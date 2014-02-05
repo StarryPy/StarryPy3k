@@ -2,6 +2,7 @@ import asyncio
 import importlib.machinery
 import inspect
 from base_plugin import BasePlugin
+from utilities import detect_overrides
 
 
 class PluginManager:
@@ -9,10 +10,12 @@ class PluginManager:
         self.base = base
         self._seen_classes = set()
         self._plugins = {}
-        self._activated_plugins = []
-        self._deactivated_plugins = []
+        self._activated_plugins = set()
+        self._deactivated_plugins = set()
         self.failed = {}
         self._resolved = False
+        self._overrides = set()
+        self._override_cache = set()
 
     def list_plugins(self):
         return self._plugins
@@ -22,11 +25,18 @@ class PluginManager:
         """
         Calls an action on all loaded plugins
         """
-        results = []
-        for plugin in self._plugins.values():
-            result = yield from getattr(plugin, "on_%s" % action)(packet)
-            results.append(result)
-        return results
+        if ("on_%s" % action) in self._overrides:
+            results = []
+            for plugin in self._plugins.values():
+                p = getattr(plugin, "on_%s" % action)
+                print(p)
+                result = yield from p(packet)
+                print(result)
+                results.append(result)
+            print(results)
+            return results
+        else:
+            return True
 
     def load_from_path(self, plugin_path):
         blacklist = ["__init__"]
@@ -35,11 +45,12 @@ class PluginManager:
                 continue
             if file.suffix == ".py" or file.is_dir():
                 try:
+                    print(file)
                     self.load_plugin(file)
                 except (SyntaxError, ImportError) as e:
                     self.failed[file.stem] = str(e)
                 except FileNotFoundError:
-                    pass
+                    print("File not found")
 
     @staticmethod
     def _load_module(file_path):
@@ -58,6 +69,8 @@ class PluginManager:
         return module
 
     def load_plugin(self, plugin_path):
+        print(str(plugin_path))
+        print(plugin_path)
         module = self._load_module(plugin_path)
         classes = self.get_classes(module)
         for candidate in classes:
@@ -101,6 +114,25 @@ class PluginManager:
             if len(ready) == 0:
                 raise ImportError("Unresolved dependencies found.")
         self._resolved = True
+
+    @asyncio.coroutine
+    def get_overrides(self):
+        if self._override_cache is self._activated_plugins:
+            return self._overrides
+        else:
+            overrides = set()
+            for plugin in self._activated_plugins:
+                override = yield from detect_overrides(BasePlugin, plugin)
+                overrides.update({x for x in override})
+            self._overrides = overrides
+            self._override_cache = self._activated_plugins
+            return overrides
+
+    def activate_all(self):
+        for plugin in self._plugins.values():
+            print(plugin)
+            plugin.activate()
+            self._activated_plugins.add(plugin)
 
 
 

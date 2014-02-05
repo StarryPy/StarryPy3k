@@ -1,0 +1,6 @@
+{
+    "listen_port": 21025,
+    "upstream_port": 21024,
+    "upstream_host": "localhost",
+    "plugin_path": "./plugins"
+}

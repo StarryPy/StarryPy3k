@@ -1,68 +1,61 @@
-from enum import IntEnum
-import asyncio
+from utilities import BiDict
 
-class Direction(IntEnum):
-    CLIENT = 0
-    SERVER = 1
+packets = BiDict({
+    'protocol_version': 0,
+    'connect_response': 1,
+    'server_disconnect': 2,
+    'handshake_challenge': 3,
+    'chat_received': 4,
+    'universe_time_update': 5,
+    'client_connect': 6,
+    'client_disconnect': 7,
+    'handshake_response': 8,
+    'warp_command': 9,
+    'chat_sent': 10,
+    'client_context_update': 11,
+    'world_start': 12,
+    'world_stop': 13,
+    'tile_array_update': 14,
+    'tile_update': 15,
+    'tile_liquid_update': 16,
+    'tile_damage_update': 17,
+    'tile_modification_failure': 18,
+    'give_item': 19,
+    'swap_in_container_result': 20,
+    'environment_update': 21,
+    'entity_interact_result': 22,
+    'modify_tile_list': 23,
+    'damage_tile': 24,
+    'damage_tile_group': 25,
+    'request_drop': 26,
+    'spawn_entity': 27,
+    'entity_interact': 28,
+    'connect_wire': 29,
+    'disconnect_all_wires': 30,
+    'open_container': 31,
+    'close_container': 32,
+    'swap_in_container': 33,
+    'item_apply_in_container': 34,
+    'start_crafting_in_container': 35,
+    'stop_crafting_in_container': 36,
+    'burn_container': 37,
+    'clear_container': 38,
+    'world_update': 39,
+    'entity_create': 40,
+    'entity_update': 41,
+    'entity_destroy': 42,
+    'damage_notification': 43,
+    'status_effect_request': 44,
+    'update_world_properties': 45,
+    'heartbeat': 46})
 
-
-class Packets(IntEnum):
-    PROTOCOL_VERSION = 0
-    CONNECT_RESPONSE = 1
-    SERVER_DISCONNECT = 2
-    HANDSHAKE_CHALLENGE = 3
-    CHAT_RECEIVED = 4
-    UNIVERSE_TIME_UPDATE = 5
-    CLIENT_CONNECT = 6
-    CLIENT_DISCONNECT = 7
-    HANDSHAKE_RESPONSE = 8
-    WARP_COMMAND = 9
-    CHAT_SENT = 10
-    CLIENT_CONTEXT_UPDATE = 11
-    WORLD_START = 12
-    WORLD_STOP = 13
-    TILE_ARRAY_UPDATE = 14
-    TILE_UPDATE = 15
-    TILE_LIQUID_UPDATE = 16
-    TILE_DAMAGE_UPDATE = 17
-    TILE_MODIFICATION_FAILURE = 18
-    GIVE_ITEM = 19
-    SWAP_IN_CONTAINER_RESULT = 20
-    ENVIRONMENT_UPDATE = 21
-    ENTITY_INTERACT_RESULT = 22
-    MODIFY_TILE_LIST = 23
-    DAMAGE_TILE = 24
-    DAMAGE_TILE_GROUP = 25
-    REQUEST_DROP = 26
-    SPAWN_ENTITY = 27
-    ENTITY_INTERACT = 28
-    CONNECT_WIRE = 29
-    DISCONNECT_ALL_WIRES = 30
-    OPEN_CONTAINER = 31
-    CLOSE_CONTAINER = 32
-    SWAP_IN_CONTAINER = 33
-    ITEM_APPLY_IN_CONTAINER = 34
-    START_CRAFTING_IN_CONTAINER = 35
-    STOP_CRAFTING_IN_CONTAINER = 36
-    BURN_CONTAINER = 37
-    CLEAR_CONTAINER = 38
-    WORLD_UPDATE = 39
-    ENTITY_CREATE = 40
-    ENTITY_UPDATE = 41
-    ENTITY_DESTROY = 42
-    DAMAGE_NOTIFICATION = 43
-    STATUS_EFFECT_REQUEST = 44
-    UPDATE_WORLD_PROPERTIES = 45
-    HEARTBEAT = 46
-
-
-class EntityType(IntEnum):
-    END = -1
-    PLAYER = 0
-    MONSTER = 1
-    OBJECT = 2
-    ITEMDROP = 3
-    PROJECTILE = 4
-    PLANT = 5
-    PLANTDROP = 6
-    EFFECT = 7
+entity_type = BiDict({
+    'end': -1,
+    'player': 0,
+    'monster': 1,
+    'object': 2,
+    'itemdrop': 3,
+    'projectile': 4,
+    'plant': 5,
+    'plantdrop': 6,
+    'effect': 7})

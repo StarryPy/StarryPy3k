@@ -1,5 +1,8 @@
 import asyncio
+from configuration_manager import ConfigurationManager
+from packets import packets
 from plugin_manager import PluginManager
+from utilities import path
 
 
 @asyncio.coroutine
@@ -8,7 +11,6 @@ def read_packet(reader, direction):
     compressed = False
 
     packet_type = yield from reader.readexactly(1)
-
 
     packet_size, packet_size_data = yield from read_svlq(reader)
     if packet_size < 0:
@@ -19,7 +21,7 @@ def read_packet(reader, direction):
     p['size'] = packet_size
     p['compressed'] = compressed
     p['data'] = data
-    p['original_data'] = packet_type+packet_size_data+data
+    p['original_data'] = packet_type + packet_size_data + data
     p['direction'] = direction
 
     return p
@@ -48,6 +50,7 @@ def read_svlq(reader):
         return v >> 1, d
     else:
         return -((v >> 1) + 1), d
+
 
 class StarboundClient:
     def __init__(self, server):
@@ -94,8 +97,8 @@ class StarryPyServer:
     def __init__(self, reader, writer):
         self.reader = reader
         self.writer = writer
-        self._client = StarboundClient(self)
         self.factory = None
+        self._client = StarboundClient(self)
         asyncio.Task(self._loop())
 
     @asyncio.coroutine
@@ -127,14 +130,24 @@ class StarryPyServer:
 
     @asyncio.coroutine
     def check_plugins(self, packet):
-        results = yield from self.factory.plugin_manager.do(packet)
+        results = yield from self.factory.plugin_manager.do(
+            packets[packet['type']],
+            packet)
         return results
 
 
 class ServerFactory:
     def __init__(self):
         self.protocols = []
+        self.configuration_manager = ConfigurationManager()
+        self.configuration_manager.load_config(path / 'config' / 'config.json',
+                                               default=True)
         self.plugin_manager = PluginManager()
+        self.plugin_manager.load_from_path(
+            path / self.configuration_manager.config.plugin_path)
+        self.plugin_manager.resolve_dependencies()
+        self.plugin_manager.activate_all()
+        asyncio.Task(self.plugin_manager.get_overrides())
 
     def remove(self, protocol):
         self.protocols.remove(protocol)
@@ -150,6 +163,7 @@ class ServerFactory:
 def start_server():
     serverf = ServerFactory()
     yield from asyncio.start_server(serverf, '127.0.0.1', 21025)
+
 
 if __name__ == "__main__":
     try:
