@@ -1,3 +1,2 @@
-asyncio
-pathlib
-filepath
+asyncio==0.2.1
+pathlib==0.97
