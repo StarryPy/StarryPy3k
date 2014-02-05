@@ -1,0 +1,24 @@
+{
+    "test1": {
+        "test2": "should be retained",
+        "test3": "this also",
+        "test4": [
+            "a",
+            "b",
+            "c"
+        ],
+        "test5": {
+            "test6": "here's another",
+            "test7": {
+                "test8": [
+                    "test9",
+                    "test10"
+                ],
+                "test10": [
+                    "test93",
+                    "test82"
+                ]
+            }
+        }
+    }
+}

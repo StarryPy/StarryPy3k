@@ -1,0 +1,20 @@
+{
+    "test1": {
+        "test2": "shouldn't be there",
+        "test3": "or this",
+        "test4": [
+            "z",
+            "y",
+            "x"
+        ],
+        "test5": {
+            "test6": "here's another bad one",
+            "test7": {
+                "test10": [
+                    "test93",
+                    "test82"
+                ]
+            }
+        }
+    }
+}
