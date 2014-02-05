@@ -1,7 +1,8 @@
+import asyncio
 import collections
 
 
-class BasePlugin(object):
+class BasePlugin:
     """
     Defines an interface for all plugins to inherit from. Note that the __init__
     method should generally not be overrode; all setup work should be done in
@@ -22,310 +23,388 @@ class BasePlugin(object):
     description = "The common class for all plugins to inherit from."
     version = ".1"
     depends = []
+    plugins = {}
     auto_activate = True
 
-    def __init__(self):
-        plugin_config = self.config.plugin_config
-        if 'auto_activate' not in plugin_config:
-            plugin_config['auto_activate'] = self.auto_activate
-        self.config.plugin_config = plugin_config
-
     def activate(self):
-        """
-        Called when the plugins are activated, do any setup work here.
-        """
-        self.active = True
-        self.logger.debug("%s plugin object activated.", self.name)
-        return True
+        pass
 
     def deactivate(self):
-        """
-        Called when the plugin is deactivated. Do any cleanup work here,
-        as it is likely that the plugin will soon be destroyed.
-        """
-        self.active = False
-        self.logger.debug("%s plugin object deactivated", self.name)
-        return True
+        pass
 
+    @asyncio.coroutine
     def on_protocol_version(self, data):
         return True
 
+    @asyncio.coroutine
     def on_server_disconnect(self, data):
         return True
 
+    @asyncio.coroutine
     def on_handshake_challenge(self, data):
         return True
 
+    @asyncio.coroutine
     def on_chat_received(self, data):
         return True
 
+    @asyncio.coroutine
     def on_universe_time_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_handshake_response(self, data):
         return True
 
+    @asyncio.coroutine
     def on_client_context_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_world_start(self, data):
         return True
 
+    @asyncio.coroutine
     def on_world_stop(self, data):
         return True
 
+    @asyncio.coroutine
     def on_tile_array_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_tile_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_tile_liquid_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_tile_damage_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_tile_modification_failure(self, data):
         return True
 
+    @asyncio.coroutine
     def on_give_item(self, data):
         return True
 
+    @asyncio.coroutine
     def on_swap_in_container_result(self, data):
         return True
 
+    @asyncio.coroutine
     def on_environment_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_entity_interact_result(self, data):
         return True
 
+    @asyncio.coroutine
     def on_modify_tile_list(self, data):
         return True
 
+    @asyncio.coroutine
     def on_damage_tile(self, data):
         return True
 
+    @asyncio.coroutine
     def on_damage_tile_group(self, data):
         return True
 
+    @asyncio.coroutine
     def on_request_drop(self, data):
         return True
 
+    @asyncio.coroutine
     def on_spawn_entity(self, data):
         return True
 
+    @asyncio.coroutine
     def on_entity_interact(self, data):
         return True
 
+    @asyncio.coroutine
     def on_connect_wire(self, data):
         return True
 
+    @asyncio.coroutine
     def on_disconnect_all_wires(self, data):
         return True
 
+    @asyncio.coroutine
     def on_open_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_close_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_swap_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_item_apply_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_start_crafting_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_stop_crafting_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_burn_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_clear_container(self, data):
         return True
 
+    @asyncio.coroutine
     def on_world_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_entity_create(self, data):
         return True
 
+    @asyncio.coroutine
     def on_entity_update(self, data):
         return True
 
+    @asyncio.coroutine
     def on_entity_destroy(self, data):
         return True
 
+    @asyncio.coroutine
     def on_status_effect_request(self, data):
         return True
 
+    @asyncio.coroutine
     def on_update_world_properties(self, data):
         return True
 
+    @asyncio.coroutine
     def on_heartbeat(self, data):
         return True
 
+    @asyncio.coroutine
     def on_connect_response(self, data):
         return True
 
+    @asyncio.coroutine
     def on_chat_sent(self, data):
         return True
 
+    @asyncio.coroutine
     def on_damage_notification(self, data):
         return True
 
+    @asyncio.coroutine
     def on_client_connect(self, data):
         return True
 
+    @asyncio.coroutine
     def on_client_disconnect(self, player):
         return True
 
+    @asyncio.coroutine
     def on_warp_command(self, data):
         return True
 
+    @asyncio.coroutine
     def after_protocol_version(self, data):
         return True
 
+    @asyncio.coroutine
     def after_server_disconnect(self, data):
         return True
 
+    @asyncio.coroutine
     def after_handshake_challenge(self, data):
         return True
 
+    @asyncio.coroutine
     def after_chat_received(self, data):
         return True
 
+    @asyncio.coroutine
     def after_universe_time_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_handshake_response(self, data):
         return True
 
+    @asyncio.coroutine
     def after_client_context_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_world_start(self, data):
         return True
 
+    @asyncio.coroutine
     def after_world_stop(self, data):
         return True
 
+    @asyncio.coroutine
     def after_tile_array_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_tile_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_tile_liquid_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_tile_damage_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_tile_modification_failure(self, data):
         return True
 
+    @asyncio.coroutine
     def after_give_item(self, data):
         return True
 
+    @asyncio.coroutine
     def after_swap_in_container_result(self, data):
         return True
 
+    @asyncio.coroutine
     def after_environment_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_entity_interact_result(self, data):
         return True
 
+    @asyncio.coroutine
     def after_modify_tile_list(self, data):
         return True
 
+    @asyncio.coroutine
     def after_damage_tile(self, data):
         return True
 
+    @asyncio.coroutine
     def after_damage_tile_group(self, data):
         return True
 
+    @asyncio.coroutine
     def after_request_drop(self, data):
         return True
 
+    @asyncio.coroutine
     def after_spawn_entity(self, data):
         return True
 
+    @asyncio.coroutine
     def after_entity_interact(self, data):
         return True
 
+    @asyncio.coroutine
     def after_connect_wire(self, data):
         return True
 
+    @asyncio.coroutine
     def after_disconnect_all_wires(self, data):
         return True
 
+    @asyncio.coroutine
     def after_open_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_close_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_swap_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_item_apply_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_start_crafting_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_stop_crafting_in_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_burn_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_clear_container(self, data):
         return True
 
+    @asyncio.coroutine
     def after_world_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_entity_create(self, data):
         return True
 
+    @asyncio.coroutine
     def after_entity_update(self, data):
         return True
 
+    @asyncio.coroutine
     def after_entity_destroy(self, data):
         return True
 
+    @asyncio.coroutine
     def after_status_effect_request(self, data):
         return True
 
+    @asyncio.coroutine
     def after_update_world_properties(self, data):
         return True
 
+    @asyncio.coroutine
     def after_heartbeat(self, data):
         return True
 
+    @asyncio.coroutine
     def after_connect_response(self, data):
         return True
 
+    @asyncio.coroutine
     def after_chat_sent(self, data):
         return True
 
+    @asyncio.coroutine
     def after_damage_notification(self, data):
         return True
 
+    @asyncio.coroutine
     def after_client_connect(self, data):
         return True
 
+    @asyncio.coroutine
     def after_client_disconnect(self, data):
         return True
 
+    @asyncio.coroutine
     def after_warp_command(self, data):
         return True
 
@@ -338,7 +417,6 @@ class CommandNameError(Exception):
     Raised when a command name can't be found from the `commands` list in a
     `SimpleCommandPlugin` instance.
     """
-
 
 class SimpleCommandPlugin(BasePlugin):
     name = "simple_command_plugin"

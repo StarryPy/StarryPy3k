@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 from utilities import recursive_dictionary_update, DotDict
 
 
@@ -18,16 +18,18 @@ class ConfigurationManager:
         return self._dot_dict
 
     def load_config(self, path, default=False):
+        if not isinstance(path, Path):
+            path = Path(path)
         if default:
             self.load_defaults(path)
-        with open(path) as f:
+        with path.open() as f:
             self._raw_config = f.read()
         self._path = path
         recursive_dictionary_update(self._config, json.loads(self._raw_config))
 
     def load_defaults(self, path):
-        path += ".default"
-        with open(path) as f:
+        path = Path(str(path) + ".default")
+        with path.open() as f:
             self._raw_default_config = f.read()
         recursive_dictionary_update(self._config,
                                     json.loads(self._raw_default_config))
@@ -35,8 +37,8 @@ class ConfigurationManager:
     def save_config(self, path=None):
         if path is None:
             path = self._path
-        temp_path = "%s_" % path
-        with open(temp_path, 'w') as f:
+        temp_path = Path(str(path) + "_")
+        with temp_path.open("w") as f:
             json.dump(self.config, f, sort_keys=True, indent=4,
                       separators=(',', ': '), ensure_ascii=False)
-        os.rename(temp_path, path)
+        temp_path.rename(path)

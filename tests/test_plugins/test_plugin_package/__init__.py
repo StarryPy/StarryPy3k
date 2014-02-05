@@ -1,0 +1,1 @@
+from tests.test_plugins.test_plugin_package.plugin import GoodPlugin

@@ -1,12 +1,107 @@
 import asyncio
+import importlib.machinery
+import inspect
+from base_plugin import BasePlugin
+
 
 class PluginManager:
-    def __init__(self):
-        pass
+    def __init__(self, base=BasePlugin):
+        self.base = base
+        self._seen_classes = set()
+        self._plugins = {}
+        self._activated_plugins = []
+        self._deactivated_plugins = []
+        self.failed = {}
+        self._resolved = False
 
     def list_plugins(self):
-        pass
+        return self._plugins
 
     @asyncio.coroutine
-    def do(self, packet):
-        return False
+    def do(self, action, packet):
+        """
+        Calls an action on all loaded plugins
+        """
+        results = []
+        for plugin in self._plugins.values():
+            result = yield from getattr(plugin, "on_%s" % action)(packet)
+            results.append(result)
+        return results
+
+    def load_from_path(self, plugin_path):
+        blacklist = ["__init__"]
+        for file in plugin_path.iterdir():
+            if file.stem in blacklist:
+                continue
+            if file.suffix == ".py" or file.is_dir():
+                try:
+                    self.load_plugin(file)
+                except (SyntaxError, ImportError) as e:
+                    self.failed[file.stem] = str(e)
+                except FileNotFoundError:
+                    pass
+
+    @staticmethod
+    def _load_module(file_path):
+        """
+        Attempts to load a module, either from a straight python file or from
+        a python package, by appending __init__.py to the end of the path if it
+        is a directory.
+        """
+        if file_path.is_dir():
+            file_path /= '__init__.py'
+        if not file_path.exists():
+            raise FileNotFoundError("{0} doesn't exist.".format(str(file_path)))
+        name = "starrypy3.%s" % file_path.stem
+        loader = importlib.machinery.SourceFileLoader(name, str(file_path))
+        module = loader.load_module(name)
+        return module
+
+    def load_plugin(self, plugin_path):
+        module = self._load_module(plugin_path)
+        classes = self.get_classes(module)
+        for candidate in classes:
+            self._seen_classes.add(candidate)
+
+    def get_classes(self, module):
+        """
+        Uses the inspect module to find all classes in a given module that
+        are subclassed from `self.base`, but are not actually `self.base`.
+        """
+        class_list = []
+        for _, obj in inspect.getmembers(module):
+            if inspect.isclass(obj):
+                if issubclass(obj, self.base) and obj is not self.base:
+                    class_list.append(obj)
+        return class_list
+
+    def load_plugins(self, plugins):
+        for plugin in plugins:
+            self.load_plugin(plugin)
+
+    def resolve_dependencies(self):
+        """
+        Resolves dependencies from self._seen_classes through a very simple
+        topological sort. Raises ImportError if there is an unresolvable
+        dependency, otherwise it instantiates the class and puts it in
+        self._plugins.
+        """
+        deps = {x.name: set(x.depends) for x in self._seen_classes}
+        classes = {x.name: x for x in self._seen_classes}
+        while len(deps) > 0:
+            ready = [x for x, d in deps.items() if len(d) == 0]
+            for name in ready:
+                self._plugins[name] = classes[name]()
+                del deps[name]
+            for name, depends in deps.items():
+                to_load = depends & set(self._plugins.keys())
+                deps[name] = deps[name].difference(set(self._plugins.keys()))
+                for plugin in to_load:
+                    classes[name].plugins[plugin] = self._plugins[plugin]
+            if len(ready) == 0:
+                raise ImportError("Unresolved dependencies found.")
+        self._resolved = True
+
+
+
+

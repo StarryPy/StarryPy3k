@@ -1,7 +1,5 @@
 import json
-import os
 import unittest
-import time
 from configuration_manager import ConfigurationManager
 import utilities
 
@@ -23,7 +21,7 @@ class ConfigurationManagerTests(unittest.TestCase):
         self.assertEquals(raw, self.config._raw_config)
 
     def test_config_manager_path_set_on_load(self):
-        self.config.load_config(str(self.trivial_config_path))
+        self.config.load_config(self.trivial_config_path)
         self.assertEqual(self.config._path, str(self.trivial_config_path))
 
     def test_config_manager_load_complex_with_default(self):
@@ -60,6 +58,13 @@ class ConfigurationManagerTests(unittest.TestCase):
         with self.output_path.open() as f:
             saved = f.read()
         self.assertEqual(original, saved)
+
+    def test_config_manager_with_path_object(self):
+        try:
+            self.config.load_config(self.trivial_config_path)
+        except TypeError:
+            self.fail("Didn't load from Path() object.")
+
 
 if __name__ == "__main__":
     unittest.main()
