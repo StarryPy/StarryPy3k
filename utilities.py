@@ -38,24 +38,24 @@ class DotDict(dict):
 
 @asyncio.coroutine
 def detect_overrides(cls, obj):
-    res = []
+    res = set()
     for key, value in cls.__dict__.items():
         if isinstance(value, classmethod):
             value = getattr(cls, key).__func__
         if isinstance(value, (FunctionType, classmethod)):
             meth = getattr(obj, key)
             if not meth.__func__ is value:
-                res.append(key)
+                res.add(key)
     return res
 
 
 class BiDict(dict):
     """A case-insensitive bidirectional dictionary that supports integers."""
 
-    def __init__(self, d):
+    def __init__(self, d, **kwargs):
+        #super().__init__(**kwargs) ## rm:Adding for inspection override, hopefully this gets removed in my pre-commit hook. We'll see.
         for k, v in d.items():
             self[k] = v
-
 
     def __setitem__(self, key, value):
         if key in self:
