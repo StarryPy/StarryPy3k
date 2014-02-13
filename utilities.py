@@ -1,4 +1,5 @@
 import asyncio
+import io
 from pathlib import Path
 import collections
 from types import FunctionType
@@ -78,3 +79,15 @@ class BiDict(dict):
     def __delitem__(self, key):
         super().__delitem__(self[key])
         super().__delitem__(key)
+
+
+class AsyncBytesIO(io.BytesIO):
+    """
+    This class just wraps a normal BytesIO.read() in a coroutine to make it
+    easier to interface with functions designed to work on coroutines without
+    having to monkey around with a type check and extra futures.
+    """
+
+    @asyncio.coroutine
+    def read(self, *args, **kwargs):
+        return super().read(*args, **kwargs)

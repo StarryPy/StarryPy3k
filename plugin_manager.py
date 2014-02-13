@@ -1,6 +1,7 @@
 import asyncio
 import importlib.machinery
 import inspect
+
 from base_plugin import BasePlugin
 from utilities import detect_overrides
 
@@ -39,16 +40,20 @@ class PluginManager:
             return True
 
     def load_from_path(self, plugin_path):
-        blacklist = ["__init__"]
+        blacklist = ["__init__", "__pycache__"]
+        loaded = set()
         for file in plugin_path.iterdir():
             if file.stem in blacklist:
                 continue
-            if file.suffix == ".py" or file.is_dir():
+            if (file.suffix == ".py" or file.is_dir()) and str(
+                    file) not in loaded:
                 try:
+                    loaded.add(str(file))
                     print(file)
                     self.load_plugin(file)
                 except (SyntaxError, ImportError) as e:
                     self.failed[file.stem] = str(e)
+                    print(e)
                 except FileNotFoundError:
                     print("File not found")
 
