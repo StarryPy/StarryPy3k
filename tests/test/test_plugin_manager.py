@@ -14,11 +14,11 @@ class TestPluginManager:
         self.bad_plugin = self.plugin_path / 'bad_plugin'
         self.bad_path = self.plugin_path / 'bad_path.py'
         self.dependent_plugins = self.plugin_path / "dependent_plugins"
-        self.plugin_manager = PluginManager()
+        self.plugin_manager = PluginManager(None)
         self.loop = None
 
     def setup(self):
-        self.plugin_manager = PluginManager()
+        self.plugin_manager = PluginManager(None)
         self.loop = asyncio.new_event_loop()
 
     def test_bad_paths(self):

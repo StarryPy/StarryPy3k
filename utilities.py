@@ -16,6 +16,7 @@ def recursive_dictionary_update(d, u):
             d[k] = u[k]
     return d
 
+
 class DotDict(dict):
     def __init__(self, d):
         for k, v in d.items():
@@ -91,3 +92,28 @@ class AsyncBytesIO(io.BytesIO):
     @asyncio.coroutine
     def read(self, *args, **kwargs):
         return super().read(*args, **kwargs)
+
+
+@asyncio.coroutine
+def read_vlq(bytestream):
+    d = b""
+    v = 0
+    while True:
+        tmp = yield from bytestream.read(1)
+        d += tmp
+        tmp = ord(tmp)
+        v <<= 7
+        v |= tmp & 0x7f
+
+        if tmp & 0x80 == 0:
+            break
+    return v, d
+
+
+@asyncio.coroutine
+def read_signed_vlq(reader):
+    v, d = yield from read_vlq(reader)
+    if (v & 1) == 0x00:
+        return v >> 1, d
+    else:
+        return -((v >> 1) + 1), d

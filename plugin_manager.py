@@ -1,45 +1,57 @@
 import asyncio
 import importlib.machinery
 import inspect
+import pathlib
+import traceback
+from types import ModuleType
 
 from base_plugin import BasePlugin
+from configuration_manager import ConfigurationManager
+from parser import PacketParser
 from utilities import detect_overrides
 
 
+
+# noinspection PyBroadException
 class PluginManager:
-    def __init__(self, base=BasePlugin):
+    def __init__(self, config: ConfigurationManager, base=BasePlugin):
         self.base = base
+        self.config = config
+        self.failed = {}
         self._seen_classes = set()
         self._plugins = {}
         self._activated_plugins = set()
         self._deactivated_plugins = set()
-        self.failed = {}
         self._resolved = False
         self._overrides = set()
         self._override_cache = set()
+        self._packet_parser = PacketParser(self.config)
 
     def list_plugins(self):
         return self._plugins
 
     @asyncio.coroutine
-    def do(self, action, packet):
+    def do(self, protocol, action: str, packet: dict):
         """
         Calls an action on all loaded plugins
         """
-        if ("on_%s" % action) in self._overrides:
-            results = []
-            for plugin in self._plugins.values():
-                p = getattr(plugin, "on_%s" % action)
-                print(p)
-                result = yield from p(packet)
-                print(result)
-                results.append(result)
-            print(results)
-            return results
-        else:
+        try:
+            if ("on_%s" % action) in self._overrides:
+                packet = yield from self._packet_parser.parse(packet)
+                send_flag = True
+                for plugin in self._plugins.values():
+                    p = getattr(plugin, "on_%s" % action)
+                    if not (yield from p(packet, protocol)):
+                        send_flag = False
+                return send_flag
+            else:
+                return True
+        except Exception:
+            print("Exception encountered in plugin.")
+            traceback.print_exc()
             return True
 
-    def load_from_path(self, plugin_path):
+    def load_from_path(self, plugin_path: pathlib.Path):
         blacklist = ["__init__", "__pycache__"]
         loaded = set()
         for file in plugin_path.iterdir():
@@ -49,7 +61,6 @@ class PluginManager:
                     file) not in loaded:
                 try:
                     loaded.add(str(file))
-                    print(file)
                     self.load_plugin(file)
                 except (SyntaxError, ImportError) as e:
                     self.failed[file.stem] = str(e)
@@ -58,7 +69,7 @@ class PluginManager:
                     print("File not found")
 
     @staticmethod
-    def _load_module(file_path):
+    def _load_module(file_path: pathlib.Path):
         """
         Attempts to load a module, either from a straight python file or from
         a python package, by appending __init__.py to the end of the path if it
@@ -68,20 +79,18 @@ class PluginManager:
             file_path /= '__init__.py'
         if not file_path.exists():
             raise FileNotFoundError("{0} doesn't exist.".format(str(file_path)))
-        name = "starrypy3.%s" % file_path.stem
+        name = "plugins.%s" % file_path.stem
         loader = importlib.machinery.SourceFileLoader(name, str(file_path))
         module = loader.load_module(name)
         return module
 
-    def load_plugin(self, plugin_path):
-        print(str(plugin_path))
-        print(plugin_path)
+    def load_plugin(self, plugin_path: pathlib.Path):
         module = self._load_module(plugin_path)
         classes = self.get_classes(module)
         for candidate in classes:
             self._seen_classes.add(candidate)
 
-    def get_classes(self, module):
+    def get_classes(self, module: ModuleType):
         """
         Uses the inspect module to find all classes in a given module that
         are subclassed from `self.base`, but are not actually `self.base`.
@@ -90,10 +99,12 @@ class PluginManager:
         for _, obj in inspect.getmembers(module):
             if inspect.isclass(obj):
                 if issubclass(obj, self.base) and obj is not self.base:
+                    obj.config = self.config
                     class_list.append(obj)
+
         return class_list
 
-    def load_plugins(self, plugins):
+    def load_plugins(self, plugins: list):
         for plugin in plugins:
             self.load_plugin(plugin)
 
@@ -139,6 +150,10 @@ class PluginManager:
             plugin.activate()
             self._activated_plugins.add(plugin)
 
+    def deactivate_all(self):
+        for plugin in self._plugins.values():
+            print("Deactivating")
+            plugin.deactivate()
 
 
 
