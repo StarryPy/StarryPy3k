@@ -7,8 +7,9 @@ from types import ModuleType
 
 from base_plugin import BasePlugin
 from configuration_manager import ConfigurationManager
-from parser import PacketParser
+from pparser import PacketParser
 from utilities import detect_overrides
+
 
 
 

@@ -3,5 +3,7 @@
 "packet_reap_time": 600,
 "min_cache_size": 16,
 "default_color": "^#red;",
-"command_prefix": "/"
+"command_prefix": "/",
+"owner_uuid": "",
+"default_roles": []
 }

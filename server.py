@@ -1,14 +1,25 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from enum import IntEnum
 import zlib
 import sys
 
 from configuration_manager import ConfigurationManager
 from data_parser import ChatReceived
 from packets import packets
-from parser import build_packet
+from pparser import build_packet
 from plugin_manager import PluginManager
 from utilities import read_signed_vlq, path
+
+
+class State(IntEnum):
+    VERSION_SENT = 0
+    CLIENT_CONNECT_RECEIVED = 1
+    HANDSHAKE_CHALLENGE_SENT = 2
+    HANDSHAKE_RESPONSE_RECEIVED = 3
+    CONNECT_RESPONSE_SENT = 4
+    CONNECTED = 5
+    CONNECTED_WITH_HEARTBEAT = 6
 
 
 @asyncio.coroutine
@@ -45,6 +56,7 @@ class StarryPyServer:
         self.factory = factory
         self._client_loop_future = None
         self._server_loop_future = asyncio.Task(self.server_loop())
+        self.state = None
 
     @asyncio.coroutine
     def server_loop(self):
@@ -63,9 +75,6 @@ class StarryPyServer:
                 break
             try:
                 if (yield from self.check_plugins(packet)):
-                    yield from self.write_client(packet)
-                else:
-                    print("False in send flag")
                     yield from self.write_client(packet)
             except (ConnectionResetError, ConnectionAbortedError):
                 print("Returning")
@@ -91,6 +100,20 @@ class StarryPyServer:
                 return
 
     @asyncio.coroutine
+    def send_message(self, message, *, world="", client_id=0, name="",
+                     channel=0):
+        if self.state == State.CONNECTED_WITH_HEARTBEAT:
+            chat_packet = ChatReceived.build(
+                {"message": message,
+                 "world": world,
+                 "client_id": client_id,
+                 "name": name,
+                 "channel": channel})
+
+            to_send = build_packet(4, chat_packet)
+            yield from self.raw_write(to_send)
+
+    @asyncio.coroutine
     def write(self, packet):
         self._writer.write(packet['original_data'])
         yield from self._writer.drain()
@@ -114,11 +137,10 @@ class StarryPyServer:
 
     @asyncio.coroutine
     def check_plugins(self, packet):
-        results = yield from self.factory.plugin_manager.do(
+        return (yield from self.factory.plugin_manager.do(
             self,
             packets[packet['type']],
-            packet)
-        return True
+            packet))
 
     def __del__(self):
         try:
@@ -150,21 +172,16 @@ class ServerFactory:
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, message, world="", name="", channel=0):
-        chat_packet = ChatReceived.build(
-            {"message": message,
-             "world": "",
-             "client_id": 0,
-             "name": "",
-             "channel": channel})
-
-        to_send = build_packet(4, chat_packet)
+    def broadcast(self, message, *, world="", name="", channel=0, client_id=0):
         for protocol in self.protocols:
             try:
-                yield from protocol.raw_write(to_send)
+                yield from protocol.send_message(message,
+                                                 world=world,
+                                                 name=name,
+                                                 channel=channel,
+                                                 client_id=client_id)
             except ConnectionError:
                 continue
-        print("Sent message")
 
     def remove(self, protocol):
         self.protocols.remove(protocol)
@@ -184,10 +201,9 @@ def start_server():
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.set_debug(True)
+    #loop.set_debug(True)  # Removed in commit to avoid errors.
     loop.executor = ThreadPoolExecutor(max_workers=100)
     loop.set_default_executor(loop.executor)
-
     server_factory = asyncio.Task(start_server())
 
     try:

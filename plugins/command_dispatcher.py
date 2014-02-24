@@ -25,11 +25,8 @@ class CommandDispatcher(BasePlugin):
                 self.config.config.command_prefix):].split()
             print(to_parse)
             command = to_parse[0]
-            print(command)
             if command not in self.commands:
                 return True
             else:
-                print("Command found.")
-                #if self.commands[command]
-                self.commands[command](data, protocol)
+                yield from self.commands[command](to_parse[1:], protocol)
                 return False

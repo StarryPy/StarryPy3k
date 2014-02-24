@@ -1,10 +1,13 @@
 import asyncio
+import collections
 
 
 class BaseMeta(type):
     def __new__(mcs, name, bases, clsdict):
         for key, value in clsdict.items():
-            if callable(value) and value.__name__.startswith("on_"):
+            if callable(value) and (
+                        value.__name__.startswith("on_") or hasattr(value,
+                                                                    "_command")):
                 clsdict[key] = asyncio.coroutine(value)
         c = type.__new__(mcs, name, bases, clsdict)
         return c
@@ -242,13 +245,30 @@ class CommandNameError(Exception):
     """
 
 
-def command(*aliases):
+def command(*aliases, role=None, roles=None, doc="No help available."):
     def wrapped_command(f):
-        def wrapper(*args, **kwargs):
-            return f(*args, **kwargs)
+        def wrapper(self, data, protocol):
+            try:
+                nonlocal roles, role, doc
+                if roles is None:
+                    roles = []
+                if not isinstance(roles, collections.Iterable):
+                    roles = [roles]
+                if role is not None:
+                    roles.append(role)
+                for role in roles:
+                    if role.__name__ not in protocol.player.roles:
+                        raise PermissionError
+                f.__doc__ = doc
+                return f(self, data, protocol)
+            except PermissionError:
+                yield from protocol.send_message("You don't have proper "
+                                                 "permissions to use that "
+                                                 "command.")
 
         wrapper._command = True
         wrapper._aliases = aliases
+        wrapper.__doc__ = doc
         return wrapper
 
     return wrapped_command
@@ -263,9 +283,24 @@ class SimpleCommandPlugin(BasePlugin):
 
     def activate(self):
         super().activate()
-        print([getattr(self, x) for x in self.__dir__()])
         for name, attr in [(x, getattr(self, x)) for x in self.__dir__()]:
             if hasattr(attr, "_command"):
                 for alias in attr._aliases:
                     self.plugins['command_dispatcher'].register(attr, alias)
 
+
+class MetaRole(type):
+    def __new__(mcs, name, bases, clsdict):
+        clsdict['roles'] = set()
+        clsdict['superroles'] = set()
+        c = type.__new__(mcs, name, bases, clsdict)
+        if name != "Role":
+            for b in c.mro():
+                if issubclass(b, Role):
+                    c.superroles.add(b)
+                    b.roles.add(c)
+        return c
+
+
+class Role(metaclass=MetaRole):
+    pass

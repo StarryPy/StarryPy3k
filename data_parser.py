@@ -3,6 +3,7 @@ import functools
 from io import BytesIO
 import io
 import struct
+import binascii
 
 from utilities import DotDict
 
@@ -112,10 +113,8 @@ class Struct(metaclass=MetaStruct):
         d = string.peek()
         big_enough = len(d) > 1
         if big_enough:
-            k = cacher.get_key(d)
             _c = cacher.retrieve(cls, d)
             if _c is not None:
-                #print("Returning cached item")
                 return _c
         if ctx is None:
             ctx = OrderedDotDict()
@@ -307,7 +306,7 @@ class UUID(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         if Flag.parse(stream, ctx):
-            return stream.read(16)
+            return binascii.hexlify(stream.read(16))
         else:
             return None
 
@@ -326,7 +325,8 @@ class VariantVariant(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         l = VLQ.parse(stream, ctx)
-        return [Variant.parse_stream(stream, ctx) for _ in range(l)]
+        return [Variant.parse(stream, ctx) for _ in range(l)]
+
 
 class DictVariant(Struct):
     @classmethod
@@ -437,9 +437,10 @@ class GreedyArray(Struct):
         while True:
             l = len(stream.peek())
             if l == 0 or _l == l: break
-            res.append(super().parse_stream(stream, ctx))
+            res.append(super().parse(stream, ctx))
             _l = l
         return res
+
 
 class EntityCreate(GreedyArray):
     entity_type = Byte

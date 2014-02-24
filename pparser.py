@@ -113,8 +113,11 @@ class PacketParser:
         if res is None:
             packet['parsed'] = {}
         else:
-            packet['parsed'] = yield from self.loop.run_in_executor(
-                self.loop.executor, res.parse, packet['data'])
+            #packet['parsed'] = yield from self.loop.run_in_executor(
+            #    self.loop.executor, res.parse, packet['data'])
+            # Removed due to issues with testers. Need to evaluate what's going
+            # on.
+            packet['parsed'] = res.parse(packet['data'])
         return packet
 
 

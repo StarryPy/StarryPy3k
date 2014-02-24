@@ -4,8 +4,36 @@ import pprint
 import shelve
 import asyncio
 
-from base_plugin import BasePlugin
+from base_plugin import Role, command, SimpleCommandPlugin
 from server import StarryPyServer
+
+
+class Owner(Role):
+    pass
+
+
+class SuperAdmin(Owner):
+    pass
+
+
+class Admin(SuperAdmin):
+    pass
+
+
+class Moderator(Admin):
+    pass
+
+
+class Guest(Moderator):
+    pass
+
+
+class Ban(Moderator):
+    pass
+
+
+class Kick(Moderator):
+    pass
 
 
 class State(IntEnum):
@@ -15,6 +43,7 @@ class State(IntEnum):
     HANDSHAKE_RESPONSE_RECEIVED = 3
     CONNECT_RESPONSE_SENT = 4
     CONNECTED = 5
+    CONNECTED_WITH_HEARTBEAT = 6
 
 
 class Player:
@@ -56,13 +85,16 @@ class Planet:
                                       self.planet, self.satellite)
 
 
-class PlayerManager(BasePlugin):
+class PlayerManager(SimpleCommandPlugin):
     name = "player_manager"
 
     def activate(self):
         super().activate()
         self.shelf = shelve.open(self.config.config.player_db, writeback=True)
         self.sync()
+        self.players = self.shelf['players']
+        self.planets = self.shelf['planets']
+        self.plugin_shelf = self.shelf['plugins']
 
     def sync(self):
         if 'players' not in self.shelf:
@@ -124,6 +156,10 @@ class PlayerManager(BasePlugin):
         print(location)
         return True
 
+    def on_heartbeat(self, data, protocol):
+        protocol.state = 6
+        return True
+
     def deactivate(self):
         for player in self.shelf['players'].values():
             player.protocol = None
@@ -141,10 +177,32 @@ class PlayerManager(BasePlugin):
         if str(uuid) in self.shelf:
             return self.shelf['players'][str(uuid)]
         else:
+            print(uuid.decode("ascii"), self.config.config.owner_uuid)
             new_player = Player(uuid, name, last_seen, roles, logged_in,
                                 protocol, client_id, ip, planet, on_ship, muted)
             self.shelf['players'][str(uuid)] = new_player
             return new_player
+
+    def get_player_by_name(self, name, check_logged_in=False):
+        lname = name.lower()
+        for player in self.players:
+            if player.name.lower() == lname:
+                if not check_logged_in or player.logged_in:
+                    return player
+
+    @command("kick", role=Kick)
+    def kick(self, data, protocol):
+        print("hello")
+        name = " ".join(data)
+        p = self.get_player_by_name(" ".join(data))
+        if p is not None:
+            p.protocol.die()
+            yield from self.factory.broadcast("%s has kicked %s." % (
+                protocol.player.name,
+                p.name))
+        else:
+            yield from protocol.send_message(
+                "Couldn't find a player with name %s" % name)
 
     @asyncio.coroutine
     def add_or_get_planet(self, sector, location, planet, satellite,
@@ -159,4 +217,3 @@ class PlayerManager(BasePlugin):
                             satellite=satellite)
             self.shelf['planets'][str(planet)] = planet
         return planet
-
