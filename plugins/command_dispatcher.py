@@ -25,6 +25,9 @@ class CommandDispatcher(BasePlugin):
             if command not in self.commands:
                 return True
             else:
-                yield from self.commands[command](to_parse[1:], protocol)
+                try:
+                    yield from self.commands[command](to_parse[1:], protocol)
+                except:
+                    self.logger.exception("Exc", exc_info=True)
                 return False
         return True

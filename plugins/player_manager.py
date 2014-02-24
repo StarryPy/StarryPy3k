@@ -121,6 +121,7 @@ class PlayerManager(SimpleCommandPlugin):
         if response.success:
             protocol.player.logged_in = True
             protocol.player.client_id = response.client_id
+            protocol.player.protocol = protocol
             protocol.state = State.CONNECTED
         else:
             protocol.player.logged_in = False
@@ -177,10 +178,15 @@ class PlayerManager(SimpleCommandPlugin):
                           **kwargs) -> Player:
         if str(uuid) in self.shelf['players']:
             self.logger.info("Returning existing player.")
-            return self.shelf['players'][str(uuid)]
+            p = self.shelf['players'][str(uuid)]
+            if uuid.decode("ascii") == self.config.config.owner_uuid:
+                p.roles = {x.__name__ for x in Owner.roles}
+            return p
         else:
             self.logger.info("Creating new player with UUID %s and name %s",
                              uuid, name)
+            if uuid.decode("ascii") == self.config.config.owner_uuid:
+                roles = {x.__name__ for x in Owner.roles}
             self.logger.debug("Matches owner UUID: ",
                               uuid.decode(
                                   "ascii") == self.config.config.owner_uuid)
@@ -189,9 +195,14 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf['players'][str(uuid)] = new_player
             return new_player
 
+    def add_role(self, player, role):
+        if issubclass(role, Role):
+            role = role.__name__
+        player.roles.add(role)
+
     def get_player_by_name(self, name, check_logged_in=False):
         lname = name.lower()
-        for player in self.players:
+        for player in self.shelf['players'].values():
             if player.name.lower() == lname:
                 if not check_logged_in or player.logged_in:
                     return player
