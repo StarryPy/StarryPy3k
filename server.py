@@ -26,6 +26,7 @@ class State(IntEnum):
 
 @asyncio.coroutine
 def read_packet(reader, direction):
+    logger.debug("New packet. Direction: %s", direction)
     p = {}
     compressed = False
     logger.debug("Attempting to read packet type")
