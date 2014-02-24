@@ -1,6 +1,8 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from enum import IntEnum
+import logging
+import traceback
 import zlib
 import sys
 
@@ -26,29 +28,51 @@ class State(IntEnum):
 def read_packet(reader, direction):
     p = {}
     compressed = False
-
-    packet_type = yield from reader.readexactly(1)
-
-    packet_size, packet_size_data = yield from read_signed_vlq(reader)
-    if packet_size < 0:
-        packet_size = abs(packet_size)
-        compressed = True
-    data = yield from reader.read(packet_size)
+    logger.debug("Attempting to read packet type")
+    try:
+        packet_type = (yield from reader.readexactly(1))
+    except:
+        logger.exception("Couldn't read packet type.", exc_info=True)
+        raise
+    logger.debug("Got packet type of %d", ord(packet_type))
+    logger.debug("Attempting to read/parse packet size.")
+    try:
+        packet_size, packet_size_data = yield from read_signed_vlq(reader)
+        if packet_size < 0:
+            packet_size = abs(packet_size)
+            compressed = True
+    except:
+        logger.exception("Couldn't read packet size!", exc_info=True)
+        raise
+    try:
+        logger.debug("Attempting to read %d bytes of data.", packet_size)
+        data = yield from reader.read(packet_size)
+    except:
+        logger.exception("Couldn't read data!")
+        raise
     p['type'] = ord(packet_type)
     p['size'] = packet_size
     p['compressed'] = compressed
     if not compressed:
+        logger.debug("Packet is not compressed.")
         p['data'] = data
     else:
-        zobj = zlib.decompressobj()
-        p['data'] = zobj.decompress(data)
+        logger.debug("Packet is compressed, attempting to decompress.")
+        try:
+            zobj = zlib.decompressobj()
+            p['data'] = zobj.decompress(data)
+        except:
+            logger.exception("Couldn't decompress packet.", exc_info=True)
+            raise
     p['original_data'] = packet_type + packet_size_data + data
     p['direction'] = direction
+    logger.debug("Completed packet parsing, returning.")
     return p
 
 
 class StarryPyServer:
     def __init__(self, reader, writer, factory):
+        logger.warning("Initializing protocol.")
         self._reader = reader
         self._writer = writer
         self._client_reader = None
@@ -60,18 +84,26 @@ class StarryPyServer:
 
     @asyncio.coroutine
     def server_loop(self):
+        logger.debug("Starting server loop.")
         (self._client_reader,
          self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
                                                                    21024)
+        logger.debug("Created client reader/writer.")
+        logger.debug("Starting client loop in Task object.")
         self._client_loop_future = asyncio.Task(self.client_loop())
+        logger.debug("Starting actual read/write loop server_loop.")
         while True:
             try:
                 packet = yield from read_packet(self._reader, "Client")
-            except asyncio.streams.IncompleteReadError:
+            except EOFError:
                 if hasattr(self, 'player'):
                     print("Connection broken from player named:" % self.player)
                 else:
                     print("Connection broken from unknown player.")
+                break
+            except:
+                print("Unknown error occurred in server loop.")
+                logger.error(traceback.format_exc())
                 break
             try:
                 if (yield from self.check_plugins(packet)):
@@ -87,10 +119,12 @@ class StarryPyServer:
         while True:
             try:
                 packet = yield from read_packet(self._client_reader, "Server")
-            except asyncio.streams.IncompleteReadError:
+            except EOFError:
                 self.die()
                 return
-            except TypeError:
+            except:
+                print("Unknown error occurred in server loop.")
+                logger.error(traceback.format_exc())
                 break
             try:
                 send_flag = yield from self.check_plugins(packet)
@@ -200,19 +234,35 @@ def start_server():
 
 
 if __name__ == "__main__":
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    aiologger = logging.getLogger("asyncio")
+    aiologger.setLevel(logging.DEBUG)
+    logger = logging.getLogger('starrypy')
+    logger.setLevel(logging.DEBUG)
+    fh_d = logging.FileHandler("debug.log")
+    fh_d.setLevel(logging.DEBUG)
+    fh_d.setFormatter(formatter)
+    aiologger.addHandler(fh_d)
+    logger.addHandler(fh_d)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(formatter)
+    aiologger.addHandler(ch)
+    logger.addHandler(ch)
     with open("commit_count") as f:
         ver = f.read()
-    print("Running commit", ver)
+    logger.info("Running commit %s", ver)
     loop = asyncio.get_event_loop()
-    #loop.set_debug(True)  # Removed in commit to avoid errors.
-    loop.executor = ThreadPoolExecutor(max_workers=100)
-    loop.set_default_executor(loop.executor)
+    loop.set_debug(True)  # Removed in commit to avoid errors.
+    #loop.executor = ThreadPoolExecutor(max_workers=100)
+    #loop.set_default_executor(loop.executor)
+    logger.info("Starting server")
     server_factory = asyncio.Task(start_server())
 
     try:
         loop.run_forever()
     except (KeyboardInterrupt, SystemExit):
-        print("Exiting")
+        logger.warning("Exiting")
     finally:
         server_factory.result().plugin_manager.deactivate_all()
-        print("Running commit", ver)
+        logger.warning("Running commit %s", ver)
