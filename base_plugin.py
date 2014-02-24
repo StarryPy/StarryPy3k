@@ -34,6 +34,9 @@ class BasePlugin(metaclass=BaseMeta):
     plugins = {}
     auto_activate = True
 
+    def __init__(self):
+        self.loop = asyncio.get_event_loop()
+
     def activate(self):
         pass
 
