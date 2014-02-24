@@ -2,5 +2,6 @@
 "player_db": "config/player",
 "packet_reap_time": 600,
 "min_cache_size": 16,
-"default_color": "^#red;"
+"default_color": "^#red;",
+"command_prefix": "/"
 }

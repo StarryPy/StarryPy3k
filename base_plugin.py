@@ -1,11 +1,10 @@
 import asyncio
-import collections
 
 
 class BaseMeta(type):
     def __new__(mcs, name, bases, clsdict):
         for key, value in clsdict.items():
-            if callable(value) and "on_" in value.__name__:
+            if callable(value) and value.__name__.startswith("on_"):
                 clsdict[key] = asyncio.coroutine(value)
         c = type.__new__(mcs, name, bases, clsdict)
         return c
@@ -240,25 +239,30 @@ class CommandNameError(Exception):
     """
 
 
+def command(*aliases):
+    def wrapped_command(f):
+        def wrapper(*args, **kwargs):
+            return f(*args, **kwargs)
+
+        wrapper._command = True
+        wrapper._aliases = aliases
+        return wrapper
+
+    return wrapped_command
+
+
 class SimpleCommandPlugin(BasePlugin):
     name = "simple_command_plugin"
     description = "Provides a simple parent class to define chat commands."
     version = "0.1"
-    depends = []
-    commands = []
-    command_aliases = {}
+    depends = ["command_dispatcher"]
     auto_activate = True
 
     def activate(self):
-        super(SimpleCommandPlugin, self).activate()
-        for command in self.commands:
-            f = getattr(self, command)
-            if not isinstance(f, collections.Callable):
-                raise CommandNameError("Could not find a method called %s"
-                                       % command)
-        for command, alias_list in self.command_aliases.items():
-            for alias in alias_list:
-                self.plugins['command_dispatcher'].register(alias, command)
+        super().activate()
+        print([getattr(self, x) for x in self.__dir__()])
+        for name, attr in [(x, getattr(self, x)) for x in self.__dir__()]:
+            if hasattr(attr, "_command"):
+                for alias in attr._aliases:
+                    self.plugins['command_dispatcher'].register(attr, alias)
 
-    def on_chat_sent(self, data, protocol):
-        pass
