@@ -10,8 +10,8 @@ class Announcer(BasePlugin):
     def send_announce(self, protocol, message):
         yield from self.factory.broadcast("%s %s" % (protocol.player.name,
                                                      message))
-        print("Sent message")
-        return
+        self.logger.debug("Sent announcement message for %s.",
+                          protocol.player.name)
 
     def on_connect_response(self, data, protocol):
         if data['parsed'].success:

@@ -1,5 +1,4 @@
 import asyncio
-import pprint
 import traceback
 
 from configuration_manager import ConfigurationManager
@@ -93,13 +92,11 @@ class PacketParser:
                 cached_packet.count -= 1
                 if cached_packet.count <= 0:
                     del (self._cache[h])
-            pprint.pprint(self._cache)
 
     @asyncio.coroutine
     def _debug_counter(self):
         while True:
             yield from asyncio.sleep(60)
-            print("%d packets cached." % len(self._cache))
 
     @asyncio.coroutine
     def _parse_and_cache_packet(self, packet):
@@ -122,7 +119,6 @@ class PacketParser:
 
 
     def __del__(self):
-        print("Killing packet cache reaper.")
         self._reaper.cancel()
 
 

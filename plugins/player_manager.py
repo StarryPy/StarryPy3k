@@ -153,7 +153,9 @@ class PlayerManager(SimpleCommandPlugin):
         else:
             protocol.player.on_ship = True
             location = "on ship"
-        print(location)
+        self.logger.info("Player %s is now at location: %s",
+                         protocol.player.name,
+                         location)
         return True
 
     def on_heartbeat(self, data, protocol):
@@ -164,9 +166,8 @@ class PlayerManager(SimpleCommandPlugin):
         for player in self.shelf['players'].values():
             player.protocol = None
             player.logged_in = False
-        print(self.shelf['players'])
         self.shelf.close()
-        print("Closed the shelf")
+        self.logger.debug("Closed the shelf")
 
     @asyncio.coroutine
     def add_or_get_player(self, uuid, name='', last_seen=None, roles=None,
@@ -174,10 +175,15 @@ class PlayerManager(SimpleCommandPlugin):
                           ip="0.0.0.0",
                           planet='', on_ship=True, muted=False,
                           **kwargs) -> Player:
-        if str(uuid) in self.shelf:
+        if str(uuid) in self.shelf['players']:
+            self.logger.info("Returning existing player.")
             return self.shelf['players'][str(uuid)]
         else:
-            print(uuid.decode("ascii"), self.config.config.owner_uuid)
+            self.logger.info("Creating new player with UUID %s and name %s",
+                             uuid, name)
+            self.logger.debug("Matches owner UUID: ",
+                              uuid.decode(
+                                  "ascii") == self.config.config.owner_uuid)
             new_player = Player(uuid, name, last_seen, roles, logged_in,
                                 protocol, client_id, ip, planet, on_ship, muted)
             self.shelf['players'][str(uuid)] = new_player
@@ -192,7 +198,6 @@ class PlayerManager(SimpleCommandPlugin):
 
     @command("kick", role=Kick)
     def kick(self, data, protocol):
-        print("hello")
         name = " ".join(data)
         p = self.get_player_by_name(" ".join(data))
         if p is not None:

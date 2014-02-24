@@ -18,15 +18,13 @@ class CommandDispatcher(BasePlugin):
         self.commands[name] = fn
 
     def on_chat_sent(self, data, protocol):
-        print(data['parsed'])
-        print(self.commands)
         if data['parsed'].message.startswith(self.config.config.command_prefix):
             to_parse = data['parsed'].message[len(
                 self.config.config.command_prefix):].split()
-            print(to_parse)
             command = to_parse[0]
             if command not in self.commands:
                 return True
             else:
                 yield from self.commands[command](to_parse[1:], protocol)
                 return False
+        return True

@@ -1,7 +1,6 @@
 import asyncio
 from enum import IntEnum
 import logging
-import traceback
 import zlib
 import sys
 
@@ -29,27 +28,16 @@ def read_packet(reader, direction):
     p = {}
     compressed = False
     logger.debug("Attempting to read packet type")
-    try:
-        packet_type = (yield from reader.readexactly(1))
-    except:
-        logger.exception("Couldn't read packet type.", exc_info=True)
-        raise
+    packet_type = (yield from reader.readexactly(1))
     logger.debug("Got packet type of %d", ord(packet_type))
     logger.debug("Attempting to read/parse packet size.")
-    try:
-        packet_size, packet_size_data = yield from read_signed_vlq(reader)
-        if packet_size < 0:
-            packet_size = abs(packet_size)
-            compressed = True
-    except:
-        logger.exception("Couldn't read packet size!", exc_info=True)
-        raise
-    try:
-        logger.debug("Attempting to read %d bytes of data.", packet_size)
-        data = yield from reader.readexactly(packet_size)
-    except:
-        logger.exception("Couldn't read data!")
-        raise
+
+    packet_size, packet_size_data = yield from read_signed_vlq(reader)
+    if packet_size < 0:
+        packet_size = abs(packet_size)
+        compressed = True
+    logger.debug("Attempting to read %d bytes of data.", packet_size)
+    data = yield from reader.readexactly(packet_size)
     p['type'] = ord(packet_type)
     p['size'] = packet_size
     p['compressed'] = compressed
@@ -81,57 +69,32 @@ class StarryPyServer:
         self._client_loop_future = None
         self._server_loop_future = asyncio.Task(self.server_loop())
         self.state = None
+        self._alive = True
 
     @asyncio.coroutine
     def server_loop(self):
-        logger.debug("Starting server loop.")
         (self._client_reader,
          self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
                                                                    21024)
-        logger.debug("Created client reader/writer.")
-        logger.debug("Starting client loop in Task object.")
         self._client_loop_future = asyncio.Task(self.client_loop())
-        logger.debug("Starting actual read/write loop server_loop.")
-        while True:
-            try:
+        try:
+            while True:
                 packet = yield from read_packet(self._reader, "Client")
-            except EOFError:
-                if hasattr(self, 'player'):
-                    print("Connection broken from player named:" % self.player)
-                else:
-                    print("Connection broken from unknown player.")
-                break
-            except:
-                print("Unknown error occurred in server loop.")
-                logger.error(traceback.format_exc())
-                break
-            try:
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
-            except (ConnectionResetError, ConnectionAbortedError):
-                print("Returning")
-                return
-        self.die()
-        return True
+        finally:
+            self.die()
 
     @asyncio.coroutine
     def client_loop(self):
-        while True:
-            try:
+        try:
+            while True:
                 packet = yield from read_packet(self._client_reader, "Server")
-            except EOFError:
-                self.die()
-                return
-            except:
-                print("Unknown error occurred in server loop.")
-                logger.error(traceback.format_exc())
-                break
-            try:
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
-            except (ConnectionResetError, ConnectionAbortedError):
-                return
+        finally:
+            self.die()
 
     @asyncio.coroutine
     def send_message(self, message, *, world="", client_id=0, name="",
@@ -163,11 +126,17 @@ class StarryPyServer:
         yield from self._writer.drain()
 
     def die(self):
-        self._writer.close()
-        self._client_writer.close()
-        self._server_loop_future.cancel()
-        self._client_loop_future.cancel()
-        self.factory.remove(self)
+        if self._alive:
+            if hasattr(self, "player"):
+                logger.info("Removing player %s.", self.player.name)
+            else:
+                logger.info("Removing unknown player.")
+            self._writer.close()
+            self._client_writer.close()
+            self._server_loop_future.cancel()
+            self._client_loop_future.cancel()
+            self.factory.remove(self)
+            self._alive = False
 
     @asyncio.coroutine
     def check_plugins(self, packet):
@@ -223,13 +192,16 @@ class ServerFactory:
     def __call__(self, reader, writer):
         server = StarryPyServer(reader, writer, factory=self)
         self.protocols.append(server)
-        print(self.protocols)
-
 
 @asyncio.coroutine
 def start_server():
     server_factory = ServerFactory()
-    yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)
+    try:
+        yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)
+    except OSError as e:
+        logger.exception("Error while trying to start server.")
+        logger.exception(e)
+        sys.exit(1)
     return server_factory
 
 
@@ -255,7 +227,7 @@ if __name__ == "__main__":
         ver = f.read()
     logger.info("Running commit %s", ver)
     loop = asyncio.get_event_loop()
-    loop.set_debug(True)  # Removed in commit to avoid errors.
+    #loop.set_debug(True)  # Removed in commit to avoid errors.
     #loop.executor = ThreadPoolExecutor(max_workers=100)
     #loop.set_default_executor(loop.executor)
     logger.info("Starting server")

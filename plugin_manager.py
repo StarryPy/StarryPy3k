@@ -1,14 +1,15 @@
 import asyncio
 import importlib.machinery
 import inspect
+import logging
 import pathlib
-import traceback
 from types import ModuleType
 
 from base_plugin import BasePlugin
 from configuration_manager import ConfigurationManager
 from pparser import PacketParser
 from utilities import detect_overrides
+
 
 
 
@@ -32,6 +33,7 @@ class PluginManager:
         self._override_cache = set()
         self._packet_parser = PacketParser(self.config)
         self._factory = factory
+        self.logger = logging.getLogger("starrypy.plugin_manager")
 
     def list_plugins(self):
         return self._plugins
@@ -52,9 +54,9 @@ class PluginManager:
                 return send_flag
             else:
                 return True
-        except Exception:
-            print("Exception encountered in plugin.")
-            traceback.print_exc()
+        except:
+            self.logger.exception("Exception encountered in plugin on action: "
+                                  "%s", action, exc_info=True)
             return True
 
     def load_from_path(self, plugin_path: pathlib.Path):
@@ -72,7 +74,7 @@ class PluginManager:
                     self.failed[file.stem] = str(e)
                     print(e)
                 except FileNotFoundError:
-                    print("File not found")
+                    self.logger.warning("File not found in plugin loader.")
 
     @staticmethod
     def _load_module(file_path: pathlib.Path):
@@ -107,6 +109,8 @@ class PluginManager:
             if inspect.isclass(obj):
                 if issubclass(obj, self.base) and obj is not self.base:
                     obj.config = self.config
+                    obj.logger = logging.getLogger("starrypy.plugin.%s" %
+                                                   obj.name)
                     class_list.append(obj)
 
         return class_list
@@ -153,14 +157,15 @@ class PluginManager:
             return overrides
 
     def activate_all(self):
+        self.logger.info("Activating plugins:")
         for plugin in self._plugins.values():
-            print(plugin)
+            self.logger.info(plugin.name)
             plugin.activate()
             self._activated_plugins.add(plugin)
 
     def deactivate_all(self):
         for plugin in self._plugins.values():
-            print("Deactivating")
+            self.logger.info("Deactivating %s", plugin.name)
             plugin.deactivate()
 
 

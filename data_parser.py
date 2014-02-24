@@ -26,8 +26,6 @@ class StructCacher:
         try:
             c = self.cache[cls.__name__][key]
             self.retrieve_count += 1
-            if self.retrieve_count % 1000 == 0:
-                print(self.set_count, self.retrieve_count)
             return c
         except KeyError:
             return None
@@ -89,7 +87,6 @@ cm = composed(classmethod, functools.lru_cache())
 class MetaStruct(type):
     @classmethod
     def __prepare__(mcs, name, bases):
-        print("Preparing", name)
         return OrderedDict({'_struct_fields': [], '_cache': {}})
 
     def __new__(mcs, name, bases, clsdict):
@@ -461,5 +458,3 @@ class BasePacket(Struct):
             obj['data'] = bytes(obj['data'].encode("utf-8"))
         res += obj['data']
         return res
-
-print(SignedVLQ.build(34385), SignedVLQ.build(12927))

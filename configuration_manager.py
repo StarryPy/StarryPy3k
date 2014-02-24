@@ -42,4 +42,5 @@ class ConfigurationManager:
         with temp_path.open("w") as f:
             json.dump(self.config, f, sort_keys=True, indent=4,
                       separators=(',', ': '), ensure_ascii=False)
+        path.unlink()
         temp_path.rename(path)
