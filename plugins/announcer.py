@@ -4,6 +4,8 @@ from base_plugin import BasePlugin
 
 
 class Announcer(BasePlugin):
+    name = "announcer"
+
     @asyncio.coroutine
     def send_announce(self, protocol, message):
         yield from self.factory.broadcast("%s %s" % (protocol.player.name,

@@ -1,5 +1,4 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from enum import IntEnum
 import logging
 import traceback
@@ -235,14 +234,16 @@ def start_server():
 
 
 if __name__ == "__main__":
+    DEBUG = False
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     aiologger = logging.getLogger("asyncio")
     aiologger.setLevel(logging.DEBUG)
     logger = logging.getLogger('starrypy')
     logger.setLevel(logging.DEBUG)
-    fh_d = logging.FileHandler("debug.log")
-    fh_d.setLevel(logging.DEBUG)
-    fh_d.setFormatter(formatter)
+    if DEBUG:
+        fh_d = logging.FileHandler("debug.log")
+        fh_d.setLevel(logging.DEBUG)
+        fh_d.setFormatter(formatter)
     aiologger.addHandler(fh_d)
     logger.addHandler(fh_d)
     ch = logging.StreamHandler()
