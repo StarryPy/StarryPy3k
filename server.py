@@ -61,7 +61,7 @@ class StarryPyServer:
     @asyncio.coroutine
     def server_loop(self):
         (self._client_reader,
-         self._client_writer) = yield from asyncio.open_connection("localhost",
+         self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
                                                                    21024)
         self._client_loop_future = asyncio.Task(self.client_loop())
         while True:
@@ -195,11 +195,14 @@ class ServerFactory:
 @asyncio.coroutine
 def start_server():
     server_factory = ServerFactory()
-    yield from asyncio.start_server(server_factory, '127.0.0.1', 21025)
+    yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)
     return server_factory
 
 
 if __name__ == "__main__":
+    with open("commit_count") as f:
+        ver = f.read()
+    print("Running commit", ver)
     loop = asyncio.get_event_loop()
     #loop.set_debug(True)  # Removed in commit to avoid errors.
     loop.executor = ThreadPoolExecutor(max_workers=100)
@@ -212,3 +215,4 @@ if __name__ == "__main__":
         print("Exiting")
     finally:
         server_factory.result().plugin_manager.deactivate_all()
+        print("Running commit", ver)
