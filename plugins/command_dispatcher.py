@@ -4,7 +4,8 @@ from base_plugin import BasePlugin
 class CommandDispatcher(BasePlugin):
     name = "command_dispatcher"
 
-    def activate(self):
+    def __init__(self):
+        super().__init__()
         self.commands = {}
 
     def register(self, fn, name, aliases=None):

@@ -187,7 +187,7 @@ class VLQ(Struct):
         result = bytearray()
         value = int(obj)
         if obj == 0:
-            result = [b'\x00']
+            result = bytearray(b'\x00')
         else:
             while value > 0:
                 byte = value & 0x7f
@@ -445,3 +445,18 @@ class EntityCreate(GreedyArray):
     entity_type = Byte
     entity = StarString
     entity_id = SignedVLQ
+
+
+class BasePacket(Struct):
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        res += Byte.build(obj['id'], ctx)
+        v = len(obj['data'])
+        if 'compressed' in ctx and ctx['compressed']:
+            v = -abs(v)
+        res += SignedVLQ.build(v)
+        if not isinstance(obj['data'], bytes):
+            obj['data'] = bytes(obj['data'].encode("utf-8"))
+        res += obj['data']
+        return res

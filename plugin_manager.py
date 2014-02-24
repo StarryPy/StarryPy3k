@@ -14,9 +14,11 @@ from utilities import detect_overrides
 
 
 
+
 # noinspection PyBroadException
 class PluginManager:
-    def __init__(self, config: ConfigurationManager, base=BasePlugin):
+    def __init__(self, config: ConfigurationManager, *, base=BasePlugin,
+                 factory=None):
         self.base = base
         self.config = config
         self.failed = {}
@@ -28,6 +30,7 @@ class PluginManager:
         self._overrides = set()
         self._override_cache = set()
         self._packet_parser = PacketParser(self.config)
+        self._factory = factory
 
     def list_plugins(self):
         return self._plugins
@@ -90,6 +93,7 @@ class PluginManager:
         module = self._load_module(plugin_path)
         classes = self.get_classes(module)
         for candidate in classes:
+            candidate.factory = self._factory
             self._seen_classes.add(candidate)
 
     def get_classes(self, module: ModuleType):
@@ -132,6 +136,7 @@ class PluginManager:
             if len(ready) == 0:
                 raise ImportError("Unresolved dependencies found.")
         self._resolved = True
+
 
     @asyncio.coroutine
     def get_overrides(self):

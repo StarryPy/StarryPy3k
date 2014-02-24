@@ -128,3 +128,7 @@ class CachedPacket:
         self.count = 1
         self.packet = packet
 
+
+def build_packet(id, data, compressed=False):
+    return BasePacket.build({"id": id, "data": data,
+                             "compressed": compressed})

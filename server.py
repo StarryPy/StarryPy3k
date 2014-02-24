@@ -4,7 +4,9 @@ import zlib
 import sys
 
 from configuration_manager import ConfigurationManager
+from data_parser import ChatReceived
 from packets import packets
+from parser import build_packet
 from plugin_manager import PluginManager
 from utilities import read_signed_vlq, path
 
@@ -94,6 +96,11 @@ class StarryPyServer:
         yield from self._writer.drain()
 
     @asyncio.coroutine
+    def raw_write(self, data):
+        self._writer.write(data)
+        yield from self._writer.drain()
+
+    @asyncio.coroutine
     def write_client(self, packet):
         self._client_writer.write(packet['original_data'])
         yield from self._writer.drain()
@@ -128,7 +135,8 @@ class ServerFactory:
             self.configuration_manager.load_config(
                 path / 'config' / 'config.json',
                 default=True)
-            self.plugin_manager = PluginManager(self.configuration_manager)
+            self.plugin_manager = PluginManager(self.configuration_manager,
+                                                factory=self)
             self.plugin_manager.load_from_path(
                 path / self.configuration_manager.config.plugin_path)
             self.plugin_manager.resolve_dependencies()
@@ -137,9 +145,26 @@ class ServerFactory:
         except Exception as e:
             print("Exception encountered during server startup.")
             print(e)
+
             loop.stop()
             sys.exit()
 
+    @asyncio.coroutine
+    def broadcast(self, message, world="", name="", channel=0):
+        chat_packet = ChatReceived.build(
+            {"message": message,
+             "world": "",
+             "client_id": 0,
+             "name": "",
+             "channel": channel})
+
+        to_send = build_packet(4, chat_packet)
+        for protocol in self.protocols:
+            try:
+                yield from protocol.raw_write(to_send)
+            except ConnectionError:
+                continue
+        print("Sent message")
 
     def remove(self, protocol):
         self.protocols.remove(protocol)
