@@ -461,3 +461,5 @@ class BasePacket(Struct):
             obj['data'] = bytes(obj['data'].encode("utf-8"))
         res += obj['data']
         return res
+
+print(SignedVLQ.build(34385), SignedVLQ.build(12927))

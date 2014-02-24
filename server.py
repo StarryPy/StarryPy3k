@@ -47,7 +47,7 @@ def read_packet(reader, direction):
         raise
     try:
         logger.debug("Attempting to read %d bytes of data.", packet_size)
-        data = yield from reader.read(packet_size)
+        data = yield from reader.readexactly(packet_size)
     except:
         logger.exception("Couldn't read data!")
         raise

@@ -93,13 +93,16 @@ class AsyncBytesIO(io.BytesIO):
     def read(self, *args, **kwargs):
         return super().read(*args, **kwargs)
 
+    @asyncio.coroutine
+    def read(self, *args, **kwargs):
+        return super().read(*args, **kwargs)
 
 @asyncio.coroutine
 def read_vlq(bytestream):
     d = b""
     v = 0
     while True:
-        tmp = yield from bytestream.read(1)
+        tmp = yield from bytestream.readexactly(1)
         d += tmp
         tmp = ord(tmp)
         v <<= 7
