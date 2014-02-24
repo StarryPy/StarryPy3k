@@ -70,6 +70,8 @@ class StarryPyServer:
         self._server_loop_future = asyncio.Task(self.server_loop())
         self.state = None
         self._alive = True
+        self.client_ip = reader._transport.get_extra_info('peername')[0]
+        logger.info("Received connection from %s", self.client_ip)
 
     @asyncio.coroutine
     def server_loop(self):
