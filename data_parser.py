@@ -140,24 +140,31 @@ class Struct(metaclass=MetaStruct):
         return res
 
     @classmethod
-    def build(cls, obj):
-        fake_stream = BytesIO()
-        ctx = OrderedDotDict()
+    def build(cls, obj, res=None, ctx=None):
+        if res is None:
+            res = b''
+        if ctx is None:
+            ctx = OrderedDict()
         if cls._struct_fields:
             for name, struct in cls._struct_fields:
-                ctx[name] = struct._build(obj, ctx)
-            res = ctx
+                try:
+                    if name in obj:
+                        res += struct.build(obj[name], ctx=ctx)
+                    else:
+                        res += struct.build(None, ctx=ctx)
+                except:
+                    print("Context at time of failure:", ctx)
+                    raise
         else:
-            res = cls._build(obj, fake_stream, ctx)
-        fake_stream.seek(0)
-        return fake_stream.read()
+            res = cls._build(obj, ctx=ctx)
+        return res
 
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         raise NotImplementedError
 
     @classmethod
-    def _build(cls, obj, stream: BytesIO, ctx: OrderedDict):
+    def _build(cls, obj, ctx: OrderedDotDict):
         raise NotImplementedError
 
 
@@ -176,7 +183,7 @@ class VLQ(Struct):
         return value
 
     @classmethod
-    def _build(cls, obj, stream: BytesIO, ctx: OrderedDict):
+    def _build(cls, obj, ctx):
         result = bytearray()
         value = int(obj)
         if obj == 0:
@@ -191,7 +198,7 @@ class VLQ(Struct):
             if len(result) > 1:
                 result[0] |= 0x80
                 result[-1] ^= 0x80
-        return stream.write(result)
+        return bytes(result)
 
 
 class SignedVLQ(Struct):
@@ -203,11 +210,22 @@ class SignedVLQ(Struct):
         else:
             return -((v >> 1) + 1)
 
+    @classmethod
+    def _build(cls, obj, ctx):
+        value = abs(obj * 2)
+        if obj < 0:
+            value -= 1
+        return VLQ.build(value, ctx)
+
 
 class UBInt32(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         return struct.unpack(">L", stream.read(4))
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">L", obj)
 
 
 class SBInt32(Struct):
@@ -215,11 +233,19 @@ class SBInt32(Struct):
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         return struct.unpack(">l", stream.read(4))
 
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">l", obj)
+
 
 class BFloat32(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         return struct.unpack(">f", stream.read(4))
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">f", obj)
 
 
 class StarByteArray(Struct):
@@ -227,6 +253,10 @@ class StarByteArray(Struct):
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         length = VLQ.parse(stream, ctx)
         return stream.read(length)
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return VLQ.build(len(obj), ctx) + obj
 
 
 class StarString(Struct):
@@ -238,11 +268,19 @@ class StarString(Struct):
         except UnicodeDecodeError:
             return data
 
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return StarByteArray.build(obj.encode("utf-8"), ctx)
+
 
 class Byte(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         return int.from_bytes(stream.read(1), byteorder="big", signed=False)
+
+    @classmethod
+    def _build(cls, obj: int, ctx: OrderedDotDict):
+        return obj.to_bytes(1, byteorder="big", signed=False)
 
 
 class Flag(Struct):
@@ -250,11 +288,19 @@ class Flag(Struct):
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         return bool(stream.read(1))
 
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return int(obj)
+
 
 class BDouble(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         return struct.unpack(">d", stream.read(8))
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">d", obj)
 
 
 class UUID(Struct):
@@ -265,13 +311,22 @@ class UUID(Struct):
         else:
             return None
 
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        if obj:
+            res += Flag.build(True)
+            res += obj
+        else:
+            res += Flag.build(False)
+        return res
+
 
 class VariantVariant(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         l = VLQ.parse(stream, ctx)
         return [Variant.parse_stream(stream, ctx) for _ in range(l)]
-
 
 class DictVariant(Struct):
     @classmethod
@@ -370,6 +425,7 @@ class ConnectResponse(Struct):
 
 class ChatSent(Struct):
     message = StarString
+    channel = Byte
 
 
 class GreedyArray(Struct):
@@ -384,7 +440,6 @@ class GreedyArray(Struct):
             res.append(super().parse_stream(stream, ctx))
             _l = l
         return res
-
 
 class EntityCreate(GreedyArray):
     entity_type = Byte
