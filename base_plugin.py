@@ -1,5 +1,4 @@
 import asyncio
-import collections
 
 
 class BaseMeta(type):
@@ -245,21 +244,27 @@ class CommandNameError(Exception):
     """
 
 
-def command(*aliases, role=None, roles=None, doc=None):
+def command(*aliases, role=None, roles=None, doc=None, syntax=None):
+    rs = roles
+    r = role
+    if rs is None:
+        rs = set()
+    elif not isinstance(roles, set):
+        rs = {x for x in rs}
+    if role is not None:
+        rs.add(r)
+    rs = {x.__name__ for x in rs}
+
     def wrapper(f):
         def wrapped(self, data, protocol):
             try:
-                rs = roles
-                r = role
-                if rs is None:
-                    rs = []
-                elif not isinstance(roles, collections.Iterable):
-                    rs = [rs]
-                if role is not None:
-                    rs.append(r)
                 for z in rs:
                     if z.__name__ not in protocol.player.roles:
                         raise PermissionError
+                if syntax is None:
+                    f.syntax = ""
+                else:
+                    f.syntax = " ".join(syntax)
                 f.__doc__ = doc
                 return f(self, data, protocol)
             except PermissionError:
@@ -268,6 +273,11 @@ def command(*aliases, role=None, roles=None, doc=None):
         wrapped._command = True
         wrapped._aliases = aliases
         wrapped.__doc__ = doc
+        wrapped.roles = rs
+        if syntax is None:
+            wrapped.syntax = ""
+        else:
+            wrapped.syntax = " ".join(syntax)
         return wrapped
 
     return wrapper

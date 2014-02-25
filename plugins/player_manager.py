@@ -5,6 +5,7 @@ import shelve
 import asyncio
 
 from base_plugin import Role, command, SimpleCommandPlugin
+from data_parser import ConnectResponse, BasePacket
 from server import StarryPyServer
 
 
@@ -85,6 +86,13 @@ class Planet:
                                       self.planet, self.satellite)
 
 
+class Bans:
+    def __init__(self, ip, reason, timeout=None):
+        self.ip = ip
+        self.reason = reason
+        self.timeout = timeout
+
+
 class PlayerManager(SimpleCommandPlugin):
     name = "player_manager"
 
@@ -103,13 +111,22 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf['plugins'] = {}
         if 'planets' not in self.shelf:
             self.shelf['planets'] = {}
+        if 'bans' not in self.shelf:
+            self.shelf['bans'] = {}
 
     def on_protocol_version(self, data, protocol):
         protocol.state = State.VERSION_SENT
         return True
 
     def on_handshake_challenge(self, data, protocol):
-        protocol.state = State.HANDSHAKE_CHALLENGE_SENT
+        if protocol.client_ip in self.shelf['bans']:
+            data['original_data'] = BasePacket.build({id: 1,
+                                                      'data': ConnectResponse.build(
+                                                          {
+                                                              'success': False,
+                                                          })})
+        else:
+            protocol.state = State.HANDSHAKE_CHALLENGE_SENT
         return True
 
     def on_handshake_response(self, data, protocol):
@@ -207,7 +224,8 @@ class PlayerManager(SimpleCommandPlugin):
                 if not check_logged_in or player.logged_in:
                     return player
 
-    @command("kick", role=Kick)
+    @command("kick", role=Kick, doc="Kicks a player.",
+             syntax=("\"player name\"", "[reason]"))
     def kick(self, data, protocol):
         name = " ".join(data)
         p = self.get_player_by_name(" ".join(data))
@@ -219,6 +237,10 @@ class PlayerManager(SimpleCommandPlugin):
         else:
             yield from protocol.send_message(
                 "Couldn't find a player with name %s" % name)
+
+    @command("ban", role=Ban)
+    def ban(self, data, protocol):
+        ip = " ".join(data)
 
     @asyncio.coroutine
     def add_or_get_planet(self, sector, location, planet, satellite,
