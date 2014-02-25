@@ -1,5 +1,6 @@
 import asyncio
-import collections
+
+from utilities import DotDict
 
 
 class BaseMeta(type):
@@ -34,7 +35,7 @@ class BasePlugin(metaclass=BaseMeta):
     description = "The common class for all plugins to inherit from."
     version = ".1"
     depends = []
-    plugins = {}
+    plugins = DotDict({})
     auto_activate = True
 
     def __init__(self):
@@ -245,33 +246,43 @@ class CommandNameError(Exception):
     """
 
 
-def command(*aliases, role=None, roles=None, doc="No help available."):
-    def wrapped_command(f):
-        def wrapper(self, data, protocol):
+def command(*aliases, role=None, roles=None, doc=None, syntax=None):
+    rs = roles
+    r = role
+    if rs is None:
+        rs = set()
+    elif not isinstance(roles, set):
+        rs = {x for x in rs}
+    if role is not None:
+        rs.add(r)
+    rs = {x.__name__ for x in rs}
+
+    def wrapper(f):
+        def wrapped(self, data, protocol):
             try:
-                nonlocal roles, role, doc
-                if roles is None:
-                    roles = []
-                if not isinstance(roles, collections.Iterable):
-                    roles = [roles]
-                if role is not None:
-                    roles.append(role)
-                for role in roles:
-                    if role.__name__ not in protocol.player.roles:
+                for z in rs:
+                    if z not in protocol.player.roles:
                         raise PermissionError
+                if syntax is None:
+                    f.syntax = ""
+                else:
+                    f.syntax = " ".join(syntax)
                 f.__doc__ = doc
                 return f(self, data, protocol)
             except PermissionError:
-                yield from protocol.send_message("You don't have proper "
-                                                 "permissions to use that "
-                                                 "command.")
+                protocol.send_message("You don't have permissions to do that.")
 
-        wrapper._command = True
-        wrapper._aliases = aliases
-        wrapper.__doc__ = doc
-        return wrapper
+        wrapped._command = True
+        wrapped._aliases = aliases
+        wrapped.__doc__ = doc
+        wrapped.roles = rs
+        if syntax is None:
+            wrapped.syntax = ""
+        else:
+            wrapped.syntax = " ".join(syntax)
+        return wrapped
 
-    return wrapped_command
+    return wrapper
 
 
 class SimpleCommandPlugin(BasePlugin):

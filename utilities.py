@@ -3,6 +3,9 @@ import io
 from pathlib import Path
 import collections
 from types import FunctionType
+import re
+import zlib
+#from server import logger
 
 path = Path(__file__).parent
 
@@ -120,3 +123,39 @@ def read_signed_vlq(reader):
         return v >> 1, d
     else:
         return -((v >> 1) + 1), d
+
+
+def extractor(*args):
+    # This extracts quoted arguments and puts them as a single argument in the
+    # passed iterator. It's not elegant, but it's the best way to do it
+    # as far as I can tell. My regex-fu isn't strong though,
+    # so if someone can come up with a better way, great.
+    x = re.split(r"(?:([^\"]\S*)|\"(.+?)\")\s*", " ".join(*args))
+    return [x for x in filter(None, x)]
+
+
+@asyncio.coroutine
+def read_packet(reader, direction):
+    p = {}
+    compressed = False
+
+    packet_type = (yield from reader.readexactly(1))
+    packet_size, packet_size_data = yield from read_signed_vlq(reader)
+    if packet_size < 0:
+        packet_size = abs(packet_size)
+        compressed = True
+
+    data = yield from reader.readexactly(packet_size)
+    p['type'] = ord(packet_type)
+    p['size'] = packet_size
+    p['compressed'] = compressed
+    if not compressed:
+        p['data'] = data
+    else:
+        zobj = zlib.decompressobj()
+        p['data'] = zobj.decompress(data)
+
+    p['original_data'] = packet_type + packet_size_data + data
+    p['direction'] = direction
+
+    return p
