@@ -3,9 +3,10 @@ from enum import IntEnum
 import pprint
 import shelve
 import asyncio
+import re
+import traceback
 
 from base_plugin import Role, command, SimpleCommandPlugin
-from data_parser import ConnectResponse, BasePacket
 from server import StarryPyServer
 
 
@@ -34,6 +35,10 @@ class Ban(Moderator):
 
 
 class Kick(Moderator):
+    pass
+
+
+class Whois(Admin):
     pass
 
 
@@ -86,11 +91,13 @@ class Planet:
                                       self.planet, self.satellite)
 
 
-class Bans:
-    def __init__(self, ip, reason, timeout=None):
+class IPBan:
+    def __init__(self, ip, reason, banned_by, timeout=None):
         self.ip = ip
         self.reason = reason
         self.timeout = timeout
+        self.banned_by = banned_by
+        self.banned_at = datetime.datetime.now()
 
 
 class PlayerManager(SimpleCommandPlugin):
@@ -115,18 +122,16 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf['bans'] = {}
 
     def on_protocol_version(self, data, protocol):
-        protocol.state = State.VERSION_SENT
-        return True
+        if protocol.client_ip in self.shelf['bans']:
+            self.logger.info("Banned IP (%s) tried to log in." %
+                             protocol.client_ip)
+            return False
+        else:
+            protocol.state = State.VERSION_SENT
+            return True
 
     def on_handshake_challenge(self, data, protocol):
-        if protocol.client_ip in self.shelf['bans']:
-            data['original_data'] = BasePacket.build({id: 1,
-                                                      'data': ConnectResponse.build(
-                                                          {
-                                                              'success': False,
-                                                          })})
-        else:
-            protocol.state = State.HANDSHAKE_CHALLENGE_SENT
+        protocol.state = State.HANDSHAKE_CHALLENGE_SENT
         return True
 
     def on_handshake_response(self, data, protocol):
@@ -147,6 +152,7 @@ class PlayerManager(SimpleCommandPlugin):
 
     def on_client_connect(self, data, protocol: StarryPyServer):
         player = yield from self.add_or_get_player(**data['parsed'])
+        player.ip = protocol.client_ip
         protocol.player = player
         return True
 
@@ -217,7 +223,7 @@ class PlayerManager(SimpleCommandPlugin):
             role = role.__name__
         player.roles.add(role)
 
-    def get_player_by_name(self, name, check_logged_in=False):
+    def get_player_by_name(self, name, check_logged_in=False) -> Player:
         lname = name.lower()
         for player in self.shelf['players'].values():
             if player.name.lower() == lname:
@@ -225,22 +231,54 @@ class PlayerManager(SimpleCommandPlugin):
                     return player
 
     @command("kick", role=Kick, doc="Kicks a player.",
-             syntax=("\"player name\"", "[reason]"))
+             syntax=("[\"]player name[\"]", "[reason]"))
     def kick(self, data, protocol):
-        name = " ".join(data)
+        name = data[0]
+        try:
+            reason = " ".join(data[1:])
+        except IndexError:
+            reason = "No reason given."
+
         p = self.get_player_by_name(" ".join(data))
         if p is not None:
             p.protocol.die()
-            yield from self.factory.broadcast("%s has kicked %s." % (
+            yield from self.factory.broadcast("%s has kicked %s. Reason: %s" % (
                 protocol.player.name,
-                p.name))
+                p.name,
+                reason))
         else:
             yield from protocol.send_message(
                 "Couldn't find a player with name %s" % name)
 
-    @command("ban", role=Ban)
+    @command("ban", role=Ban, doc="Bans a user or an IP address.",
+             syntax=("(ip | name)", "(reason)"))
     def ban(self, data, protocol):
-        ip = " ".join(data)
+        try:
+            target, reason = data[0], " ".join(data[1:])
+            if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target):
+                self.ban_by_ip(target, reason, protocol)
+            else:
+                self.ban_by_name(target, reason, protocol)
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+            yield from protocol.send_message("You must provide a name "
+                                             "and a reason for banning.")
+
+    def ban_by_ip(self, ip, reason, protocol):
+        ban = IPBan(ip, reason, protocol.player.name)
+        self.shelf['bans'][ip] = ban
+        asyncio.Task(protocol.send_message("Banned IP: %s with reason: %s" % (
+            ip, reason
+        )))
+
+    def ban_by_name(self, name, reason, protocol):
+        p = self.get_player_by_name(name)
+        if p is not None:
+            self.ban_by_ip(p.ip, reason, protocol)
+        else:
+            asyncio.Task(protocol.send_message("Couldn't find a player by the "
+                                               "name %s" % name))
 
     @asyncio.coroutine
     def add_or_get_planet(self, sector, location, planet, satellite,
@@ -255,3 +293,15 @@ class PlayerManager(SimpleCommandPlugin):
                             satellite=satellite)
             self.shelf['planets'][str(planet)] = planet
         return planet
+
+    @command("list_bans", role=Ban, doc="Lists all active bans.")
+    def list_bans(self, data, protocol):
+        if len(self.shelf['bans'].keys()) == 0:
+            yield from protocol.send_message("There are no active bans.")
+        else:
+            res = ["Active bans:"]
+            for ban in self.shelf['bans'].values():
+                res.append("IP: %(ip)s - "
+                           "Reason: %(reason)s - "
+                           "Banned by: %(banned_by)s" % ban.__dict__)
+            yield from protocol.send_message("\n".join(res))

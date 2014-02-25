@@ -99,8 +99,17 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message, *, world="", client_id=0, name="",
+    def send_message(self, message: str, *, world="", client_id=0, name="",
                      channel=0):
+        if "\n" in message:
+            for m in message.splitlines():
+                yield from self.send_message(m,
+                                             world=world,
+                                             client_id=client_id,
+                                             name=name,
+                                             channel=channel
+                )
+            return
         if self.state == State.CONNECTED_WITH_HEARTBEAT:
             chat_packet = ChatReceived.build(
                 {"message": message,

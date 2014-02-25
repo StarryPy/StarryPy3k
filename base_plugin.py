@@ -259,7 +259,7 @@ def command(*aliases, role=None, roles=None, doc=None, syntax=None):
         def wrapped(self, data, protocol):
             try:
                 for z in rs:
-                    if z.__name__ not in protocol.player.roles:
+                    if z not in protocol.player.roles:
                         raise PermissionError
                 if syntax is None:
                     f.syntax = ""
