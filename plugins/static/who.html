@@ -1,0 +1,13 @@
+<html>
+<head>
+    <title>{{ title }}</title>
+</head>
+<body>
+{{ count }} players online.
+<ul>
+    {% for item in items %}
+    <li>{{ escape(item) }}</li>
+    {% end %}
+</ul>
+</body>
+</html>

@@ -17,6 +17,7 @@ from utilities import detect_overrides
 
 
 
+
 # noinspection PyBroadException
 class PluginManager:
     def __init__(self, config: ConfigurationManager, *, base=BasePlugin,

@@ -1,7 +1,6 @@
 import asyncio
 from enum import IntEnum
 import logging
-import zlib
 import sys
 
 from configuration_manager import ConfigurationManager
@@ -9,7 +8,7 @@ from data_parser import ChatReceived
 from packets import packets
 from pparser import build_packet
 from plugin_manager import PluginManager
-from utilities import read_signed_vlq, path
+from utilities import path, read_packet
 
 
 class State(IntEnum):
@@ -20,42 +19,6 @@ class State(IntEnum):
     CONNECT_RESPONSE_SENT = 4
     CONNECTED = 5
     CONNECTED_WITH_HEARTBEAT = 6
-
-
-@asyncio.coroutine
-def read_packet(reader, direction):
-    logger.debug("New packet. Direction: %s", direction)
-    p = {}
-    compressed = False
-    logger.debug("Attempting to read packet type")
-    packet_type = (yield from reader.readexactly(1))
-    logger.debug("Got packet type of %d", ord(packet_type))
-    logger.debug("Attempting to read/parse packet size.")
-
-    packet_size, packet_size_data = yield from read_signed_vlq(reader)
-    if packet_size < 0:
-        packet_size = abs(packet_size)
-        compressed = True
-    logger.debug("Attempting to read %d bytes of data.", packet_size)
-    data = yield from reader.readexactly(packet_size)
-    p['type'] = ord(packet_type)
-    p['size'] = packet_size
-    p['compressed'] = compressed
-    if not compressed:
-        logger.debug("Packet is not compressed.")
-        p['data'] = data
-    else:
-        logger.debug("Packet is compressed, attempting to decompress.")
-        try:
-            zobj = zlib.decompressobj()
-            p['data'] = zobj.decompress(data)
-        except:
-            logger.exception("Couldn't decompress packet.", exc_info=True)
-            raise
-    p['original_data'] = packet_type + packet_size_data + data
-    p['direction'] = direction
-    logger.debug("Completed packet parsing, returning.")
-    return p
 
 
 class StarryPyServer:
@@ -204,6 +167,7 @@ class ServerFactory:
         server = StarryPyServer(reader, writer, factory=self)
         self.protocols.append(server)
 
+
 @asyncio.coroutine
 def start_server():
     server_factory = ServerFactory()
@@ -218,7 +182,8 @@ def start_server():
 
 if __name__ == "__main__":
     DEBUG = False
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     aiologger = logging.getLogger("asyncio")
     aiologger.setLevel(logging.DEBUG)
     logger = logging.getLogger('starrypy')

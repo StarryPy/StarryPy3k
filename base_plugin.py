@@ -1,5 +1,7 @@
 import asyncio
 
+from utilities import DotDict
+
 
 class BaseMeta(type):
     def __new__(mcs, name, bases, clsdict):
@@ -33,7 +35,7 @@ class BasePlugin(metaclass=BaseMeta):
     description = "The common class for all plugins to inherit from."
     version = ".1"
     depends = []
-    plugins = {}
+    plugins = DotDict({})
     auto_activate = True
 
     def __init__(self):
