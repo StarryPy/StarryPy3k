@@ -10,7 +10,7 @@ parse_map = {
     1: ConnectResponse,
     2: None,
     3: None,
-    4: None,
+    4: ChatReceived,
     5: None,
     6: None,
     7: ClientConnect,
