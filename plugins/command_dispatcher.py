@@ -1,5 +1,5 @@
 from base_plugin import BasePlugin
-from utilities import extractor
+from utilities import extractor, syntax
 
 
 class CommandDispatcher(BasePlugin):
@@ -34,7 +34,19 @@ class CommandDispatcher(BasePlugin):
                 try:
                     yield from self.commands[command](extractor(to_parse[1:]),
                                                       protocol)
+                except SyntaxWarning:
+                    print("Syntax warning")
+                    try:
+                        yield from protocol.send_message("Syntax error.",
+                                                         syntax(command,
+                                                                self.commands[
+                                                                    command],
+                                                                self.config.config.command_prefix))
+                    except:
+                        self.logger.exception("Exc", exc_info=True)
+                        raise
                 except:
                     self.logger.exception("Exc", exc_info=True)
-                return False
+                finally:
+                    return False
         return True

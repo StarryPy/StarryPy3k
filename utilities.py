@@ -1,4 +1,5 @@
 import asyncio
+from enum import IntEnum
 import io
 from pathlib import Path
 import collections
@@ -8,6 +9,21 @@ import zlib
 #from server import logger
 
 path = Path(__file__).parent
+
+
+class State(IntEnum):
+    VERSION_SENT = 0
+    CLIENT_CONNECT_RECEIVED = 1
+    HANDSHAKE_CHALLENGE_SENT = 2
+    HANDSHAKE_RESPONSE_RECEIVED = 3
+    CONNECT_RESPONSE_SENT = 4
+    CONNECTED = 5
+    CONNECTED_WITH_HEARTBEAT = 6
+
+
+class Direction(IntEnum):
+    TO_STARBOUND_CLIENT = 0
+    TO_STARBOUND_SERVER = 1
 
 
 def recursive_dictionary_update(d, u):
@@ -159,3 +175,10 @@ def read_packet(reader, direction):
     p['direction'] = direction
 
     return p
+
+
+def syntax(command, fn, command_prefix):
+    return "Syntax: %s%s %s" % (
+        command_prefix,
+        command,
+        fn.syntax)

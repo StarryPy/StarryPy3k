@@ -3,14 +3,15 @@ import tornado.web
 from tornado.platform.asyncio import AsyncIOMainLoop
 
 from base_plugin import BasePlugin
+from utilities import path
 
 
 class WebHandler(tornado.web.RequestHandler):
     def get(self, *args, **kwargs):
-        players = [player.name for player in
+        players = [player for player in
                    self.player_manager.players.values()]
         self.render("static/who.html", title="Who's online",
-                    items=players, count=len(players))
+                    players=players)
 
 
 class WebManager(BasePlugin):
@@ -28,4 +29,8 @@ class WebManager(BasePlugin):
 
 application = tornado.web.Application([
     (r"/", WebHandler),
+    (r'/css/(.*)', tornado.web.StaticFileHandler, {'path': str(path
+                                                               / "plugins"
+                                                               / "static"
+                                                               / "css")}),
 ])

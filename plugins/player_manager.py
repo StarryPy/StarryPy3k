@@ -11,23 +11,23 @@ from server import StarryPyServer
 
 
 class Owner(Role):
-    pass
+    is_meta = True
 
 
 class SuperAdmin(Owner):
-    pass
+    is_meta = True
 
 
 class Admin(SuperAdmin):
-    pass
+    is_meta = True
 
 
 class Moderator(Admin):
-    pass
+    is_meta = True
 
 
 class Guest(Moderator):
-    pass
+    is_meta = True
 
 
 class Ban(Moderator):
@@ -55,7 +55,7 @@ class State(IntEnum):
 class Player:
     def __init__(self, uuid, name='', last_seen=None, roles=None,
                  logged_in=True, protocol=None, client_id=-1, ip="0.0.0.0",
-                 planet='', on_ship=True, muted=False, state=None):
+                 planet='', muted=False, state=None):
         self.uuid = uuid
         self.name = name
         if last_seen is None:
@@ -70,12 +70,19 @@ class Player:
         self.protocol = protocol
         self.client_id = client_id
         self.ip = ip
-        self.planet = planet
-        self.on_ship = on_ship
+        self.location = planet
         self.muted = muted
 
     def __str__(self):
         return pprint.pformat(self.__dict__)
+
+
+class Ship:
+    def __init__(self, player):
+        self.player = player
+
+    def __str__(self):
+        return "%s's ship." % self.player
 
 
 class Planet:
@@ -120,6 +127,8 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf['planets'] = {}
         if 'bans' not in self.shelf:
             self.shelf['bans'] = {}
+        if 'ships' not in self.shelf:
+            self.shelf['ships'] = {}
 
     def on_protocol_version(self, data, protocol):
         if protocol.client_ip in self.shelf['bans']:
@@ -144,6 +153,8 @@ class PlayerManager(SimpleCommandPlugin):
             protocol.player.logged_in = True
             protocol.player.client_id = response.client_id
             protocol.player.protocol = protocol
+            protocol.player.location = yield from self.add_or_get_ship(
+                protocol.player.name)
             protocol.state = State.CONNECTED
         else:
             protocol.player.logged_in = False
@@ -159,6 +170,7 @@ class PlayerManager(SimpleCommandPlugin):
     def on_client_disconnect(self, data, protocol):
         protocol.player.protocol = None
         protocol.player.logged_in = False
+        protocol.player.location = None
         return True
 
     def on_server_disconnect(self, data, protocol):
@@ -167,6 +179,12 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_warp_command(self, data, protocol):
+        if data['parsed'].warp_type == 3:
+            protocol.player.location = yield from \
+                self.add_or_get_ship(data['parsed'].player)
+        elif data['parsed'].warp_type == 2:
+            protocol.player.location = self.add_or_get_ship(
+                protocol.player.name)
         return True
 
     def on_world_start(self, data, protocol: StarryPyServer):
@@ -174,12 +192,14 @@ class PlayerManager(SimpleCommandPlugin):
         if planet.celestialParameters is not None:
             location = yield from self.add_or_get_planet(
                 **planet.celestialParameters.coordinate)
+            protocol.player.location = location
         else:
-            protocol.player.on_ship = True
-            location = "on ship"
+            if not isinstance(protocol.player.location, Ship):
+                protocol.player.location = yield from self.add_or_get_ship(
+                    protocol.player.name)
         self.logger.info("Player %s is now at location: %s",
                          protocol.player.name,
-                         location)
+                         protocol.player.location)
         return True
 
     def on_heartbeat(self, data, protocol):
@@ -197,7 +217,7 @@ class PlayerManager(SimpleCommandPlugin):
     def add_or_get_player(self, uuid, name='', last_seen=None, roles=None,
                           logged_in=True, protocol=None, client_id=-1,
                           ip="0.0.0.0",
-                          planet='', on_ship=True, muted=False,
+                          planet='', muted=False,
                           **kwargs) -> Player:
         if str(uuid) in self.shelf['players']:
             self.logger.info("Returning existing player.")
@@ -210,13 +230,24 @@ class PlayerManager(SimpleCommandPlugin):
                              uuid, name)
             if uuid.decode("ascii") == self.config.config.owner_uuid:
                 roles = {x.__name__ for x in Owner.roles}
+            else:
+                roles = {x.__name__ for x in Guest.roles}
             self.logger.debug("Matches owner UUID: ",
                               uuid.decode(
                                   "ascii") == self.config.config.owner_uuid)
             new_player = Player(uuid, name, last_seen, roles, logged_in,
-                                protocol, client_id, ip, planet, on_ship, muted)
+                                protocol, client_id, ip, planet, muted)
             self.shelf['players'][str(uuid)] = new_player
             return new_player
+
+    @asyncio.coroutine
+    def add_or_get_ship(self, player_name):
+        if player_name in self.shelf['ships']:
+            return self.shelf['ships'][player_name]
+        else:
+            ship = Ship(player_name)
+            self.shelf['ships'][player_name] = ship
+            return ship
 
     def add_role(self, player, role):
         if issubclass(role, Role):

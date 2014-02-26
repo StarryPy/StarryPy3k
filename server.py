@@ -1,5 +1,4 @@
 import asyncio
-from enum import IntEnum
 import logging
 import sys
 
@@ -8,17 +7,7 @@ from data_parser import ChatReceived
 from packets import packets
 from pparser import build_packet
 from plugin_manager import PluginManager
-from utilities import path, read_packet
-
-
-class State(IntEnum):
-    VERSION_SENT = 0
-    CLIENT_CONNECT_RECEIVED = 1
-    HANDSHAKE_CHALLENGE_SENT = 2
-    HANDSHAKE_RESPONSE_RECEIVED = 3
-    CONNECT_RESPONSE_SENT = 4
-    CONNECTED = 5
-    CONNECTED_WITH_HEARTBEAT = 6
+from utilities import path, read_packet, State, Direction
 
 
 class StarryPyServer:
@@ -44,7 +33,8 @@ class StarryPyServer:
         self._client_loop_future = asyncio.Task(self.client_loop())
         try:
             while True:
-                packet = yield from read_packet(self._reader, "Client")
+                packet = yield from read_packet(self._reader,
+                                                Direction.TO_STARBOUND_SERVER)
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
         finally:
@@ -54,7 +44,8 @@ class StarryPyServer:
     def client_loop(self):
         try:
             while True:
-                packet = yield from read_packet(self._client_reader, "Server")
+                packet = yield from read_packet(self._client_reader,
+                                                Direction.TO_STARBOUND_CLIENT)
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
@@ -62,17 +53,24 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message: str, *, world="", client_id=0, name="",
+    def send_message(self, message, *messages, world="", client_id=0, name="",
                      channel=0):
+        if messages:
+            for m in messages:
+                yield from self.send_message(m,
+                                             world=world,
+                                             client_id=client_id,
+                                             name=name,
+                                             channel=channel)
         if "\n" in message:
             for m in message.splitlines():
                 yield from self.send_message(m,
                                              world=world,
                                              client_id=client_id,
                                              name=name,
-                                             channel=channel
-                )
+                                             channel=channel)
             return
+
         if self.state == State.CONNECTED_WITH_HEARTBEAT:
             chat_packet = ChatReceived.build(
                 {"message": message,
@@ -142,17 +140,16 @@ class ServerFactory:
             self.plugin_manager.activate_all()
             asyncio.Task(self.plugin_manager.get_overrides())
         except Exception as e:
-            print("Exception encountered during server startup.")
-            print(e)
+            logger.exception("Error during server startup.", exc_info=True)
 
             loop.stop()
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, message, *, world="", name="", channel=0, client_id=0):
+    def broadcast(self, messages, *, world="", name="", channel=0, client_id=0):
         for protocol in self.protocols:
             try:
-                yield from protocol.send_message(message,
+                yield from protocol.send_message(messages,
                                                  world=world,
                                                  name=name,
                                                  channel=channel,
