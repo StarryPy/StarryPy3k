@@ -174,6 +174,7 @@ class PlayerManager(SimpleCommandPlugin):
         if planet.celestialParameters is not None:
             location = yield from self.add_or_get_planet(
                 **planet.celestialParameters.coordinate)
+            protocol.player.planet = location
         else:
             protocol.player.on_ship = True
             location = "on ship"
@@ -210,6 +211,8 @@ class PlayerManager(SimpleCommandPlugin):
                              uuid, name)
             if uuid.decode("ascii") == self.config.config.owner_uuid:
                 roles = {x.__name__ for x in Owner.roles}
+            else:
+                roles = {x.__name__ for x in Guest.roles}
             self.logger.debug("Matches owner UUID: ",
                               uuid.decode(
                                   "ascii") == self.config.config.owner_uuid)
