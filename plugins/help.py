@@ -35,3 +35,4 @@ class HelpPlugin(SimpleCommandPlugin):
                 traceback.print_exc()
                 yield from protocol.send_message(
                     "Unknown command %s." % data[0])
+

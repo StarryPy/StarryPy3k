@@ -149,9 +149,9 @@ class PlayerManager(SimpleCommandPlugin):
 
     def on_connect_response(self, data, protocol):
         response = data['parsed']
-        if response.success:
+        if response['success']:
             protocol.player.logged_in = True
-            protocol.player.client_id = response.client_id
+            protocol.player.client_id = response['client_id']
             protocol.player.protocol = protocol
             protocol.player.location = yield from self.add_or_get_ship(
                 protocol.player.name)
@@ -179,19 +179,19 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_warp_command(self, data, protocol):
-        if data['parsed'].warp_type == 3:
+        if data['parsed']['warp_type'] == 3:
             protocol.player.location = yield from \
-                self.add_or_get_ship(data['parsed'].player)
-        elif data['parsed'].warp_type == 2:
+                self.add_or_get_ship(data['parsed']['player'])
+        elif data['parsed']['warp_type'] == 2:
             protocol.player.location = self.add_or_get_ship(
                 protocol.player.name)
         return True
 
     def on_world_start(self, data, protocol: StarryPyServer):
-        planet = data['parsed'].planet
-        if planet.celestialParameters is not None:
+        planet = data['parsed']['planet']
+        if planet['celestialParameters'] is not None:
             location = yield from self.add_or_get_planet(
-                **planet.celestialParameters.coordinate)
+                **planet['celestialParameters']['coordinate'])
             protocol.player.location = location
         else:
             if not isinstance(protocol.player.location, Ship):

@@ -21,8 +21,9 @@ class CommandDispatcher(BasePlugin):
         self.commands[name] = fn
 
     def on_chat_sent(self, data, protocol):
-        if data['parsed'].message.startswith(self.config.config.command_prefix):
-            to_parse = data['parsed'].message[len(
+        if data['parsed']['message'].startswith(
+                self.config.config.command_prefix):
+            to_parse = data['parsed']['message'][len(
                 self.config.config.command_prefix):].split()
             try:
                 command = to_parse[0]
