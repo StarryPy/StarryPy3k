@@ -47,8 +47,11 @@
         <p class="lead">
         <ul class="list-group">
             {% for player in players %}
-            <li class="list-group-item">{{ escape(player.name) }}</li>
-            {% end %}
+        <li class="list-group-item">
+            <h4 class="list-group-item-heading">{{ escape(player.name) }}</h4>
+            Roles: {{" ".join([role for role in player.roles])}}
+        </li>
+        {% end %}
         </ul>
         </p>
     </div>

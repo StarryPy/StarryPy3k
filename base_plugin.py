@@ -249,6 +249,8 @@ class CommandNameError(Exception):
 def command(*aliases, role=None, roles=None, doc=None, syntax=None):
     rs = roles
     r = role
+    if isinstance(syntax, str):
+        syntax = (syntax,)
     if rs is None:
         rs = set()
     elif not isinstance(roles, set):
@@ -304,14 +306,17 @@ class MetaRole(type):
     def __new__(mcs, name, bases, clsdict):
         clsdict['roles'] = set()
         clsdict['superroles'] = set()
+
         c = type.__new__(mcs, name, bases, clsdict)
         if name != "Role":
+            has_meta = False
             for b in c.mro():
                 if issubclass(b, Role):
-                    c.superroles.add(b)
                     b.roles.add(c)
+                    c.superroles.add(b)
+
         return c
 
 
 class Role(metaclass=MetaRole):
-    pass
+    is_meta = False

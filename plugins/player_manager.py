@@ -11,23 +11,23 @@ from server import StarryPyServer
 
 
 class Owner(Role):
-    pass
+    is_meta = True
 
 
 class SuperAdmin(Owner):
-    pass
+    is_meta = True
 
 
 class Admin(SuperAdmin):
-    pass
+    is_meta = True
 
 
 class Moderator(Admin):
-    pass
+    is_meta = True
 
 
 class Guest(Moderator):
-    pass
+    is_meta = True
 
 
 class Ban(Moderator):

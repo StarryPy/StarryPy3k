@@ -62,17 +62,24 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message: str, *, world="", client_id=0, name="",
+    def send_message(self, message, *messages, world="", client_id=0, name="",
                      channel=0):
+        if messages:
+            for m in messages:
+                yield from self.send_message(m,
+                                             world=world,
+                                             client_id=client_id,
+                                             name=name,
+                                             channel=channel)
         if "\n" in message:
             for m in message.splitlines():
                 yield from self.send_message(m,
                                              world=world,
                                              client_id=client_id,
                                              name=name,
-                                             channel=channel
-                )
+                                             channel=channel)
             return
+
         if self.state == State.CONNECTED_WITH_HEARTBEAT:
             chat_packet = ChatReceived.build(
                 {"message": message,
@@ -142,17 +149,16 @@ class ServerFactory:
             self.plugin_manager.activate_all()
             asyncio.Task(self.plugin_manager.get_overrides())
         except Exception as e:
-            print("Exception encountered during server startup.")
-            print(e)
+            logger.exception("Error during server startup.", exc_info=True)
 
             loop.stop()
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, message, *, world="", name="", channel=0, client_id=0):
+    def broadcast(self, messages, *, world="", name="", channel=0, client_id=0):
         for protocol in self.protocols:
             try:
-                yield from protocol.send_message(message,
+                yield from protocol.send_message(messages,
                                                  world=world,
                                                  name=name,
                                                  channel=channel,

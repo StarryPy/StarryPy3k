@@ -159,3 +159,10 @@ def read_packet(reader, direction):
     p['direction'] = direction
 
     return p
+
+
+def syntax(command, fn, command_prefix):
+    return "Syntax: %s%s %s" % (
+        command_prefix,
+        command,
+        fn.syntax)
