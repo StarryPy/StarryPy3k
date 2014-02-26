@@ -1,11 +1,13 @@
 import asyncio
 import random
 from base_plugin import SimpleCommandPlugin, command
+from plugins.player_manager import Owner
 
 __author__ = 'FZFalzar'
 
 class ServerAds(SimpleCommandPlugin):
     name = "ServerAds"
+    #depends = ["player_manager"]
 
     #activate is main entry point for plugin
     def activate(self):
@@ -32,21 +34,7 @@ class ServerAds(SimpleCommandPlugin):
                 print("[%s] %s %s" % (self.name, self.serverads_prefix, self.serverads_list[0]))
                 yield from self.factory.broadcast("%s ^#00FF00;%s" % (self.serverads_prefix, self.serverads_list[0]))
 
-    def dobroadcast(self):
-        #make sure we do not re-broadcast the last message, for variety
-        if len(self.serverads_list) > 1:
-            while self.rNum == self.prevMsgIdx:
-                #randomly pick from the array
-                self.rNum = random.randint(0, len(self.serverads_list) - 1)
-                #override previous index
-                self.prevMsgIdx = self.rNum
-            print("[%s] %s %s" % (self.name, self.serverads_prefix, self.serverads_list[self.rNum]))
-            self.factory.broadcast("%s ^#00FF00;%s" % (self.serverads_prefix, self.serverads_list[self.rNum]), 0, "", "ServerAds")
-        elif len(self.serverads_list) <= 1:
-            print("[%s] %s %s" % (self.name, self.serverads_prefix, self.serverads_list[0]))
-            self.factory.broadcast("%s ^#00FF00;%s" % (self.serverads_prefix, self.serverads_list[0]), 0, "", "ServerAds")
-
-    @command("ads_interval")
+    @command("ads_interval", role=Owner, doc="Sets interval for display of serverads", syntax=("[interval]",))
     def ads_interval(self, data, protocol):
         """Sets interval for display of serverads. Syntax: /ads_interval [duration in seconds]"""
         if len(data) == 0:
@@ -63,7 +51,7 @@ class ServerAds(SimpleCommandPlugin):
             asyncio.Task(protocol.send_message(self.ads_interval.__doc__))
             return
 
-    @command("ads_reload")
+    @command("ads_reload", role=Owner, doc="Reloads configuration values")
     def ads_reload(self, data, protocol):
         """Reloads configuration values. Syntax: /ads_reload"""
         asyncio.Task(self.load_config())
