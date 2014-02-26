@@ -431,12 +431,15 @@ class GreedyArray(Struct):
         bcls = cls.mro()[0]
         res = []
         _l = -1
-        while True:
-            l = len(stream.peek())
-            if l == 0 or _l == l: break
-            res.append(super().parse(stream, ctx))
-            _l = l
-        return res
+        try:
+            while True:
+                l = len(stream.peek())
+                if l == 0 or _l == l:
+                    break
+                res.append(super().parse(stream, ctx))
+                _l = l
+        finally:
+            return res
 
 
 class EntityCreate(GreedyArray):
