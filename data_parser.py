@@ -114,7 +114,7 @@ class Struct(metaclass=MetaStruct):
             if _c is not None:
                 return _c
         if ctx is None:
-            ctx = OrderedDotDict()
+            ctx = {}
         res = cls.parse_stream(string, ctx)
         if big_enough:
             cacher.set(cls, res, d)
@@ -140,7 +140,7 @@ class Struct(metaclass=MetaStruct):
         if res is None:
             res = b''
         if ctx is None:
-            ctx = OrderedDict()
+            ctx = {}
         if cls._struct_fields:
             for name, struct in cls._struct_fields:
                 try:
@@ -329,7 +329,7 @@ class DictVariant(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         l = VLQ.parse(stream, ctx)
-        c = OrderedDotDict()
+        c = {}
         for _ in range(l):
             key = StarString.parse(stream, ctx)
             value = Variant.parse(stream, ctx)
@@ -461,3 +461,6 @@ class BasePacket(Struct):
             obj['data'] = bytes(obj['data'].encode("utf-8"))
         res += obj['data']
         return res
+
+
+print(VLQ.build(123000))
