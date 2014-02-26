@@ -34,9 +34,9 @@ class GeneralCommands(SimpleCommandPlugin):
                     "Roles: ^yellow;%s^green;\n"
                     "UUID: ^yellow;%s^green;\n"
                     "IP address: ^cyan;%s^green;\n"
-                    "Current planet: ^yellow;%s^green;""" % (
+                    "Current location: ^yellow;%s^green;""" % (
                         info.name, ", ".join(info.roles),
-                        info.uuid.decode("ascii"), info.ip, info.planet))
+                        info.uuid.decode("ascii"), info.ip, info.location))
             else:
                 yield from protocol.send_message(
                     "Name: %s ^gray;(OFFLINE)^yellow;\n"

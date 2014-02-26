@@ -217,7 +217,7 @@ class SignedVLQ(Struct):
 class UBInt32(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        return struct.unpack(">L", stream.read(4))
+        return struct.unpack(">L", stream.read(4))[0]
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -227,7 +227,7 @@ class UBInt32(Struct):
 class SBInt32(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        return struct.unpack(">l", stream.read(4))
+        return struct.unpack(">l", stream.read(4))[0]
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -237,7 +237,7 @@ class SBInt32(Struct):
 class BFloat32(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        return struct.unpack(">f", stream.read(4))
+        return struct.unpack(">f", stream.read(4))[0]
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):

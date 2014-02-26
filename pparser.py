@@ -2,7 +2,6 @@ import asyncio
 import traceback
 
 from configuration_manager import ConfigurationManager
-
 from data_parser import *
 
 
@@ -17,7 +16,7 @@ parse_map = {
     7: ClientConnect,
     8: None,
     9: None,
-    10: None,
+    10: WarpCommand,
     11: ChatSent,
     12: None,
     13: None,

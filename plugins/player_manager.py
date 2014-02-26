@@ -55,7 +55,7 @@ class State(IntEnum):
 class Player:
     def __init__(self, uuid, name='', last_seen=None, roles=None,
                  logged_in=True, protocol=None, client_id=-1, ip="0.0.0.0",
-                 planet='', on_ship=True, muted=False, state=None):
+                 planet='', muted=False, state=None):
         self.uuid = uuid
         self.name = name
         if last_seen is None:
@@ -70,12 +70,22 @@ class Player:
         self.protocol = protocol
         self.client_id = client_id
         self.ip = ip
-        self.planet = planet
-        self.on_ship = on_ship
+        self.location = planet
         self.muted = muted
 
     def __str__(self):
         return pprint.pformat(self.__dict__)
+
+
+class Ship:
+    def __init__(self, player=None):
+        self.player = player
+
+    def __str__(self):
+        if self.player is None:
+            return "On own ship."
+        else:
+            return "On %s's ship." % self.player
 
 
 class Planet:
@@ -167,20 +177,27 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_warp_command(self, data, protocol):
+        print(data['parsed'])
+        print(data['parsed'].warp_type)
+        if data['parsed'].warp_type == 3:
+            print(data['parsed'].player)
+            protocol.player.location = Ship(data['parsed'].player)
+            print(protocol.player.location)
+        elif data['parsed'].warp_type == 2:
+            protocol.player.location = Ship()
         return True
-
     def on_world_start(self, data, protocol: StarryPyServer):
         planet = data['parsed'].planet
         if planet.celestialParameters is not None:
             location = yield from self.add_or_get_planet(
                 **planet.celestialParameters.coordinate)
-            protocol.player.planet = location
+            protocol.player.location = location
         else:
-            protocol.player.on_ship = True
-            location = "on ship"
+            if not isinstance(protocol.player.location, Ship):
+                protocol.player.location = Ship()
         self.logger.info("Player %s is now at location: %s",
                          protocol.player.name,
-                         location)
+                         protocol.player.location)
         return True
 
     def on_heartbeat(self, data, protocol):
@@ -198,7 +215,7 @@ class PlayerManager(SimpleCommandPlugin):
     def add_or_get_player(self, uuid, name='', last_seen=None, roles=None,
                           logged_in=True, protocol=None, client_id=-1,
                           ip="0.0.0.0",
-                          planet='', on_ship=True, muted=False,
+                          planet='', muted=False,
                           **kwargs) -> Player:
         if str(uuid) in self.shelf['players']:
             self.logger.info("Returning existing player.")
@@ -217,7 +234,7 @@ class PlayerManager(SimpleCommandPlugin):
                               uuid.decode(
                                   "ascii") == self.config.config.owner_uuid)
             new_player = Player(uuid, name, last_seen, roles, logged_in,
-                                protocol, client_id, ip, planet, on_ship, muted)
+                                protocol, client_id, ip, planet, muted)
             self.shelf['players'][str(uuid)] = new_player
             return new_player
 
