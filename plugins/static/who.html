@@ -44,19 +44,37 @@
     <div class="starter-template">
         <h1>{{ len(players) }} players currently online.</h1>
 
-        <p class="lead">
-        <ul class="list-group">
-            {% for player in players %}
-        <li class="list-group-item">
-            <h4 class="list-group-item-heading">{{ escape(player.name) }}</h4>
-            Roles: {{" ".join([role for role in player.roles])}}
-        </li>
-        {% end %}
-        </ul>
-        </p>
-    </div>
-</div>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <div class="panel-group" id="accordion">
+            <div class="panel panel-default">
+                {% for x, player in enumerate(players) %}
+
+
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordion"
+                           href="#collapse{{x}}">
+                            {{ escape(player.name) }}
+                        </a>
+                    </h4>
+                </div>
+                <div id="collapse{{x}}" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        {% if len(player.roles) %}
+                        Roles:
+                        {% for role in player.roles %}
+                        <span class="label label-default" style="width:auto">{{role}}</span>
+                        {% end %}
+                        <br/>
+                        {% end %}
+
+                        Logged in: {{player.last_seen}}
+                    </div>
+                </div>
+
+                {% end %}
+            </div>
+        </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
 </body>
 </html>

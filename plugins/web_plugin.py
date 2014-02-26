@@ -9,7 +9,7 @@ from utilities import path
 class WebHandler(tornado.web.RequestHandler):
     def get(self, *args, **kwargs):
         players = [player for player in
-                   self.player_manager.players.values() if player.logged_in]
+                   self.player_manager.players.values()]
         self.render("static/who.html", title="Who's online",
                     players=players)
 
