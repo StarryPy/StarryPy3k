@@ -39,12 +39,12 @@ class ColoredNames(BasePlugin):
             now = datetime.now()
             try:
                 if self.config.config.chattimestamps:
-                    timestamp = "[" + now.strftime("%H:%M") + "] "
+                    timestamp = "[%s]" % now.strftime("%H:%M")
                 else:
                     timestamp = ""
             except:
                 self.config.config.chattimestamps=True
-                timestamp = "[" + now.strftime("%H:%M") + "] "
+                timestamp = "[%s]" % now.strftime("%H:%M")
             info = self.plugins['player_manager'].get_player_by_name(protocol.player.name)
             try:
                 p = data['parsed']
@@ -56,9 +56,14 @@ class ColoredNames(BasePlugin):
                     cts_color = "^yellow;"
                 else:
                     cts_color = "^gray;"
-                #sender = info.name
                 sender = self.colored_name(info)
-                msg = cts_color + timestamp + "<" + sender + cts_color + "> " + p['message']
+                msg = "%s%s <%s%s> %s" % (
+                    cts_color,
+                    timestamp,
+                    sender,
+                    cts_color,
+                    p['message']
+                )
                 if p['channel'] == 1:
                     for p in self.factory.protocols:
                         if p.player.location == protocol.player.location:
@@ -67,7 +72,11 @@ class ColoredNames(BasePlugin):
                     yield from self.factory.broadcast(msg)
             except AttributeError as e:
                 self.logger.warning("Received AttributeError in colored_name. %s", str(e))
-                yield from protocol.send_message(cts_color + "<" + protocol.player.name + cts_color + "> " + info.message)
+                yield from protocol.send_message("%s<%s%s> %s" % (cts_color,
+                                                                  protocol.player.name,
+                                                                  cts_color,
+                                                                  info.message
+                                                                  ))
                 return True
         return False
  
@@ -84,6 +93,5 @@ class ColoredNames(BasePlugin):
             color = self.colors.Registered
         else:
             color = self.colors.default
-#        color = colors[UserLevels(data.access_level).lower()]
-        name = data.name
-        return color + name + "^green;"
+
+        return color + data.name + "^green;"
