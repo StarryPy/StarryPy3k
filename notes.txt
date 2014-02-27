@@ -1,0 +1,5 @@
+Entity create types I can decipher:
+
+00 is a player
+02 is a shipworld
+05 appears to be a world

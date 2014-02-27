@@ -29,7 +29,7 @@ class PlanetProtect(SimpleCommandPlugin):
                 if protocol.player.location.player == protocol.player.name:
                     protocol.player.location.protected = True
                     protocol.player.location.allowed_builders = {
-                    protocol.player.uuid}
+                        protocol.player.name}
                     yield from protocol.send_message(
                         "Your ship has been auto-protected.")
 
@@ -38,7 +38,7 @@ class PlanetProtect(SimpleCommandPlugin):
     def protect(self, data, protocol):
         location = protocol.player.location
         location.protected = True
-        location.allowed_builders = {protocol.player.uuid}
+        location.allowed_builders = {protocol.player.name}
         yield from protocol.send_message("Protected planet %s" % location)
 
     @command("unprotect", doc="Unprotects a planet", syntax="", role=Unprotect)
@@ -58,7 +58,7 @@ class PlanetProtect(SimpleCommandPlugin):
             yield from self.protect(data, protocol)
         p = self.plugins.player_manager.get_player_by_name(" ".join(data))
         if p is not None:
-            protocol.player.location.allowed_builders.add(p.uuid)
+            protocol.player.location.allowed_builders.add(p.name)
             yield from protocol.send_message(
                 "Added %s to allowed list for %s" % (
                 p.name, protocol.player.location))
@@ -68,17 +68,46 @@ class PlanetProtect(SimpleCommandPlugin):
                     protocol.player.location, protocol.player.name))
             except AttributeError:
                 yield from protocol.send_message(
-                    "%s isn't online, so we can't send them a notification." % p.name)
+                    "%s isn't online, so we can't send them a notification."
+                    % p.name)
         else:
             yield from protocol.send_message(
                 "Couldn't find a player with name %s" %
-                p.name)
+                " ".join(data))
 
     @command("del_builder",
              doc="Deletes a player from the current location's build list",
              syntax="[\"](player name)[\"]")
     def del_builder(self, data, protocol):
-        pass
+        if not hasattr(protocol.player.location, "protected"):
+            yield from protocol.send_message(
+                "Location is not protected.")
+            return
+        p = self.plugins.player_manager.get_player_by_name(" ".join(data))
+        if p is not None:
+            try:
+                protocol.player.location.allowed_builders.remove(p.name)
+            except KeyError:
+                yield from protocol.send_message("Player isn't in the allowed"
+                                                 "builders list for this."
+                                                 "location.")
+        else:
+            yield from protocol.send_message("Couldn't find a player with name "
+                                             "%s" % " ".join(data))
+
+    @command("list_builders",
+             doc="Lists all players granted build permissions "
+                 "at current location",
+             syntax="")
+    def list_builders(self, data, protocol):
+        if not hasattr(protocol.player.location, 'protected'):
+            yield from protocol.send_message("This location has never been"
+                                             "protected.")
+            return
+        players = ", ".join(sorted(protocol.player.location.allowed_builders))
+        yield from protocol.send_message("Players allowed to build at location "
+                                         "'%s': %s" % (protocol.player.location,
+                                                       players))
 
     def on_entity_interact(self, data, protocol):
         if data['direction'] == Direction.TO_STARBOUND_CLIENT:
@@ -89,7 +118,7 @@ class PlanetProtect(SimpleCommandPlugin):
             else:
                 if Admin.__name__ in protocol.player.roles:
                     return True
-                elif protocol.player.uuid in protocol.player.location.allowed_builders:
+                elif protocol.player.name in protocol.player.location.allowed_builders:
                     return True
                 else:
                     return False
@@ -97,10 +126,16 @@ class PlanetProtect(SimpleCommandPlugin):
             print(e)
             return True
 
+    def on_entity_create(self, data, protocol):
+        if data['direction'] == Direction.TO_STARBOUND_SERVER and data['data'][
+            0] == 0x00:
+            return True  # A player is being sent, let's let it through.
+        return (yield from self.on_entity_interact(data, protocol))
+
     on_damage_tile = on_entity_interact
     on_damage_tile_group = on_entity_interact
-    on_entity_create = on_entity_interact
-    on_spawn_entity = on_entity_create
+    #on_entity_create = on_entity_interact
+    on_spawn_entity = on_entity_interact
     on_modify_tile_list = on_entity_interact
-    on_tile_update = on_entity_create
-    on_tile_array_update = on_entity_create
+    on_tile_update = on_entity_interact
+    on_tile_array_update = on_entity_interact

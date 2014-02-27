@@ -82,7 +82,7 @@ class Ship:
         self.player = player
 
     def __str__(self):
-        return "%s's ship." % self.player
+        return "%s's ship" % self.player
 
 
 class Planet:
@@ -235,6 +235,10 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.debug("Matches owner UUID: ",
                               uuid.decode(
                                   "ascii") == self.config.config.owner_uuid)
+            if isinstance(name, bytes):
+                name = name.decode("utf-8")
+            if isinstance(uuid, bytes):
+                uuid = uuid.decode("ascii")
             new_player = Player(uuid, name, last_seen, roles, logged_in,
                                 protocol, client_id, ip, planet, muted)
             self.shelf['players'][str(uuid)] = new_player
