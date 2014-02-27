@@ -52,7 +52,7 @@ class ColoredNames(BasePlugin):
                     return
                 if p['channel'] == 1:
                     cts_color = "^green;"
-                elif 0 == p['channel']:
+                elif p['channel'] == 0:
                     cts_color = "^yellow;"
                 else:
                     cts_color = "^gray;"
