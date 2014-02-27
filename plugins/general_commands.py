@@ -1,7 +1,7 @@
 from base_plugin import SimpleCommandPlugin, command
 import data_parser
 import packets
-from plugins.player_manager import Moderator, Admin
+from plugins.player_manager import Moderator, Admin, SuperAdmin
 import pparser
 
 
@@ -15,20 +15,24 @@ class GiveItem(Admin):
 
 class GeneralCommands(SimpleCommandPlugin):
     name = "general_commands"
-    depends = ["command_dispatcher", "player_manager"]
+    depends = ["command_dispatcher", "player_manager", "colored_names"]
 
-    @command("who")
+    @command("who", "players",
+             doc="Shows players online.",
+             syntax="")
     def who(self, data, protocol):
         ret_list = []
         for player in self.plugins['player_manager'].players.values():
             if player.logged_in:
-                ret_list.append(player.name)
+                ret_list.append(self.plugins.colored_names.colored_name(player))
         yield from protocol.send_message(
-            "%d players online: %s" % (len(ret_list),
-                                       ", ".join(ret_list)))
+            "^cyan;%d^green; players online: %s" % (len(ret_list),
+                                       "^green;, ".join(ret_list)))
 
-    @command("whois", doc="Returns client data about the specified user.",
-             syntax="(username)", role=Whois)
+    @command("whois",
+             doc="Returns client data about the specified user.",
+             syntax="(username)",
+             role=Whois)
     def whois(self, data, protocol):
         if len(data) == 0:
             raise SyntaxWarning
@@ -42,14 +46,14 @@ class GeneralCommands(SimpleCommandPlugin):
                     "UUID: ^yellow;%s^green;\n"
                     "IP address: ^cyan;%s^green;\n"
                     "Current location: ^yellow;%s^green;""" % (
-                        info.name, ", ".join(info.roles),
+                        self.plugins.colored_names.colored_name(info), ", ".join(info.roles),
                         info.uuid, info.ip, info.location))
             else:
                 yield from protocol.send_message(
                     "Name: %s ^gray;(OFFLINE)^yellow;\n"
                     "UUID: ^yellow;%s^green;\n"
                     "Last known IP: ^cyan;%s^green;""" % (
-                        info.name, info.uuid, info.ip))
+                        self.plugins.colored_names.colored_name(info), info.uuid, info.ip))
         else:
             yield from protocol.send_message("Player not found!")
 
@@ -96,11 +100,29 @@ class GeneralCommands(SimpleCommandPlugin):
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
         yield from target.raw_write(item_packet)
-        yield from protocol.send_message("Gave %s (count: %d) to %s" %
-                                         (item, count, target.player.name))
-        yield from target.send_message("%s gave you %s (count: %d)" %
-                                       (protocol.player.name, item, count))
+        yield from protocol.send_message("Gave ^yellow;%s^green; (count: ^cyan;%d^green;) to %s" %
+                                         (item, count, self.plugins.colored_names.colored_name(target.player)))
+        yield from target.send_message("%s gave you ^yellow;%s^green; (count: ^cyan;%d^green;)" %
+                                       (self.plugins.colored_names.colored_name(protocol.player), item, count))
 
     def on_give_item(self, data, protocol):
         print(data['data'])
         return True
+
+    @command("chattimestamps",
+             doc="Toggles chat time stamps.",
+             syntax="",
+             role=SuperAdmin)
+    def chattimestamps(self, data, protocol):
+        try:
+            if self.config.config.chattimestamps:
+                self.config.config.chattimestamps = False
+                yield from self.factory.broadcast("Chat timestamps are now: ^red;HIDDEN")
+
+            else:
+                self.config.config.chattimestamps = True
+                yield from self.factory.broadcast("Chat timestamps are now: ^yellow;SHOWN")
+        except:
+            self.config.config.chattimestamps=True
+            yield from self.factory.broadcast("Chat timestamps are now: ^yellow;SHOWN")
+

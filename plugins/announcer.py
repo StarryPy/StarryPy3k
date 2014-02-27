@@ -1,15 +1,18 @@
 import asyncio
-
 from base_plugin import BasePlugin
 
 
 class Announcer(BasePlugin):
     name = "announcer"
+    depends = ["colored_names"]
 
     @asyncio.coroutine
     def send_announce(self, protocol, message):
-        yield from self.factory.broadcast("%s %s" % (protocol.player.name,
-                                                     message))
+        timestamp = self.plugins.colored_names.timestamps()
+        player_name = self.plugins.colored_names.colored_name(protocol.player)
+        yield from self.factory.broadcast("%s%s %s" % (timestamp,
+                                                       player_name,
+                                                       message))
         self.logger.debug("Sent announcement message for %s.",
                           protocol.player.name)
 

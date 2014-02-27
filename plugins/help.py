@@ -19,12 +19,13 @@ class HelpPlugin(SimpleCommandPlugin):
                 if f.roles - protocol.player.roles:
                     continue
                 commands.append(c)
+            commands.sort()
             yield from protocol.send_message(
-                "Available commands: %s" % " ".join(
+                "Available commands: ^yellow;%s" % "^green;, ^yellow;".join(
                     [command for command in commands]))
         else:
             try:
-                yield from protocol.send_message("Help for %s: %s"
+                yield from protocol.send_message("Help for ^yellow;%s^green;: %s"
                                                  % (
                 data[0], self.commands[data[0]].__doc__))
                 yield from protocol.send_message(syntax(
@@ -34,5 +35,5 @@ class HelpPlugin(SimpleCommandPlugin):
             except:
                 traceback.print_exc()
                 yield from protocol.send_message(
-                    "Unknown command %s." % data[0])
+                    "Unknown command ^yellow;%s^green;." % data[0])
 
