@@ -42,6 +42,14 @@ class Whois(Admin):
     pass
 
 
+class Grant(Owner):
+    pass
+
+
+class Revoke(Owner):
+    pass
+
+
 class State(IntEnum):
     VERSION_SENT = 0
     CLIENT_CONNECT_RECEIVED = 1
@@ -75,6 +83,12 @@ class Player:
 
     def __str__(self):
         return pprint.pformat(self.__dict__)
+
+    def check_role(self, role):
+        for r in self.roles:
+            if r.lower() == role.__name__.lower():
+                return True
+        return False
 
 
 class Ship:
@@ -117,6 +131,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.players = self.shelf['players']
         self.planets = self.shelf['planets']
         self.plugin_shelf = self.shelf['plugins']
+        #manhole.install(activate_on="USR1")
 
     def sync(self):
         if 'players' not in self.shelf:
@@ -219,29 +234,29 @@ class PlayerManager(SimpleCommandPlugin):
                           ip="0.0.0.0",
                           planet='', muted=False,
                           **kwargs) -> Player:
-        if str(uuid) in self.shelf['players']:
+        if isinstance(uuid, bytes):
+            uuid = uuid.decode("ascii")
+        if isinstance(name, bytes):
+            name = name.decode("utf-8")
+        if uuid in self.shelf['players']:
             self.logger.info("Returning existing player.")
-            p = self.shelf['players'][str(uuid)]
-            if uuid.decode("ascii") == self.config.config.owner_uuid:
+            p = self.shelf['players'][uuid]
+            if uuid == self.config.config.owner_uuid:
                 p.roles = {x.__name__ for x in Owner.roles}
             return p
         else:
             self.logger.info("Creating new player with UUID %s and name %s",
                              uuid, name)
-            if uuid.decode("ascii") == self.config.config.owner_uuid:
+            if uuid == self.config.config.owner_uuid:
+                print("Got UUID")
                 roles = {x.__name__ for x in Owner.roles}
             else:
                 roles = {x.__name__ for x in Guest.roles}
             self.logger.debug("Matches owner UUID: ",
-                              uuid.decode(
-                                  "ascii") == self.config.config.owner_uuid)
-            if isinstance(name, bytes):
-                name = name.decode("utf-8")
-            if isinstance(uuid, bytes):
-                uuid = uuid.decode("ascii")
+                              uuid == self.config.config.owner_uuid)
             new_player = Player(uuid, name, last_seen, roles, logged_in,
                                 protocol, client_id, ip, planet, muted)
-            self.shelf['players'][str(uuid)] = new_player
+            self.shelf['players'][uuid] = new_player
             return new_player
 
     @asyncio.coroutine
@@ -255,8 +270,21 @@ class PlayerManager(SimpleCommandPlugin):
 
     def add_role(self, player, role):
         if issubclass(role, Role):
-            role = role.__name__
-        player.roles.add(role)
+            r = role.__name__
+        else:
+            raise TypeError("add_role requires a Role subclass to be passed as "
+                            "the second argument.")
+        player.roles.add(r)
+        self.logger.info("Granted role %s to %s" % (r, player.name))
+        for subrole in role.roles:
+            s = self.get_role(subrole)
+            if issubclass(s, role):
+                self.add_role(player, s)
+
+    def get_role(self, name):
+        if issubclass(name, Role):
+            return name
+        return [x for x in Owner.roles if x.__name__.lower() == name.lower()][0]
 
     def get_player_by_name(self, name, check_logged_in=False) -> Player:
         lname = name.lower()
@@ -340,3 +368,27 @@ class PlayerManager(SimpleCommandPlugin):
                            "Reason: %(reason)s - "
                            "Banned by: %(banned_by)s" % ban.__dict__)
             yield from protocol.send_message("\n".join(res))
+
+    @command("grant", "promote", role=Grant, doc="Grants a role to a player.",
+             syntax=("(role)", "(player)"))
+    def grant(self, data, protocol):
+        role = data[0]
+        name = " ".join(data[1:])
+        p = self.get_player_by_name(name)
+        try:
+            if role.lower() not in (x.__name__.lower() for x in Owner.roles):
+                raise LookupError("Unknown role %s" % role)
+            if p is None:
+                raise LookupError("Unknown player %s" % name)
+            ro = [x for x in Owner.roles if
+                  x.__name__.lower() == role.lower()][0]
+            self.add_role(p, ro)
+            yield from protocol.send_message("Granted role %s to %s." %
+                                             (ro.__name__, p.name))
+            if p.protocol is not None:
+                yield from p.protocol.send_message("You've been granted the "
+                                                   "role %s by %s"
+                                                   % (ro.__name__,
+                                                      protocol.player.name))
+        except LookupError as e:
+            yield from protocol.send_message(str(e))

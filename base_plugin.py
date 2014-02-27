@@ -310,7 +310,7 @@ class MetaRole(type):
         c = type.__new__(mcs, name, bases, clsdict)
         if name != "Role":
             has_meta = False
-            for b in c.mro():
+            for b in c.mro()[1:]:
                 if issubclass(b, Role):
                     b.roles.add(c)
                     c.superroles.add(b)

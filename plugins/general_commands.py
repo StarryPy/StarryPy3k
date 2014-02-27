@@ -36,16 +36,12 @@ class GeneralCommands(SimpleCommandPlugin):
                     "IP address: ^cyan;%s^green;\n"
                     "Current location: ^yellow;%s^green;""" % (
                         info.name, ", ".join(info.roles),
-                        info.uuid.decode("ascii"), info.ip, info.location))
+                        info.uuid, info.ip, info.location))
             else:
                 yield from protocol.send_message(
                     "Name: %s ^gray;(OFFLINE)^yellow;\n"
                     "UUID: ^yellow;%s^green;\n"
                     "Last known IP: ^cyan;%s^green;""" % (
-                        info.name, info.uuid.decode("ascii"), info.ip))
+                        info.name, info.uuid, info.ip))
         else:
             yield from protocol.send_message("Player not found!")
-
-    @command("grant", doc="Grants a role to a player")
-    def grant(self, data, protocol):
-        pass
