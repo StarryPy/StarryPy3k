@@ -26,12 +26,12 @@ Below I provide installation instructions for Linux and Windows.
 ### Linux
 
 (CentOS instructions coming in the near future.) On Debian, the installation is
-decidedly simple, but it will require sudo access if you do not have python 2.7
+decidedly simple, but it will require sudo access if you do not have python 3.4
 installed.
 
 First, let's make sure that all the prerequisites are installed:
 
-`sudo apt-get install python2.7 python-dev python-pip git`
+`sudo apt-get install python3.4 python-dev python-pip git`
 
 After installing the prerequisites, clone the repo in the directory of your choice
 using git:
@@ -82,10 +82,10 @@ directory_name' to get to the right place. If you go too high, use 'cd..' to go
 down a level.
 
 (THIS STEP ONLY NEEDED FOR PYTHON BELOW VERSION 3.4)
-Once you're in the StarryPy folder, run 'pip install -r requirements.txt' to
+Once you're in the StarryPy folder, run 'pip3 install -r requirements.txt' to
 install all of the dependencies.
 
-If you get enum34 error, run 'pip install enum34'.
+If you get enum34 error, run 'pip3 install enum34'.
 
 Finally, once that's done, we can move onto configuration.
 
@@ -119,6 +119,7 @@ If you're on windows, be sure to set `starbound_path` to the correct path
 **After making sure the Starbound server is running**, use your terminal (cmd or
 powershell on windows) and `cd` to the directory you installed StarryPy into.
 Enter `python server.py` to start the proxy.
+(If you're using Python 2 and 3 use: `py -3 server.py` to start the proxy.)
 
 ## Built-in plugins
 
