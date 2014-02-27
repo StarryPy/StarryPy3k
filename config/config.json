@@ -1,9 +1,31 @@
 {
-"player_db": "config/player",
-"packet_reap_time": 600,
-"min_cache_size": 16,
-"default_color": "^#red;",
-"command_prefix": "/",
-"owner_uuid": "871ba366a1e8c104c018b2f4577decb5",
-"default_roles": []
+    "owner_uuid": "-- REPLACE THIS --",
+    "listen_port": 21025,
+    "upstream_port": 21024,
+    "command_prefix": "/",
+    "chattimestamps": true,
+    "default_roles": [],
+    "colors": {
+        "default": "^#F7EB43;",
+        "Guest": "^#F7EB43;",
+        "Registered": "^#A0F743;",
+        "Moderator": "^#4385F7;",
+        "Admin": "^#C443F7;",
+        "SuperAdmin": "^#FF00FF;",
+        "Owner": "^#F7434C;",
+        "Irc": "^#E39313;"
+    },
+    "serverads": {
+            "serverads_list" : [
+                    "Welcome to the server!",
+                    "Have a nice day!",
+                    "Please do not grief",
+                    "Noisy players will be muted"
+            ],
+            "serverads_prefix" : "^#00FFFF;[SA]",
+            "serverads_interval" : 3600
+    },
+    "player_db": "config/player",
+    "packet_reap_time": 600,
+    "min_cache_size": 16
 }
