@@ -221,4 +221,6 @@ if __name__ == "__main__":
     finally:
         server_factory.result().kill_all()
         server_factory.result().plugin_manager.deactivate_all()
+        loop.stop()
+        loop.close()
         logger.warning("Running commit %s", ver)
