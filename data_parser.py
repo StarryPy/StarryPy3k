@@ -377,18 +377,14 @@ class ChatReceived(Struct):
     message = StarString
 
 
-class WorldCoordinate(Struct):
+class WarpCommand(Struct):
+    warp_type = UBInt32
     sector = StarString
     x = SBInt32
     y = SBInt32
     z = SBInt32
     planet = SBInt32
     satellite = SBInt32
-
-
-class WarpCommand(Struct):
-    warp_type = UBInt32
-    coordinates = WorldCoordinate
     player = StarString
 
 
@@ -462,5 +458,3 @@ class BasePacket(Struct):
         res += obj['data']
         return res
 
-
-print(VLQ.build(123000))

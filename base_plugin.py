@@ -34,7 +34,7 @@ class BasePlugin(metaclass=BaseMeta):
     name = "Base Plugin"
     description = "The common class for all plugins to inherit from."
     version = ".1"
-    depends = []
+    depends = ()
     plugins = DotDict({})
     auto_activate = True
 
@@ -272,7 +272,8 @@ def command(*aliases, role=None, roles=None, doc=None, syntax=None):
                 f.__doc__ = doc
                 return f(self, data, protocol)
             except PermissionError:
-                protocol.send_message("You don't have permissions to do that.")
+                asyncio.Task(protocol.send_message(
+                    "You don't have permissions to do that."))
 
         wrapped._command = True
         wrapped._aliases = aliases
@@ -303,18 +304,22 @@ class SimpleCommandPlugin(BasePlugin):
 
 
 class MetaRole(type):
+    roles = {}
+
     def __new__(mcs, name, bases, clsdict):
+        if name in mcs.roles:
+            return mcs.roles[name]
         clsdict['roles'] = set()
         clsdict['superroles'] = set()
-
+        print("Adding role", name)
         c = type.__new__(mcs, name, bases, clsdict)
         if name != "Role":
-            has_meta = False
             for b in c.mro()[1:]:
-                if issubclass(b, Role):
+                if issubclass(b, Role) and b is not Role:
+                    print("Adding", name, "to", b.__name__)
                     b.roles.add(c)
                     c.superroles.add(b)
-
+        mcs.roles[name] = c
         return c
 
 
