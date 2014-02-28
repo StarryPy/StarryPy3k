@@ -9,6 +9,40 @@ temp_channel = "##starrypy"
 temp_username = "starrypytest"
 
 
+def base_cc(text, start_code, end_code=15):
+    if end_code is None:
+        end_code = start_code
+    return chr(start_code) + text + chr(end_code)
+
+
+def color(text, color="00", background=""):
+    return base_cc(color + background + text, 3)
+
+
+def bold(text):
+    return base_cc(text, 2)
+
+
+def italic(text):
+    return base_cc(text, 29)
+
+
+def underline(text):
+    return base_cc(text, 21)
+
+
+def strikethrough(text):
+    return base_cc(text, 19)
+
+
+def underline2(text):
+    return base_cc(text, 31)
+
+
+def reverse(text):
+    return base_cc(text, 21)
+
+
 class IRCPlugin(BasePlugin):
     name = "irc_bot"
 
@@ -48,7 +82,7 @@ class IRCPlugin(BasePlugin):
     def announce_join(self, protocol):
         yield from asyncio.sleep(1)
         yield from self.bot_write(
-            "%s joined the server." % protocol.player.name)
+            "%s joined the server." % color(bold(protocol.player.name), '10'))
 
     @asyncio.coroutine
     def announce_leave(self, player):
