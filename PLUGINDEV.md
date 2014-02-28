@@ -12,11 +12,7 @@ Requirements can be found in README.md. The version of Python used as of time of
 Looking to add features to your own flavor of StarryPy? This guide will give you a brief overview of the basic code structure of a plugin, and how you can suscribe to certain events to give functionality to your plugin.
 
 ### Imports
->All plugins require the following to be imported, so StarryPy is able to load and execute them properly:
-```python
-import asyncio
-```
-In a standard installation, StarryPy comes with 2 base plugin classes that you can use; BasePlugin and SimpleCommandPlugin. Do note that you can only extend off one class at a time, for a single plugin class.
+>In a standard installation, StarryPy comes with 2 base plugin classes that you can use; BasePlugin and SimpleCommandPlugin. Do note that you can only extend off one class at a time, for a single plugin class.
 #### BasePlugin
 BasePlugin is the parent of all StarryPy plugins and contains all the event hooks that StarryPy provides, from which you can suscribe to by overriding the same function name in your plugin body:
 ```python
