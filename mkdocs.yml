@@ -1,0 +1,5 @@
+site_name: StarryPy3k
+pages:
+- [index.md, Home]
+- [about.md, About]
+theme: readthedocs
