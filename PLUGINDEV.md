@@ -42,4 +42,26 @@ class MyPlugin(BasePlugin):
 * **activate()** is the entry point for all plugins. When the plugin loader goes through the list of plugins to load, it will call activate() for each plugin. super().activate() is required as it tells the parent class to load first so your plugin is able to suscribe to events.
 
 ### Events
->StarryPy has many events that your plugin can suscribe to and perform an action. Such events include "on_chat_sent", 
+>StarryPy has many events that your plugin can suscribe to and perform an action. Such events include on_chat_sent, on_client_connect, on_give_item, to name a few. More can be found in **base_plugin.py**
+
+>To suscribe to an event, just create a definition with the same signature in your plugin class like so:
+```python
+def on_chat_sent(self, data, protocol):
+	print("on_chat_sent got triggered!")
+```
+* **data** contains a parsed list of values in the data packet that StarryPy intercepted. You can access the values in this list by accessing it via a key (e.g data['parsed']['message'])
+* **protocol** contains the handle of the player/entity that triggered the event. Inside this there are many useful properties that you can use, such as "protocol.player.name" and "protocol.player.roles", giving you the name and permissions respectively. 
+
+### Configuration & Logging
+>StarryPy uses a centralized JSON configuration to save/load plugin configuration data. The config object can be accessed very simply in the plugin class by the following:
+```python
+self.my_config_value = self.config.config.my_plugin["my_config_value"]
+```
+
+>Similarly, logging functionality has been built into StarryPy and can be accessed easily. There are 3 main loggers that StarryPy includes, one for logging, one for debugging and one for errors and warnings. They can be accessed like so:
+```python
+self.logger.info("This is a regular msg")	#this will log a timestamped message with the plugin name that called in server.log
+self.logger.debug("This is a debug msg")	#same as above, but it goes into debug.log and is prefixed with DEBUG
+self.logger.warning("This is a warning msg")	#same as above, but it goes into server.log and is prefixed with WARN or ERROR
+```
+ 
