@@ -35,17 +35,14 @@ class CommandDispatcher(BasePlugin):
                 try:
                     yield from self.commands[command](extractor(to_parse[1:]),
                                                       protocol)
-                except SyntaxWarning:
-                    print("Syntax warning")
-                    try:
-                        yield from protocol.send_message("Syntax error.",
-                                                         syntax(command,
-                                                                self.commands[
-                                                                    command],
-                                                                self.config.config.command_prefix))
-                    except:
-                        self.logger.exception("Exc", exc_info=True)
-                        raise
+                except SyntaxWarning as e:
+                    yield from protocol.send_message("Syntax error: %s" % e,
+                                                     syntax(command,
+                                                            self.commands[
+                                                                command],
+                                                            self.config.config.command_prefix))
+                except NameError as e:
+                    yield from protocol.send_message("Unknown player %s" % e)
                 except:
                     self.logger.exception("Exc", exc_info=True)
                 finally:

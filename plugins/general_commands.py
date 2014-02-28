@@ -1,8 +1,15 @@
 from base_plugin import SimpleCommandPlugin, command
-from plugins.player_manager import Moderator
+import data_parser
+import packets
+from plugins.player_manager import Moderator, Admin
+import pparser
 
 
 class Whois(Moderator):
+    pass
+
+
+class GiveItem(Admin):
     pass
 
 
@@ -45,3 +52,55 @@ class GeneralCommands(SimpleCommandPlugin):
                         info.name, info.uuid, info.ip))
         else:
             yield from protocol.send_message("Player not found!")
+
+    @command("give", "item", "give_item",
+             role=GiveItem,
+             doc="Gives an item to a player. "
+                 "If player name is omitted, give item(s) to self.",
+             syntax=("[player=self]", "(item name)", "[count=1]"))
+    def give_item(self, data, protocol):
+        print(data)
+        arg_count = len(data)
+        if arg_count == 1:
+            target = protocol.player
+            item = data[0]
+            count = 1
+        elif arg_count == 2:
+            if data[1].isdigit():
+                target = protocol.player
+                item = data[0]
+                count = int(data[1])
+            else:
+                target = self.plugins.player_manager.get_player_by_name(data[0])
+                item = data[1]
+                count = 1
+        elif arg_count == 3:
+            target = self.plugins.player_manager.get_player_by_name(data[0])
+            item = data[1]
+            if not data[2].isdigit():
+                raise SyntaxWarning("Couldn't convert %s to an item count." %
+                                    data[2])
+            count = int(data[2])
+        else:
+            raise SyntaxWarning("Too many arguments")
+        if target is None:
+            raise NameError(target)
+        target = target.protocol
+        if count > 1000:
+            count = 1000
+        count += 1
+        item_base = data_parser.GiveItem.build(dict(name=item,
+                                                    count=count,
+                                                    variant_type=0,
+                                                    description=""))
+        item_packet = pparser.build_packet(packets.packets['give_item'],
+                                           item_base)
+        yield from target.raw_write(item_packet)
+        yield from protocol.send_message("Gave %s (count: %d) to %s" %
+                                         (item, count, target.player.name))
+        yield from target.send_message("%s gave you %s (count: %d)" %
+                                       (protocol.player.name, item, count))
+
+    def on_give_item(self, data, protocol):
+        print(data['data'])
+        return True
