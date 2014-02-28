@@ -25,7 +25,7 @@ class StarboundWatchdog(SimpleCommandPlugin):
 
 
     def find_executable(self):
-        if self.platform == "windows":
+        if self.platform == "win32":
             p = self.starbound_path / "win32/starbound_server.exe"
             self.logger.info("Detected windows. Trying path %s", str(p))
         elif self.platform == "linux":
