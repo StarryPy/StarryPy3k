@@ -55,7 +55,7 @@ class StarboundWatchdog(SimpleCommandPlugin):
                     "Please reconnect.")
                 yield from asyncio.sleep(5)
                 self.watchdog = asyncio.Task(
-                    self.start_watchdog(self.executable))
+                    self.start_watchdog())
                 break
             yield from asyncio.sleep(1)
         subproc.terminate()
