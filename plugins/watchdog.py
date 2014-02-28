@@ -47,12 +47,8 @@ class StarboundWatchdog(SimpleCommandPlugin):
             if subproc.poll():
                 self.logger.warning("Starbound has exited. "
                                     "Restarting in 5 seconds...")
-                yield from self.factory.broadcast(
-                    "The starbound server has died"
-                    " and is in the process of "
-                    "being automatically "
-                    "restarted. "
-                    "Please reconnect.")
+                for protocol in self.factory.protocols:
+                    protocol.die()
                 yield from asyncio.sleep(5)
                 self.watchdog = asyncio.Task(
                     self.start_watchdog())
