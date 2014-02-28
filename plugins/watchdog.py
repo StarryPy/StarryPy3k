@@ -58,4 +58,7 @@ class StarboundWatchdog(SimpleCommandPlugin):
                     self.start_watchdog())
                 break
             yield from asyncio.sleep(1)
-        subproc.terminate()
+        try:
+            subproc.terminate()
+        except ProcessLookupError:
+            self.logger.detail("Process already dead.")
