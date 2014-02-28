@@ -57,4 +57,4 @@ class StarboundWatchdog(SimpleCommandPlugin):
         try:
             subproc.terminate()
         except ProcessLookupError:
-            self.logger.detail("Process already dead.")
+            self.logger.debug("Process already dead.")
