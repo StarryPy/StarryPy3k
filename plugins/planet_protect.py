@@ -61,11 +61,11 @@ class PlanetProtect(SimpleCommandPlugin):
             protocol.player.location.allowed_builders.add(p.name)
             yield from protocol.send_message(
                 "Added %s to allowed list for %s" % (
-                p.name, protocol.player.location))
+                    p.name, protocol.player.location))
             try:
                 yield from p.protocol.send_message(
                     "You've been granted build access on %s by %s" % (
-                    protocol.player.location, protocol.player.name))
+                        protocol.player.location, protocol.player.name))
             except AttributeError:
                 yield from protocol.send_message(
                     "%s isn't online, so we can't send them a notification."
@@ -116,7 +116,7 @@ class PlanetProtect(SimpleCommandPlugin):
             if not getattr(protocol.player.location, "protected", False):
                 return True
             else:
-                if Admin.__name__ in protocol.player.roles:
+                if protocol.player.check_role(Admin):
                     return True
                 elif protocol.player.name in protocol.player.location.allowed_builders:
                     return True
