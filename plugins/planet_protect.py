@@ -121,8 +121,7 @@ class PlanetProtect(SimpleCommandPlugin):
                     return True
                 else:
                     return False
-        except AttributeError as e:
-            self.logger.exception("Attribute error.", exc_info=True)
+        except AttributeError:
             return True
 
     def on_entity_create(self, data, protocol):

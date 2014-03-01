@@ -213,10 +213,10 @@ class Command:
         elif not isinstance(roles, set):
             roles = {x for x in roles}
         if role is not None:
-            roles.add(set)
+            roles.add(role)
         if doc is None:
             doc = ""
-        self.roles = roles
+        self.roles = {role.__name__ for role in roles}
         self.syntax = syntax
         self.human_syntax = " ".join(syntax)
         self.doc = doc
@@ -228,8 +228,6 @@ class Command:
                 for role in self.roles:
                     if role not in protocol.player.roles:
                         raise PermissionError
-                f.syntax = self.human_syntax
-                f.__doc__ = self.doc
                 return f(s, data, protocol)
             except PermissionError:
                 send_message(protocol,
@@ -239,4 +237,7 @@ class Command:
         wrapped._aliases = self.aliases
         wrapped.__doc__ = self.doc
         wrapped.roles = self.roles
+        f.roles = self.roles
+        f.syntax = self.human_syntax
+        f.__doc__ = self.doc
         return wrapped
