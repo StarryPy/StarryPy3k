@@ -32,5 +32,4 @@ application = tornado.web.Application([
     (r'/css/(.*)', tornado.web.StaticFileHandler, {'path': str(path
                                                                / "plugins"
                                                                / "static"
-                                                               / "css")}),
-])
+                                                               / "css")})])

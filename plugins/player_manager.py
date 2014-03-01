@@ -10,7 +10,7 @@ from data_parser import StarString
 import packets
 from pparser import build_packet
 from server import StarryPyServer
-from utilities import command
+from utilities import Command, send_message
 
 
 class Owner(Role):
@@ -274,8 +274,8 @@ class PlayerManager(SimpleCommandPlugin):
         if issubclass(role, Role):
             r = role.__name__
         else:
-            raise TypeError("add_role requires a Role subclass to be passed as "
-                            "the second argument.")
+            raise TypeError("add_role requires a Role subclass to be passed as"
+                            " the second argument.")
         player.roles.add(r)
         self.logger.info("Granted role %s to %s" % (r, player.name))
         for subrole in role.roles:
@@ -286,7 +286,8 @@ class PlayerManager(SimpleCommandPlugin):
     def get_role(self, name):
         if issubclass(name, Role):
             return name
-        return [x for x in Owner.roles if x.__name__.lower() == name.lower()][0]
+        return [x for x in Owner.roles
+                if x.__name__.lower() == name.lower()][0]
 
     def get_player_by_name(self, name, check_logged_in=False) -> Player:
         lname = name.lower()
@@ -295,7 +296,7 @@ class PlayerManager(SimpleCommandPlugin):
                 if not check_logged_in or player.logged_in:
                     return player
 
-    @command("kick", role=Kick, doc="Kicks a player.",
+    @Command("kick", role=Kick, doc="Kicks a player.",
              syntax=("[\"]player name[\"]", "[reason]"))
     def kick(self, data, protocol):
         name = data[0]
@@ -309,15 +310,17 @@ class PlayerManager(SimpleCommandPlugin):
             kill_packet = build_packet(packets.packets['server_disconnect'],
                                        StarString.build("You were kicked."))
             yield from p.protocol.raw_write(kill_packet)
-            yield from self.factory.broadcast("%s has kicked %s. Reason: %s" % (
-                protocol.player.name,
-                p.name,
-                reason))
+            yield from self.factory.broadcast("%s has kicked %s. Reason: %s" %
+                                              (protocol.player.name,
+                                               p.name,
+                                               reason))
         else:
-            yield from protocol.send_message(
-                "Couldn't find a player with name %s" % name)
+            send_message(protocol,
+                         "Couldn't find a player with name %s" % name)
 
-    @command("ban", role=Ban, doc="Bans a user or an IP address.",
+    @Command("ban",
+             role=Ban,
+             doc="Bans a user or an IP address.",
              syntax=("(ip | name)", "(reason)"))
     def ban(self, data, protocol):
         try:
@@ -332,17 +335,15 @@ class PlayerManager(SimpleCommandPlugin):
     def ban_by_ip(self, ip, reason, protocol):
         ban = IPBan(ip, reason, protocol.player.name)
         self.shelf['bans'][ip] = ban
-        asyncio.Task(protocol.send_message("Banned IP: %s with reason: %s" % (
-            ip, reason
-        )))
+        send_message(protocol, "Banned IP: %s with reason: %s" % (ip, reason))
 
     def ban_by_name(self, name, reason, protocol):
         p = self.get_player_by_name(name)
         if p is not None:
             self.ban_by_ip(p.ip, reason, protocol)
         else:
-            asyncio.Task(protocol.send_message("Couldn't find a player by the "
-                                               "name %s" % name))
+            send_message(protocol,
+                         "Couldn't find a player by the name %s" % name)
 
     @asyncio.coroutine
     def add_or_get_planet(self, sector, location, planet, satellite,
@@ -358,19 +359,19 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf['planets'][str(planet)] = planet
         return planet
 
-    @command("list_bans", role=Ban, doc="Lists all active bans.")
+    @Command("list_bans", role=Ban, doc="Lists all active bans.")
     def list_bans(self, data, protocol):
         if len(self.shelf['bans'].keys()) == 0:
-            yield from protocol.send_message("There are no active bans.")
+            send_message(protocol, "There are no active bans.")
         else:
             res = ["Active bans:"]
             for ban in self.shelf['bans'].values():
                 res.append("IP: %(ip)s - "
                            "Reason: %(reason)s - "
                            "Banned by: %(banned_by)s" % ban.__dict__)
-            yield from protocol.send_message("\n".join(res))
+            send_message(protocol, "\n".join(res))
 
-    @command("grant", "promote", role=Grant, doc="Grants a role to a player.",
+    @Command("grant", "promote", role=Grant, doc="Grants a role to a player.",
              syntax=("(role)", "(player)"))
     def grant(self, data, protocol):
         role = data[0]
@@ -384,12 +385,11 @@ class PlayerManager(SimpleCommandPlugin):
             ro = [x for x in Owner.roles if
                   x.__name__.lower() == role.lower()][0]
             self.add_role(p, ro)
-            yield from protocol.send_message("Granted role %s to %s." %
-                                             (ro.__name__, p.name))
+            send_message(protocol,
+                         "Granted role %s to %s." % (ro.__name__, p.name))
             if p.protocol is not None:
-                yield from p.protocol.send_message("You've been granted the "
-                                                   "role %s by %s"
-                                                   % (ro.__name__,
-                                                      protocol.player.name))
+                send_message(p.protocol,
+                             "You've been granted the role %s by %s"
+                             % (ro.__name__, protocol.player.name))
         except LookupError as e:
-            yield from protocol.send_message(str(e))
+            send_message(protocol, str(e))

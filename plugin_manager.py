@@ -11,14 +11,6 @@ from pparser import PacketParser
 from utilities import detect_overrides
 
 
-
-
-
-
-
-
-
-# noinspection PyBroadException
 class PluginManager:
     def __init__(self, config: ConfigurationManager, *, base=BasePlugin,
                  factory=None):
@@ -87,7 +79,7 @@ class PluginManager:
         if file_path.is_dir():
             file_path /= '__init__.py'
         if not file_path.exists():
-            raise FileNotFoundError("{0} doesn't exist.".format(str(file_path)))
+            raise FileNotFoundError("{0} doesn't exist.".format(file_path))
         name = "plugins.%s" % file_path.stem
         loader = importlib.machinery.SourceFileLoader(name, str(file_path))
         module = loader.load_module(name)
@@ -143,7 +135,6 @@ class PluginManager:
                 raise ImportError("Unresolved dependencies found.")
         self._resolved = True
 
-
     @asyncio.coroutine
     def get_overrides(self):
         if self._override_cache is self._activated_plugins:
@@ -168,6 +159,3 @@ class PluginManager:
         for plugin in self._plugins.values():
             self.logger.info("Deactivating %s", plugin.name)
             plugin.deactivate()
-
-
-

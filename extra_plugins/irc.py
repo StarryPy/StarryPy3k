@@ -77,6 +77,7 @@ class IRCPlugin(BasePlugin):
     def activate(self):
         super().activate()
         self.protocol = MockProtocol(self)
+        self.dispatcher = self.plugins.command_dispatcher
         self.bot = irc3.IrcBot(nick=temp_username, autojoins=[temp_channel],
                                host=temp_server)
         self.bot.log = self.logger
@@ -92,7 +93,6 @@ class IRCPlugin(BasePlugin):
         self.bot.create_connection()
         self.ops = set()
         asyncio.Task(self.update_ops())
-
 
     @asyncio.coroutine
     def send_message(self, data, nick):
@@ -147,10 +147,10 @@ class IRCPlugin(BasePlugin):
         self.protocol.player.roles = self.protocol.player.guest
         if mask.split("!")[0] in self.ops:
             self.protocol.player.roles = self.protocol.player.owner
-        if command in self.plugins.command_dispatcher.commands:
-            yield from self.plugins.command_dispatcher.run_command(command,
-                                                                   self.protocol,
-                                                                   to_parse)
+        if command in self.dispatcher.commands:
+            yield from self.dispatcher.run_command(command,
+                                                   self.protocol,
+                                                   to_parse)
         else:
             yield from self.bot_write(target, "Command not found.")
 

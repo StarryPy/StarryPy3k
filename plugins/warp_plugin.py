@@ -6,7 +6,7 @@ from data_parser import WarpCommand
 import packets
 import plugins.player_manager as player_manager
 from pparser import build_packet
-from utilities import command
+from utilities import Command, send_message
 
 
 class Warp(player_manager.Owner):
@@ -30,7 +30,7 @@ class WarpPlugin(SimpleCommandPlugin):
         super().activate()
         self.get_by_name = self.plugins.player_manager.get_player_by_name
 
-    @command("warp", role=Warp, doc="Warps a player to another player.",
+    @Command("warp", role=Warp, doc="Warps a player to another player.",
              syntax=("[from player=self]", "(to player)"))
     def warp(self, data, protocol):
         if len(data) == 1:
@@ -44,16 +44,14 @@ class WarpPlugin(SimpleCommandPlugin):
         if (from_player is None) or (to_player is None):
             raise NameError("Couldn't find name.")
         yield from self.warp_player_to_player(from_player, to_player)
-        yield from protocol.send_message("Warped %s to %s." % (from_player.name,
-                                                               to_player.name))
-        yield from from_player.protocol.send_message("%s has warped to you %s's"
-                                                     "ship." %
-                                                     (protocol.player.name,
-                                                      to_player.name))
-        yield from to_player.protocol.send_message("%s has been warped to "
-                                                   "your ship by %s." %
-                                                   (from_player.name,
-                                                    protocol.player.name))
+        send_message(protocol, "Warped %s to %s." % (from_player.name,
+                                                     to_player.name))
+        send_message(from_player.protocol,
+                     "%s has warped to you %s's ship." % (protocol.player.name,
+                                                          to_player.name))
+        send_message(to_player.protocol,
+                     "%s has been warped to your ship by %s." %
+                     (from_player.name, protocol.player.name))
 
     @asyncio.coroutine
     def warp_player_to_player(self, from_player, to_player):
@@ -72,7 +70,12 @@ class WarpPlugin(SimpleCommandPlugin):
 
     @asyncio.coroutine
     def warp_ship_to_planet(self, from_player, to):
-        planet_regex = r"(?:(?P<sector>[a-z]+):(?P<a>-?[0-9]+):(?P<x>-?[0-9]+):(?P<y>-?[0-9]+):(?P<planet>[0-9]+):(?P<satellite>[0-9]+)?)"
+        planet_regex = (r"(?:(?P<sector>[a-z]+):"
+                        r"(?P<a>-?[0-9]+):"
+                        r"(?P<x>-?[0-9]+):"
+                        r"(?P<y>-?[0-9]+):"
+                        r"(?P<planet>[0-9]+):"
+                        r"(?P<satellite>[0-9]+)?)")
         warp_match = re.match(planet_regex, to)
         if warp_match is not None:
             warp_coords = warp_match.groupdict()

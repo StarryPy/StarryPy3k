@@ -154,7 +154,8 @@ class ServerFactory:
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, messages, *, world="", name="", channel=0, client_id=0):
+    def broadcast(self, messages, *, world="", name="", channel=0,
+                  client_id=0):
         for protocol in self.protocols:
             try:
                 yield from protocol.send_message(messages,

@@ -116,7 +116,6 @@ class PacketParser:
             packet['parsed'] = res.parse(packet['data'])
         return packet
 
-
     def __del__(self):
         self._reaper.cancel()
 

@@ -23,7 +23,6 @@ class StarboundWatchdog(SimpleCommandPlugin):
         self.executable = self.find_executable()
         self.watchdog = asyncio.Task(self.start_watchdog())
 
-
     def find_executable(self):
         if self.platform == "win32":
             p = self.starbound_path / "win32/starbound_server.exe"

@@ -1,7 +1,7 @@
 import traceback
 
 from base_plugin import SimpleCommandPlugin
-from utilities import syntax, command
+from utilities import syntax, Command, send_message
 
 
 class HelpPlugin(SimpleCommandPlugin):
@@ -11,7 +11,7 @@ class HelpPlugin(SimpleCommandPlugin):
         super().activate()
         self.commands = self.plugins['command_dispatcher'].commands
 
-    @command("help", doc="Help command.")
+    @Command("help", doc="Help command.")
     def _help(self, data, protocol):
         if not data:
             commands = []
@@ -19,20 +19,18 @@ class HelpPlugin(SimpleCommandPlugin):
                 if f.roles - protocol.player.roles:
                     continue
                 commands.append(c)
-            yield from protocol.send_message(
-                "Available commands: %s" % " ".join(
-                    [command for command in commands]))
+            send_message(protocol,
+                         "Available commands: %s" % " ".join(
+                             [command for command in commands]))
         else:
             try:
-                yield from protocol.send_message("Help for %s: %s"
-                                                 % (
-                    data[0], self.commands[data[0]].__doc__))
-                yield from protocol.send_message(syntax(
-                    data[0],
-                    self.commands[data[0]],
-                    self.config.config.command_prefix))
+                docstring = self.commands[data[0]].__doc__
+                send_message(protocol,
+                             "Help for %s: %s" % (data[0], docstring),
+                             syntax(data[0],
+                                    self.commands[data[0]],
+                                    self.config.config.command_prefix))
             except:
                 traceback.print_exc()
-                yield from protocol.send_message(
-                    "Unknown command %s." % data[0])
-
+                send_message(protocol,
+                             "Unknown command %s." % data[0])

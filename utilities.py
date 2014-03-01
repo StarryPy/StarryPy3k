@@ -74,7 +74,6 @@ class BiDict(dict):
     """A case-insensitive bidirectional dictionary that supports integers."""
 
     def __init__(self, d, **kwargs):
-        #super().__init__(**kwargs) ## rm:Adding for inspection override, hopefully this gets removed in my pre-commit hook. We'll see.
         for k, v in d.items():
             self[k] = v
 
@@ -195,43 +194,45 @@ def send_message(protocol, *messages):
     return asyncio.Task(protocol.send_message(*messages))
 
 
-def command(*aliases, role=None, roles=None, doc=None, syntax=None):
-    rs = roles
-    r = role
-    if isinstance(syntax, str):
-        syntax = (syntax,)
-    if rs is None:
-        rs = set()
-    elif not isinstance(roles, set):
-        rs = {x for x in rs}
-    if role is not None:
-        rs.add(r)
-    rs = {x.__name__ for x in rs}
+class Command:
+    """
+    Defines a decorator that encapsulates a command in StarryPy3k
+    """
 
-    def wrapper(f):
-        def wrapped(self, data, protocol):
+    def __init__(self, *aliases, role=None, roles=None, doc=None, syntax=None):
+        if syntax is None:
+            syntax = ()
+        if isinstance(syntax, str):
+            syntax = (syntax,)
+        if roles is None:
+            roles = set()
+        elif not isinstance(roles, set):
+            roles = {x for x in roles}
+        if role is not None:
+            roles.add(set)
+        if doc is None:
+            doc = ""
+        self.roles = roles
+        self.syntax = syntax
+        self.human_syntax = " ".join(syntax)
+        self.doc = doc
+        self.aliases = aliases
+
+    def __call__(self, f):
+        def wrapped(s, data, protocol):
             try:
-                for z in rs:
-                    if z not in protocol.player.roles:
+                for role in self.roles:
+                    if role not in protocol.player.roles:
                         raise PermissionError
-                if syntax is None:
-                    f.syntax = ""
-                else:
-                    f.syntax = " ".join(syntax)
-                f.__doc__ = doc
-                return f(self, data, protocol)
+                f.syntax = self.human_syntax
+                f.__doc__ = self.doc
+                return f(s, data, protocol)
             except PermissionError:
-                asyncio.Task(protocol.send_message(
-                    "You don't have permissions to do that."))
+                send_message(protocol,
+                             "You don't have permissions to do that.")
 
         wrapped._command = True
-        wrapped._aliases = aliases
-        wrapped.__doc__ = doc
-        wrapped.roles = rs
-        if syntax is None:
-            wrapped.syntax = ""
-        else:
-            wrapped.syntax = " ".join(syntax)
+        wrapped._aliases = self.aliases
+        wrapped.__doc__ = self.doc
+        wrapped.roles = self.roles
         return wrapped
-
-    return wrapper

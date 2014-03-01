@@ -9,8 +9,9 @@ class CommandDispatcher(BasePlugin):
     A plugin which handles user commands. All plugins wishing to provide
     commands should register themselves through CommandDispatcher.
 
-    This should be done by using the @command decorator in a SimpleCommandPlugin
-    subclass, though it could be done manually in tricky use-cases.
+    This should be done by using the @Command decorator in a
+    SimpleCommandPlugin subclass, though it could be done manually in tricky
+    use-cases.
     """
     name = "command_dispatcher"
 
@@ -86,7 +87,7 @@ class CommandDispatcher(BasePlugin):
             try:
                 command = to_parse[0]
             except IndexError:
-                return True  # It's just a slash. No reason for us to handle it.
+                return True  # It's just a slash.
             if command not in self.commands:
                 return True  # There's no command here that we know of.
             else:
