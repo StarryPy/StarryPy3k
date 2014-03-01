@@ -143,8 +143,8 @@ class PlayerManager(SimpleCommandPlugin):
         for p in self.players.values():
             if p.logged_in and p.location is player.location:
                 send_message(p.protocol,
-
-                             message)
+                             message,
+                             name=p.name)
         return None
 
     def sync(self):
@@ -256,16 +256,12 @@ class PlayerManager(SimpleCommandPlugin):
         if uuid in self.shelf['players']:
             self.logger.info("Returning existing player.")
             p = self.shelf['players'][uuid]
-            print(uuid, self.config.config.owner_uuid)
             if uuid == self.config.config.owner_uuid:
-                print("They're the same")
                 p.roles = {x.__name__ for x in Owner.roles}
-                print(p.roles)
             return p
         else:
             self.logger.info("Creating new player with UUID %s and name %s",
                              uuid, name)
-            print(uuid, self.config.config.owner_uuid)
             if uuid == self.config.config.owner_uuid:
                 roles = {x.__name__ for x in Owner.roles}
             else:

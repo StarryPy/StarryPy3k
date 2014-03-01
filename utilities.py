@@ -194,8 +194,8 @@ def send_message(protocol, *messages, **kwargs):
     return asyncio.Task(protocol.send_message(*messages, **kwargs))
 
 
-def broadcast(factory, *messages):
-    return asyncio.Task(factory.broadcast(*messages))
+def broadcast(factory, *messages, **kwargs):
+    return asyncio.Task(factory.broadcast(*messages, **kwargs))
 
 
 class Command:
