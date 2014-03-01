@@ -1,17 +1,17 @@
-from base_plugin import SimpleCommandPlugin, command
+from base_plugin import SimpleCommandPlugin
 import data_parser
 import packets
-from plugins.player_manager import Moderator, Admin
+from plugins.player_manager import Admin
 import pparser
+from utilities import command
 
 
-class Whois(Moderator):
+class Whois(Admin):
     pass
 
 
 class GiveItem(Admin):
     pass
-
 
 class GeneralCommands(SimpleCommandPlugin):
     name = "general_commands"
@@ -59,7 +59,6 @@ class GeneralCommands(SimpleCommandPlugin):
                  "If player name is omitted, give item(s) to self.",
              syntax=("[player=self]", "(item name)", "[count=1]"))
     def give_item(self, data, protocol):
-        print(data)
         arg_count = len(data)
         if arg_count == 1:
             target = protocol.player
@@ -86,21 +85,17 @@ class GeneralCommands(SimpleCommandPlugin):
         if target is None:
             raise NameError(target)
         target = target.protocol
-        if count > 1000:
+        if count > 1000 and item != "money":
             count = 1000
         count += 1
         item_base = data_parser.GiveItem.build(dict(name=item,
                                                     count=count,
-                                                    variant_type=0,
-                                                    description=""))
+                                                    variant_type=7,
+                                                    extra=0))
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
         yield from target.raw_write(item_packet)
         yield from protocol.send_message("Gave %s (count: %d) to %s" %
-                                         (item, count, target.player.name))
+                                         (item, count - 1, target.player.name))
         yield from target.send_message("%s gave you %s (count: %d)" %
-                                       (protocol.player.name, item, count))
-
-    def on_give_item(self, data, protocol):
-        print(data['data'])
-        return True
+                                       (protocol.player.name, item, count - 1))

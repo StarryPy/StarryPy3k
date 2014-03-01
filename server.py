@@ -23,6 +23,10 @@ class StarryPyServer:
         self.state = None
         self._alive = True
         self.client_ip = reader._transport.get_extra_info('peername')[0]
+        self._server_read_future = None
+        self._client_read_future = None
+        self._server_write_future = None
+        self._client_write_future = None
         logger.info("Received connection from %s", self.client_ip)
 
     @asyncio.coroutine

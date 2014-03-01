@@ -116,6 +116,7 @@ class AsyncBytesIO(io.BytesIO):
     def read(self, *args, **kwargs):
         return super().read(*args, **kwargs)
 
+
 @asyncio.coroutine
 def read_vlq(bytestream):
     d = b""
@@ -182,3 +183,55 @@ def syntax(command, fn, command_prefix):
         command_prefix,
         command,
         fn.syntax)
+
+
+def send_message(protocol, *messages):
+    """
+    Sends a message to a player on a protocol.
+    :param protocol: The protocol to send the message to.
+    :param messages: The message(s) to send.
+    :return: A future for tthe message sending.
+    """
+    return asyncio.Task(protocol.send_message(*messages))
+
+
+def command(*aliases, role=None, roles=None, doc=None, syntax=None):
+    rs = roles
+    r = role
+    if isinstance(syntax, str):
+        syntax = (syntax,)
+    if rs is None:
+        rs = set()
+    elif not isinstance(roles, set):
+        rs = {x for x in rs}
+    if role is not None:
+        rs.add(r)
+    rs = {x.__name__ for x in rs}
+
+    def wrapper(f):
+        def wrapped(self, data, protocol):
+            try:
+                for z in rs:
+                    if z not in protocol.player.roles:
+                        raise PermissionError
+                if syntax is None:
+                    f.syntax = ""
+                else:
+                    f.syntax = " ".join(syntax)
+                f.__doc__ = doc
+                return f(self, data, protocol)
+            except PermissionError:
+                asyncio.Task(protocol.send_message(
+                    "You don't have permissions to do that."))
+
+        wrapped._command = True
+        wrapped._aliases = aliases
+        wrapped.__doc__ = doc
+        wrapped.roles = rs
+        if syntax is None:
+            wrapped.syntax = ""
+        else:
+            wrapped.syntax = " ".join(syntax)
+        return wrapped
+
+    return wrapper
