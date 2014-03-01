@@ -21,7 +21,8 @@ from base_plugin import BasePlugin
 #### SimpleCommandPlugin
 SimpleCommandPlugin provides an extension to handle commands sent via chat (e.g "/help", "/kick"). It also provides a command decorator from which you can set details such as a help/syntax string. More on this will be explained in a later portion of the guide.
 ```python
-from base_plugin import SimpleCommandPlugin, command
+from base_plugin import SimpleCommandPlugin
+from utilities import Command
 ```
 
 ### Plugin Class
