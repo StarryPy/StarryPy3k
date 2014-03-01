@@ -408,7 +408,8 @@ class GiveItem(Struct):
     name = StarString
     count = VLQ
     variant_type = Byte
-    description = StarString
+    extra = Byte
+    #description = StarString
 
 
 class ConnectResponse(Struct):

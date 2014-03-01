@@ -1,7 +1,7 @@
 import traceback
 
-from base_plugin import SimpleCommandPlugin, command
-from utilities import syntax
+from base_plugin import SimpleCommandPlugin
+from utilities import syntax, command
 
 
 class HelpPlugin(SimpleCommandPlugin):
@@ -26,7 +26,7 @@ class HelpPlugin(SimpleCommandPlugin):
             try:
                 yield from protocol.send_message("Help for %s: %s"
                                                  % (
-                data[0], self.commands[data[0]].__doc__))
+                    data[0], self.commands[data[0]].__doc__))
                 yield from protocol.send_message(syntax(
                     data[0],
                     self.commands[data[0]],

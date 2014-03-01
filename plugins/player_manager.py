@@ -4,10 +4,13 @@ import pprint
 import shelve
 import asyncio
 import re
-import traceback
 
-from base_plugin import Role, command, SimpleCommandPlugin
+from base_plugin import Role, SimpleCommandPlugin
+from data_parser import StarString
+import packets
+from pparser import build_packet
 from server import StarryPyServer
+from utilities import command
 
 
 class Owner(Role):
@@ -131,7 +134,6 @@ class PlayerManager(SimpleCommandPlugin):
         self.players = self.shelf['players']
         self.planets = self.shelf['planets']
         self.plugin_shelf = self.shelf['plugins']
-        #manhole.install(activate_on="USR1")
 
     def sync(self):
         if 'players' not in self.shelf:
@@ -144,6 +146,7 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf['bans'] = {}
         if 'ships' not in self.shelf:
             self.shelf['ships'] = {}
+        self.shelf.sync()
 
     def on_protocol_version(self, data, protocol):
         if protocol.client_ip in self.shelf['bans']:
@@ -248,7 +251,6 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.info("Creating new player with UUID %s and name %s",
                              uuid, name)
             if uuid == self.config.config.owner_uuid:
-                print("Got UUID")
                 roles = {x.__name__ for x in Owner.roles}
             else:
                 roles = {x.__name__ for x in Guest.roles}
@@ -304,7 +306,9 @@ class PlayerManager(SimpleCommandPlugin):
 
         p = self.get_player_by_name(" ".join(data))
         if p is not None:
-            p.protocol.die()
+            kill_packet = build_packet(packets.packets['server_disconnect'],
+                                       StarString.build("You were kicked."))
+            yield from p.protocol.raw_write(kill_packet)
             yield from self.factory.broadcast("%s has kicked %s. Reason: %s" % (
                 protocol.player.name,
                 p.name,
@@ -322,11 +326,8 @@ class PlayerManager(SimpleCommandPlugin):
                 self.ban_by_ip(target, reason, protocol)
             else:
                 self.ban_by_name(target, reason, protocol)
-        except Exception as e:
-            print(e)
-            traceback.print_exc()
-            yield from protocol.send_message("You must provide a name "
-                                             "and a reason for banning.")
+        except:
+            raise SyntaxWarning
 
     def ban_by_ip(self, ip, reason, protocol):
         ban = IPBan(ip, reason, protocol.player.name)
@@ -349,7 +350,7 @@ class PlayerManager(SimpleCommandPlugin):
         a, x, y = location
         loc_string = "%s:%d:%d:%d:%d:%d" % (sector, a, x, y, planet, satellite)
         if loc_string in self.shelf['planets']:
-            print("Returning already existing planet.")
+            self.logger.info("Returning already existing planet.")
             planet = self.shelf['planets'][loc_string]
         else:
             planet = Planet(sector=sector, location=location, planet=planet,

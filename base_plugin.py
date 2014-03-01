@@ -246,48 +246,6 @@ class CommandNameError(Exception):
     """
 
 
-def command(*aliases, role=None, roles=None, doc=None, syntax=None):
-    rs = roles
-    r = role
-    if isinstance(syntax, str):
-        syntax = (syntax,)
-    if rs is None:
-        rs = set()
-    elif not isinstance(roles, set):
-        rs = {x for x in rs}
-    if role is not None:
-        rs.add(r)
-    rs = {x.__name__ for x in rs}
-
-    def wrapper(f):
-        def wrapped(self, data, protocol):
-            try:
-                for z in rs:
-                    if z not in protocol.player.roles:
-                        raise PermissionError
-                if syntax is None:
-                    f.syntax = ""
-                else:
-                    f.syntax = " ".join(syntax)
-                f.__doc__ = doc
-                return f(self, data, protocol)
-            except PermissionError:
-                asyncio.Task(protocol.send_message(
-                    "You don't have permissions to do that."))
-
-        wrapped._command = True
-        wrapped._aliases = aliases
-        wrapped.__doc__ = doc
-        wrapped.roles = rs
-        if syntax is None:
-            wrapped.syntax = ""
-        else:
-            wrapped.syntax = " ".join(syntax)
-        return wrapped
-
-    return wrapper
-
-
 class SimpleCommandPlugin(BasePlugin):
     name = "simple_command_plugin"
     description = "Provides a simple parent class to define chat commands."
@@ -311,12 +269,10 @@ class MetaRole(type):
             return mcs.roles[name]
         clsdict['roles'] = set()
         clsdict['superroles'] = set()
-        print("Adding role", name)
         c = type.__new__(mcs, name, bases, clsdict)
         if name != "Role":
             for b in c.mro()[1:]:
                 if issubclass(b, Role) and b is not Role:
-                    print("Adding", name, "to", b.__name__)
                     b.roles.add(c)
                     c.superroles.add(b)
         mcs.roles[name] = c

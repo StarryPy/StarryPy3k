@@ -1,8 +1,8 @@
 import asyncio
 
-from base_plugin import SimpleCommandPlugin, command
+from base_plugin import SimpleCommandPlugin
 from plugins.player_manager import Admin, Ship
-from utilities import Direction
+from utilities import Direction, command
 
 
 class Protect(Admin):
@@ -123,7 +123,7 @@ class PlanetProtect(SimpleCommandPlugin):
                 else:
                     return False
         except AttributeError as e:
-            print(e)
+            self.logger.exception("Attribute error.", exc_info=True)
             return True
 
     def on_entity_create(self, data, protocol):
