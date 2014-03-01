@@ -184,14 +184,14 @@ def syntax(command, fn, command_prefix):
         fn.syntax)
 
 
-def send_message(protocol, *messages):
+def send_message(protocol, *messages, **kwargs):
     """
     Sends a message to a player on a protocol.
     :param protocol: The protocol to send the message to.
     :param messages: The message(s) to send.
     :return: A future for tthe message sending.
     """
-    return asyncio.Task(protocol.send_message(*messages))
+    return asyncio.Task(protocol.send_message(*messages, **kwargs))
 
 
 def broadcast(factory, *messages):
