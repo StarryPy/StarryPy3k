@@ -4,6 +4,7 @@ import irc3
 
 from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
+from utilities import broadcast
 
 temp_server = "irc.freenode.net"
 temp_channel = "##starrypy"
@@ -97,7 +98,7 @@ class IRCPlugin(BasePlugin):
     @asyncio.coroutine
     def send_message(self, data, nick):
         message = data
-        yield from self.factory.broadcast("IRC: <%s> %s" % (nick, message))
+        broadcast(self.factory, "IRC: <%s> %s" % (nick, message))
 
     def forward(self, mask, event, target, data):
         if data[0] == ".":

@@ -194,6 +194,10 @@ def send_message(protocol, *messages):
     return asyncio.Task(protocol.send_message(*messages))
 
 
+def broadcast(factory, *messages):
+    return asyncio.Task(factory.broadcast(*messages))
+
+
 class Command:
     """
     Defines a decorator that encapsulates a command in StarryPy3k

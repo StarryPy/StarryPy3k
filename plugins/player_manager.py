@@ -10,7 +10,7 @@ from data_parser import StarString
 import packets
 from pparser import build_packet
 from server import StarryPyServer
-from utilities import Command, send_message
+from utilities import Command, send_message, broadcast
 
 
 class Owner(Role):
@@ -310,10 +310,11 @@ class PlayerManager(SimpleCommandPlugin):
             kill_packet = build_packet(packets.packets['server_disconnect'],
                                        StarString.build("You were kicked."))
             yield from p.protocol.raw_write(kill_packet)
-            yield from self.factory.broadcast("%s has kicked %s. Reason: %s" %
-                                              (protocol.player.name,
-                                               p.name,
-                                               reason))
+            broadcast(self.factory,
+                      "%s has kicked %s. Reason: %s" % (protocol.player.name,
+                                                        p.name,
+                                                        reason))
+
         else:
             send_message(protocol,
                          "Couldn't find a player with name %s" % name)

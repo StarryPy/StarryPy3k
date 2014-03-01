@@ -1,6 +1,7 @@
 import asyncio
 
 from base_plugin import BasePlugin
+from utilities import broadcast
 
 
 class Announcer(BasePlugin):
@@ -8,10 +9,7 @@ class Announcer(BasePlugin):
 
     @asyncio.coroutine
     def send_announce(self, protocol, message):
-        yield from self.factory.broadcast("%s %s" % (protocol.player.name,
-                                                     message))
-        self.logger.debug("Sent announcement message for %s.",
-                          protocol.player.name)
+        broadcast(self.factory, "%s %s" % (protocol.player.name, message))
 
     def on_connect_response(self, data, protocol):
         if data['parsed']['success']:
