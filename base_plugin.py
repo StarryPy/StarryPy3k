@@ -1,6 +1,7 @@
 import asyncio
+import collections
 
-from utilities import DotDict
+from utilities import DotDict, recursive_dictionary_update
 
 
 class BaseMeta(type):
@@ -34,11 +35,18 @@ class BasePlugin(metaclass=BaseMeta):
     description = "The common class for all plugins to inherit from."
     version = ".1"
     depends = ()
+    default_config = None
     plugins = DotDict({})
     auto_activate = True
 
     def __init__(self):
         self.loop = asyncio.get_event_loop()
+        self.plugin_config = self.config.get_plugin_config(self.name)
+        if isinstance(self.default_config, collections.Mapping):
+            self.plugin_config.update(
+                DotDict(recursive_dictionary_update(self.default_config,
+                                                    self.plugin_config)))
+
 
     def activate(self):
         pass

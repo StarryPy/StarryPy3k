@@ -224,8 +224,10 @@ if __name__ == "__main__":
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Exiting")
     finally:
-        server_factory.result().kill_all()
-        server_factory.result().plugin_manager.deactivate_all()
+        factory = server_factory.result()
+        factory.kill_all()
+        factory.plugin_manager.deactivate_all()
+        factory.configuration_manager.save_config()
         loop.stop()
         loop.close()
         logger.warning("Running commit %s", ver)

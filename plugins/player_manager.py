@@ -133,15 +133,23 @@ class DeletePlayer(SuperAdmin):
 class PlayerManager(SimpleCommandPlugin):
     name = "player_manager"
 
+    def __init__(self):
+        with open("config/sector_magic_string") as f:
+            ms = f.read()
+        self.default_config = {"player_db": "config/player",
+                               "unlocked_sector_magic": ms,
+                               "owner_uuid": "!--REPLACE IN CONFIG FILE--!"}
+        super().__init__()
+
     def activate(self):
         super().activate()
-        self.shelf = shelve.open(self.config.config.player_db, writeback=True)
+        self.shelf = shelve.open(self.plugin_config.player_db, writeback=True)
         self.sync()
         self.players = self.shelf['players']
         self.planets = self.shelf['planets']
         self.plugin_shelf = self.shelf['plugins']
         self.unlocked_sector_magic = base64.decodebytes(
-            self.config.config.unlocked_sector_magic.encode("ascii"))
+            self.plugin_config.unlocked_sector_magic.encode("ascii"))
 
     @Command("test_broadcast")
     def test_broadcast(self, data, protocol):
@@ -169,13 +177,8 @@ class PlayerManager(SimpleCommandPlugin):
         self.shelf.sync()
 
     def on_protocol_version(self, data, protocol):
-        if protocol.client_ip in self.shelf['bans']:
-            self.logger.info("Banned IP (%s) tried to log in." %
-                             protocol.client_ip)
-            return False
-        else:
-            protocol.state = State.VERSION_SENT
-            return True
+        protocol.state = State.VERSION_SENT
+        return True
 
     def on_handshake_challenge(self, data, protocol):
         protocol.state = State.HANDSHAKE_CHALLENGE_SENT
@@ -199,15 +202,19 @@ class PlayerManager(SimpleCommandPlugin):
             protocol.player.client_id = -1
         return True
 
+    def build_rejection(self, rejection_reason):
+        return build_packet(packets.packets['connect_response'],
+                            ConnectResponse.build(
+                                dict(success=False, client_id=0,
+                                     message=rejection_reason)) +
+                            self.unlocked_sector_magic)
+
     def on_client_connect(self, data, protocol: StarryPyServer):
         try:
             player = yield from self.add_or_get_player(**data['parsed'])
+            self.check_bans(protocol)
         except (NameError, ValueError) as e:
-            rp = ConnectResponse.build(
-                dict(success=False, client_id=0,
-                     message=str(e))) + self.unlocked_sector_magic
-            yield from protocol.raw_write(
-                build_packet(packets.packets['connect_response'], rp))
+            yield from protocol.raw_write(self.build_rejection(str(e)))
             protocol.die()
             return False
         player.ip = protocol.client_ip
@@ -275,7 +282,7 @@ class PlayerManager(SimpleCommandPlugin):
             p = self.shelf['players'][uuid]
             if p.logged_in:
                 raise ValueError("Player is already logged in.")
-            if uuid == self.config.config.owner_uuid:
+            if uuid == self.plugin_config.owner_uuid:
                 p.roles = {x.__name__ for x in Owner.roles}
             return p
         else:
@@ -283,12 +290,10 @@ class PlayerManager(SimpleCommandPlugin):
                 raise NameError("A user with that name already exists.")
             self.logger.info("Creating new player with UUID %s and name %s",
                              uuid, name)
-            if uuid == self.config.config.owner_uuid:
+            if uuid == self.plugin_config.owner_uuid:
                 roles = {x.__name__ for x in Owner.roles}
             else:
                 roles = {x.__name__ for x in Guest.roles}
-            self.logger.debug("Matches owner UUID: ",
-                              uuid == self.config.config.owner_uuid)
             new_player = Player(uuid, name, last_seen, roles, logged_in,
                                 protocol, client_id, ip, planet, muted)
             self.shelf['players'][uuid] = new_player
@@ -460,5 +465,12 @@ class PlayerManager(SimpleCommandPlugin):
             raise ValueError(
                 "Can't delete a logged-in player; please kick them first. If absolutely necessary, append *force to the command.")
         self.players.pop(player.uuid)
-        del (player)
+        del player
         send_message(protocol, "Player %s has been deleted." % name)
+
+    def check_bans(self, protocol):
+        if protocol.client_ip in self.shelf['bans']:
+            self.logger.info("Banned IP (%s) tried to log in." %
+                             protocol.client_ip)
+            raise ValueError("You are banned!\nReason: %s"
+                             % self.shelf['bans'][protocol.client_ip].reason)

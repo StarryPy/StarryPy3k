@@ -23,10 +23,18 @@ class ConfigurationManager:
             path = Path(path)
         if default:
             self.load_defaults(path)
-        with path.open() as f:
-            self._raw_config = f.read()
+        try:
+            with path.open() as f:
+                self._raw_config = f.read()
+        except FileNotFoundError:
+            path.touch()
+            with path.open("w") as f:
+                f.write("{}")
+            self._raw_config = "{}"
         self._path = path
         recursive_dictionary_update(self._config, json.loads(self._raw_config))
+        if "plugins" not in self._config:
+            self._config['plugins'] = DotDict({})
 
     def load_defaults(self, path):
         path = Path(str(path) + ".default")
@@ -44,3 +52,11 @@ class ConfigurationManager:
                       separators=(',', ': '), ensure_ascii=False)
         path.unlink()
         temp_path.rename(path)
+
+    def get_plugin_config(self, plugin_name):
+        if plugin_name not in self.config:
+            storage = DotDict({})
+            self.config.plugins[plugin_name] = storage
+        else:
+            storage = self.config.plugins[plugin_name]
+        return storage

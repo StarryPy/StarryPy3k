@@ -6,10 +6,13 @@ from utilities import syntax, Command, send_message
 
 class HelpPlugin(SimpleCommandPlugin):
     name = "help_plugin"
+    depends = ["command_dispatcher"]
 
     def activate(self):
         super().activate()
-        self.commands = self.plugins['command_dispatcher'].commands
+        cd = self.plugins.command_dispatcher
+        self.commands = cd.commands
+        self.command_prefix = cd.plugin_config.command_prefix
 
     @Command("help", doc="Help command.")
     def _help(self, data, protocol):
@@ -29,7 +32,7 @@ class HelpPlugin(SimpleCommandPlugin):
                              "Help for %s: %s" % (data[0], docstring),
                              syntax(data[0],
                                     self.commands[data[0]],
-                                    self.config.config.command_prefix))
+                                    self.command_prefix))
             except:
                 traceback.print_exc()
                 send_message(protocol,

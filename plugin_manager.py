@@ -91,6 +91,7 @@ class PluginManager:
         for candidate in classes:
             candidate.factory = self._factory
             self._seen_classes.add(candidate)
+        self.config.save_config()
 
     def get_classes(self, module: ModuleType):
         """
@@ -123,16 +124,18 @@ class PluginManager:
         classes = {x.name: x for x in self._seen_classes}
         while len(deps) > 0:
             ready = [x for x, d in deps.items() if len(d) == 0]
+            print(deps)
+            if len(ready) == 0:
+                raise ImportError("Unresolved dependencies found.")
             for name in ready:
-                self._plugins[name] = classes[name]()
+                p = classes[name]()
+                self._plugins[name] = p
                 del deps[name]
             for name, depends in deps.items():
                 to_load = depends & set(self._plugins.keys())
                 deps[name] = deps[name].difference(set(self._plugins.keys()))
                 for plugin in to_load:
                     classes[name].plugins[plugin] = self._plugins[plugin]
-            if len(ready) == 0:
-                raise ImportError("Unresolved dependencies found.")
         self._resolved = True
 
     @asyncio.coroutine

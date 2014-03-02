@@ -105,8 +105,7 @@ class GeneralCommands(SimpleCommandPlugin):
     def nick(self, data, protocol):
         name = " ".join(data)
         if self.plugins.player_manager.get_player_by_name(name):
-            send_message(protocol, "There's already a user by that name.")
-            return
+            raise ValueError("There's already a user by that name.")
         else:
             old_name = protocol.player.name
             protocol.player.name = name

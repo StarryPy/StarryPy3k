@@ -14,6 +14,7 @@ class CommandDispatcher(BasePlugin):
     use-cases.
     """
     name = "command_dispatcher"
+    default_config = {"command_prefix": "/"}
 
     def __init__(self):
         super().__init__()
@@ -53,7 +54,7 @@ class CommandDispatcher(BasePlugin):
                      "Syntax error: %s" % error,
                      syntax(command,
                             self.commands[command],
-                            self.config.config.command_prefix))
+                            self.plugin_config.command_prefix))
         return None
 
     def send_name_error(self, player_name, protocol):
@@ -83,9 +84,9 @@ class CommandDispatcher(BasePlugin):
 
     def on_chat_sent(self, data, protocol):
         if data['parsed']['message'].startswith(
-                self.config.config.command_prefix):
+                self.plugin_config.command_prefix):
             to_parse = data['parsed']['message'][len(
-                self.config.config.command_prefix):].split()
+                self.plugin_config.command_prefix):].split()
             try:
                 command = to_parse[0]
             except IndexError:
