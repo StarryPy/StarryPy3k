@@ -23,6 +23,12 @@ class ChatManager(SimpleCommandPlugin):
     name = "chat_manager"
     depends = ['player_manager', 'command_dispatcher']
 
+    def activate(self):
+        super().activate()
+        self.storage = self.plugins.player_manager.get_storage(self)
+        if "mutes" not in self.storage:
+            self.storage["mutes"] = set()
+
     def on_chat_sent(self, data, protocol):
         message = data['parsed']['message']
         if message[
@@ -57,7 +63,7 @@ class ChatManager(SimpleCommandPlugin):
             send_message(protocol, "%s is unmuteable." % player.name)
             return
         else:
-            player.muted = True
+            self.storage.mutes.add(player)
             send_message(protocol, "%s has been muted." % player.name)
             send_message(player.protocol,
                          "%s has muted you." % protocol.player.name)
@@ -75,11 +81,11 @@ class ChatManager(SimpleCommandPlugin):
             send_message(protocol, "%s isn't muted." % player.name)
             return
         else:
-            player.muted = False
+            self.storage.mutes.remove(player)
             send_message(protocol, "%s has been unmuted." % player.name)
             send_message(player.protocol,
                          "%s has unmuted you." % protocol.player.name)
 
     def mute_check(self, player):
-        return getattr(player, "muted", None)
+        return player in self.storage.mutes
 

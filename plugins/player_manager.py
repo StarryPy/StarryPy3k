@@ -12,7 +12,7 @@ from data_parser import StarString, ConnectResponse
 import packets
 from pparser import build_packet
 from server import StarryPyServer
-from utilities import Command, send_message, broadcast
+from utilities import Command, send_message, broadcast, DotDict
 
 
 class Owner(Role):
@@ -140,9 +140,6 @@ class PlayerManager(SimpleCommandPlugin):
                                "unlocked_sector_magic": ms,
                                "owner_uuid": "!--REPLACE IN CONFIG FILE--!"}
         super().__init__()
-
-    def activate(self):
-        super().activate()
         self.shelf = shelve.open(self.plugin_config.player_db, writeback=True)
         self.sync()
         self.players = self.shelf['players']
@@ -474,3 +471,9 @@ class PlayerManager(SimpleCommandPlugin):
                              protocol.client_ip)
             raise ValueError("You are banned!\nReason: %s"
                              % self.shelf['bans'][protocol.client_ip].reason)
+
+    def get_storage(self, caller):
+        name = caller.name
+        if name not in self.plugin_shelf:
+            self.plugin_shelf[name] = DotDict({})
+        return self.plugin_shelf[name]

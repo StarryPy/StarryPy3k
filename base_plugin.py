@@ -43,9 +43,12 @@ class BasePlugin(metaclass=BaseMeta):
         self.loop = asyncio.get_event_loop()
         self.plugin_config = self.config.get_plugin_config(self.name)
         if isinstance(self.default_config, collections.Mapping):
-            self.plugin_config.update(
-                DotDict(recursive_dictionary_update(self.default_config,
-                                                    self.plugin_config)))
+            temp = recursive_dictionary_update(self.default_config,
+                                               self.plugin_config)
+            self.plugin_config.update(temp)
+
+        else:
+            self.plugin_config = self.default_config
 
 
     def activate(self):

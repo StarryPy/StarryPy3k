@@ -124,9 +124,6 @@ class PluginManager:
         classes = {x.name: x for x in self._seen_classes}
         while len(deps) > 0:
             ready = [x for x, d in deps.items() if len(d) == 0]
-            print(deps)
-            if len(ready) == 0:
-                raise ImportError("Unresolved dependencies found.")
             for name in ready:
                 p = classes[name]()
                 self._plugins[name] = p
@@ -136,6 +133,8 @@ class PluginManager:
                 deps[name] = deps[name].difference(set(self._plugins.keys()))
                 for plugin in to_load:
                     classes[name].plugins[plugin] = self._plugins[plugin]
+            if len(ready) == 0:
+                raise ImportError("Unresolved dependencies found.")
         self._resolved = True
 
     @asyncio.coroutine

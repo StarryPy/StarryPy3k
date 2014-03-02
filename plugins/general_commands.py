@@ -118,3 +118,8 @@ class GeneralCommands(SimpleCommandPlugin):
             #                                      channel=0))
             #asyncio.Task(protocol.client_raw_write(pparser.build_packet
             #                                            'chat_sent'], csp)))
+
+    @Command("whoami", doc="Displays your current nickname for chat.")
+    def whoami(self, data, protocol):
+        send_message(protocol,
+                     "Your current chat name is '%s'" % protocol.player.name)

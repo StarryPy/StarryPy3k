@@ -54,7 +54,7 @@ class ConfigurationManager:
         temp_path.rename(path)
 
     def get_plugin_config(self, plugin_name):
-        if plugin_name not in self.config:
+        if plugin_name not in self.config.plugins:
             storage = DotDict({})
             self.config.plugins[plugin_name] = storage
         else:
