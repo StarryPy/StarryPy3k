@@ -1,3 +1,4 @@
+import base64
 import datetime
 from enum import IntEnum
 import pprint
@@ -6,7 +7,7 @@ import asyncio
 import re
 
 from base_plugin import Role, SimpleCommandPlugin
-from data_parser import StarString
+from data_parser import StarString, ConnectResponse
 import packets
 from pparser import build_packet
 from server import StarryPyServer
@@ -134,6 +135,8 @@ class PlayerManager(SimpleCommandPlugin):
         self.players = self.shelf['players']
         self.planets = self.shelf['planets']
         self.plugin_shelf = self.shelf['plugins']
+        self.unlocked_sector_magic = base64.decodebytes(
+            self.config.config.unlocked_sector_magic.encode("ascii"))
 
     @Command("test_broadcast")
     def test_broadcast(self, data, protocol):
@@ -192,7 +195,16 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_client_connect(self, data, protocol: StarryPyServer):
-        player = yield from self.add_or_get_player(**data['parsed'])
+        try:
+            player = yield from self.add_or_get_player(**data['parsed'])
+        except (NameError, ValueError) as e:
+            rp = ConnectResponse.build(
+                dict(success=False, client_id=0,
+                     message=str(e))) + self.unlocked_sector_magic
+            yield from protocol.raw_write(
+                build_packet(packets.packets['connect_response'], rp))
+            protocol.die()
+            return False
         player.ip = protocol.client_ip
         protocol.player = player
         return True
@@ -256,10 +268,14 @@ class PlayerManager(SimpleCommandPlugin):
         if uuid in self.shelf['players']:
             self.logger.info("Returning existing player.")
             p = self.shelf['players'][uuid]
+            if p.logged_in:
+                raise ValueError("Player is already logged in.")
             if uuid == self.config.config.owner_uuid:
                 p.roles = {x.__name__ for x in Owner.roles}
             return p
         else:
+            if self.get_player_by_name(name) is not None:
+                raise NameError("A user with that name already exists.")
             self.logger.info("Creating new player with UUID %s and name %s",
                              uuid, name)
             if uuid == self.config.config.owner_uuid:

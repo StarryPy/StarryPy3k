@@ -286,7 +286,7 @@ class Flag(Struct):
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
-        return int(obj)
+        return struct.pack(">?", obj)
 
 
 class BDouble(Struct):
@@ -334,7 +334,10 @@ class DictVariant(Struct):
             key = StarString.parse(stream, ctx)
             value = Variant.parse(stream, ctx)
             if isinstance(value, bytes):
-                value = value.decode('ascii')
+                try:
+                    value = value.decode('utf-8')
+                except UnicodeDecodeError:
+                    pass
             c[key] = value
         return c
 
@@ -415,6 +418,7 @@ class GiveItem(Struct):
 class ConnectResponse(Struct):
     success = Flag
     client_id = VLQ
+    message = StarString
 
 
 class ChatSent(Struct):
