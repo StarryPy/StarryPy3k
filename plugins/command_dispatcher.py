@@ -75,6 +75,8 @@ class CommandDispatcher(BasePlugin):
             self.send_syntax_error(command, e, protocol)
         except NameError as e:
             self.send_name_error(e, protocol)
+        except ValueError as e:
+            send_message(protocol, str(e))
         except:
             self.logger.exception("Unknown exception encountered. Ignoring.",
                                   exc_info=True)

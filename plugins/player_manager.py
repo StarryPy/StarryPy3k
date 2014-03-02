@@ -1,6 +1,7 @@
 import base64
 import datetime
 from enum import IntEnum
+from operator import attrgetter
 import pprint
 import shelve
 import asyncio
@@ -123,6 +124,10 @@ class IPBan:
         self.timeout = timeout
         self.banned_by = banned_by
         self.banned_at = datetime.datetime.now()
+
+
+class DeletePlayer(SuperAdmin):
+    pass
 
 
 class PlayerManager(SimpleCommandPlugin):
@@ -422,3 +427,38 @@ class PlayerManager(SimpleCommandPlugin):
                              % (ro.__name__, protocol.player.name))
         except LookupError as e:
             send_message(protocol, str(e))
+
+    @Command("list_players", role=Whois, doc="Lists all players.",
+             syntax=("[wildcards]",))
+    def list_players(self, data, protocol):
+        players = [player for player in self.players.values()]
+        players.sort(key=attrgetter('name'))
+        send_message(protocol,
+                     "%d players found:" % len(players))
+        for x, player in enumerate(players):
+            player_info = "  %d. %s%s"
+            if player.logged_in:
+                l = " (logged-in)"
+            else:
+                l = ""
+            send_message(protocol, player_info % (x + 1, player.name, l))
+
+    @Command("del_player", role=DeletePlayer, doc="Deletes a player",
+             syntax=("(username)",
+                     "[*force=forces deletion of a logged in player. NOT RECOMMENDED.]"))
+    def delete_player(self, data, protocol):
+        if data[-1] == "*force":
+            force = True
+            data.pop()
+        else:
+            force = False
+        name = " ".join(data)
+        player = self.get_player_by_name(name)
+        if player is None:
+            raise NameError
+        if (not force) and player.logged_in:
+            raise ValueError(
+                "Can't delete a logged-in player; please kick them first. If absolutely necessary, append *force to the command.")
+        self.players.pop(player.uuid)
+        del (player)
+        send_message(protocol, "Player %s has been deleted." % name)
