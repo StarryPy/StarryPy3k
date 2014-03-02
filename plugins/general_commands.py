@@ -28,6 +28,18 @@ class GeneralCommands(SimpleCommandPlugin):
                      "%d players online: %s" % (len(ret_list),
                                                 ", ".join(ret_list)))
 
+    def generate_whois(self, info):
+        l = ""
+        if not info.logged_in:
+            l = "(Offline)"
+        return ("Name: %s\n"
+                "Roles: ^yellow;%s^green;%s\n"
+                "UUID: ^yellow;%s^green;\n"
+                "IP address: ^cyan;%s^green;\n"
+                "Current location: ^yellow;%s^green;""" % (
+                    info.name, l, ", ".join(info.roles),
+                    info.uuid, info.ip, info.location))
+
     @Command("whois", doc="Returns client data about the specified user.",
              syntax="(username)", role=Whois)
     def whois(self, data, protocol):
@@ -36,21 +48,7 @@ class GeneralCommands(SimpleCommandPlugin):
         name = " ".join(data)
         info = self.plugins['player_manager'].get_player_by_name(name)
         if info is not None:
-            if info.logged_in:
-                send_message(protocol,
-                             "Name: %s\n"
-                             "Roles: ^yellow;%s^green;\n"
-                             "UUID: ^yellow;%s^green;\n"
-                             "IP address: ^cyan;%s^green;\n"
-                             "Current location: ^yellow;%s^green;""" % (
-                                 info.name, ", ".join(info.roles),
-                                 info.uuid, info.ip, info.location))
-            else:
-                send_message(protocol,
-                             "Name: %s ^gray;(OFFLINE)^yellow;\n"
-                             "UUID: ^yellow;%s^green;\n"
-                             "Last known IP: ^cyan;%s^green;""" % (
-                                 info.name, info.uuid, info.ip))
+            send_message(protocol, self.generate_whois(info))
         else:
             send_message(protocol, "Player not found!")
 
@@ -122,4 +120,4 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("whoami", doc="Displays your current nickname for chat.")
     def whoami(self, data, protocol):
         send_message(protocol,
-                     "Your current chat name is '%s'" % protocol.player.name)
+                     self.generate_whois(protocol.player))
