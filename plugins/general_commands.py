@@ -3,7 +3,7 @@ import data_parser
 import packets
 from plugins.player_manager import Admin
 import pparser
-from utilities import send_message, Command
+from utilities import send_message, Command, broadcast
 
 
 class Whois(Admin):
@@ -99,3 +99,23 @@ class GeneralCommands(SimpleCommandPlugin):
                                (item, count - 1, target.player.name))
         send_message(target, "%s gave you %s (count: %d)" %
                              (protocol.player.name, item, count - 1))
+
+    @Command("nick", doc="Changes your nickname to another one.",
+             syntax="(username)")
+    def nick(self, data, protocol):
+        name = " ".join(data)
+        if self.plugins.player_manager.get_player_by_name(name):
+            send_message(protocol, "There's already a user by that name.")
+            return
+        else:
+            old_name = protocol.player.name
+            protocol.player.name = name
+            broadcast(self.factory,
+                      "%s's name has been changed to %s" % (old_name, name))
+            # Removed for now as it's worthless.
+            # I've filed a report with the devs about /nick on the server side
+            # doing nothing but changing the chat name.
+            #csp = data_parser.ChatSent.build(dict(message="/nick %s" % name,
+            #                                      channel=0))
+            #asyncio.Task(protocol.client_raw_write(pparser.build_packet
+            #                                            'chat_sent'], csp)))
