@@ -1,6 +1,6 @@
 import asyncio
 
-from base_plugin import SimpleCommandPlugin
+from base_plugin import StorageCommandPlugin
 from plugins.player_manager import Admin, Ship
 from utilities import Direction, Command, send_message
 
@@ -13,37 +13,83 @@ class Unprotect(Admin):
     pass
 
 
-class PlanetProtect(SimpleCommandPlugin):
+class ProtectedLocation:
+    def __init__(self, location, allowed_builder):
+        self.protected = True
+        self.location = location
+        self.allowed_builders = {allowed_builder.name}
+
+    def unprotect(self):
+        self.protected = False
+
+    def protect(self):
+        self.protected = True
+
+    def add_builder(self, builder):
+        self.allowed_builders.add(builder.name)
+
+    def del_builder(self, builder):
+        self.allowed_builders.remove(builder.name)
+
+    def check_builder(self, builder):
+        return builder.name in self.allowed_builders
+
+    def get_builders(self):
+        return self.allowed_builders
+
+
+class PlanetProtect(StorageCommandPlugin):
     name = "planet_protect"
-    depends = ['command_dispatcher', 'player_manager']
+
+    def activate(self):
+        super().activate()
+        if "locations" not in self.storage:
+            self.storage['locations'] = {}
 
     def on_world_start(self, data, protocol):
         asyncio.Task(self.protect_ship(protocol))
         return True
 
+    def check_protection(self, location):
+        return str(location) in self.storage['locations']
+
+    def get_protection(self, location) -> ProtectedLocation:
+        return self.storage['locations'][str(location)]
+
+    def add_protection(self, location, player):
+        if str(location) not in self.storage['locations']:
+            protection = ProtectedLocation(location, player)
+            self.storage['locations'][str(location)] = protection
+        else:
+            protection = self.storage['locations'][str(location)]
+            protection.protect()
+            protection.add_builder(player)
+        return protection
+
+    def disable_protection(self, location):
+        self.storage['locations'][str(location)].unprotect()
+
     @asyncio.coroutine
     def protect_ship(self, protocol):
         yield from asyncio.sleep(.5)
         if isinstance(protocol.player.location, Ship):
-            if not hasattr(protocol.player.location, "protected"):
-                if protocol.player.location.player == protocol.player.name:
-                    protocol.player.location.protected = True
-                    protocol.player.location.allowed_builders = {
-                        protocol.player.name}
+            ship = protocol.player.location
+            if not self.check_protection(ship):
+                if ship.player == protocol.player.name:
+                    self.add_protection(ship, protocol.player)
                     send_message(protocol,
                                  "Your ship has been auto-protected.")
 
     @Command("protect", doc="Protects a planet", syntax="", role=Protect)
     def protect(self, data, protocol):
         location = protocol.player.location
-        location.protected = True
-        location.allowed_builders = {protocol.player.name}
-        send_message(protocol, "Protected planet %s" % location)
+        self.add_protection(location, protocol.player)
+        send_message(protocol, "Protected location: %s" % location)
 
     @Command("unprotect", doc="Unprotects a planet", syntax="", role=Unprotect)
     def unprotect(self, data, protocol):
         location = protocol.player.location
-        location.protected = False
+        self.disable_protection(location)
         send_message(protocol, "Unprotected planet %s" % location)
 
     @Command("add_builder",
@@ -51,13 +97,11 @@ class PlanetProtect(SimpleCommandPlugin):
              syntax="[\"](player name)[\"]",
              role=Protect)
     def add_builder(self, data, protocol):
-        if not hasattr(protocol.player.location, "protected"):
-            send_message(protocol,
-                         "Planet is not protected. Protecting.")
-            yield from self.protect(data, protocol)
+        location = protocol.player.location
         p = self.plugins.player_manager.get_player_by_name(" ".join(data))
         if p is not None:
-            protocol.player.location.allowed_builders.add(p.name)
+            protection = self.get_protection(location)
+            protection.add_builder(p)
             send_message(protocol,
                          "Added %s to allowed list for %s" % (
                              p.name, protocol.player.location))
@@ -67,7 +111,7 @@ class PlanetProtect(SimpleCommandPlugin):
                         protocol.player.location, protocol.player.name))
             except AttributeError:
                 send_message(protocol,
-                             "%s isn't online, promoted anyways." % p.name)
+                             "%s isn't online, granted anyways." % p.name)
         else:
             send_message(protocol,
                          "Couldn't find a player with name %s" %
@@ -77,18 +121,12 @@ class PlanetProtect(SimpleCommandPlugin):
              doc="Deletes a player from the current location's build list",
              syntax="[\"](player name)[\"]")
     def del_builder(self, data, protocol):
-        if not hasattr(protocol.player.location, "protected"):
-            send_message(protocol,
-                         "Location is not protected.")
-            return
         p = self.plugins.player_manager.get_player_by_name(" ".join(data))
         if p is not None:
-            try:
-                protocol.player.location.allowed_builders.remove(p.name)
-            except KeyError:
-                send_message(protocol, "Player isn't in the allowed"
-                                       "builders list for this."
-                                       "location.")
+            protection = self.get_protection(protocol.player.location)
+            protection.del_builder(p)
+            send_message(protocol,
+                         "Removed player from build list for this location.")
         else:
             send_message(protocol, "Couldn't find a player with name "
                                    "%s" % " ".join(data))
@@ -98,31 +136,30 @@ class PlanetProtect(SimpleCommandPlugin):
                  "at current location",
              syntax="")
     def list_builders(self, data, protocol):
-        if not hasattr(protocol.player.location, 'protected'):
+        if not self.check_protection(protocol.player.location):
             send_message(protocol, "This location has never been"
                                    "protected.")
-            return
-        players = ", ".join(sorted(protocol.player.location.allowed_builders))
-        send_message(protocol, "Players allowed to build at location "
-                               "'%s': %s" % (protocol.player.location,
-                                             players))
+        else:
+            protection = self.get_protection(protocol.player.location)
+            players = ", ".join(protection.get_builders())
+            send_message(protocol, "Players allowed to build at location "
+                                   "'%s': %s" % (protocol.player.location,
+                                                 players))
 
     def on_entity_interact(self, data, protocol):
         if data['direction'] == Direction.TO_STARBOUND_CLIENT:
             return True
-        try:
-            allowed_builders = protocol.player.location.allowed_builders
-            if not getattr(protocol.player.location, "protected", False):
-                return True
-            else:
-                if protocol.player.check_role(Admin):
-                    return True
-                elif protocol.player.name in allowed_builders:
-                    return True
-                else:
-                    return False
-        except AttributeError:
+        if not self.check_protection(protocol.player.location):
             return True
+        protection = self.get_protection(protocol.player.location)
+        if not protection.protected:
+            return True
+        if protocol.player.check_role(Admin):
+            return True
+        elif protocol.player.name in protection.get_builders():
+            return True
+        else:
+            return False
 
     def on_entity_create(self, data, protocol):
         if data['direction'] == Direction.TO_STARBOUND_SERVER:

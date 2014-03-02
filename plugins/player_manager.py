@@ -116,7 +116,6 @@ class Planet:
         return "%s:%d:%d:%d:%d:%d" % (self.sector, self.a, self.x, self.y,
                                       self.planet, self.satellite)
 
-
 class IPBan:
     def __init__(self, ip, reason, banned_by, timeout=None):
         self.ip = ip

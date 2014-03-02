@@ -241,3 +241,8 @@ class Command:
         f.syntax = self.human_syntax
         f.__doc__ = self.doc
         return wrapped
+
+
+class StorageMixin:
+    def __init__(self):
+        self.storage = self.plugins.player_manager.get_storage(self)

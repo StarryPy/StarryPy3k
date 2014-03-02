@@ -244,3 +244,21 @@ class MetaRole(type):
 
 class Role(metaclass=MetaRole):
     is_meta = False
+
+
+class StoragePlugin(BasePlugin):
+    name = "storage_plugin"
+    depends = ['player_manager']
+
+    def activate(self):
+        super().activate()
+        self.storage = self.plugins.player_manager.get_storage(self.name)
+
+
+class StorageCommandPlugin(SimpleCommandPlugin):
+    name = "storage_command_plugin"
+    depends = ['command_dispatcher', 'player_manager']
+
+    def activate(self):
+        super().activate()
+        self.storage = self.plugins.player_manager.get_storage(self)
