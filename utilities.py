@@ -237,6 +237,7 @@ class Command:
         wrapped._aliases = self.aliases
         wrapped.__doc__ = self.doc
         wrapped.roles = self.roles
+        wrapped.syntax = syntax
         f.roles = self.roles
         f.syntax = self.human_syntax
         f.__doc__ = self.doc

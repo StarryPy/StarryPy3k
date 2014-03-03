@@ -11,6 +11,7 @@
         },
         "general_commands": {},
         "help_plugin": {},
+        "irc_bot": {},
         "planet_protect": {},
         "player_manager": {
             "owner_uuid": "871ba366a1e8c104c018b2f4577decb5",

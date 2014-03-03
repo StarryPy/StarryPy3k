@@ -78,6 +78,8 @@ class IRCPlugin(BasePlugin):
     def activate(self):
         super().activate()
         self.protocol = MockProtocol(self)
+        self.prefix = self.config.get_plugin_config('command_dispatcher')[
+            'command_prefix']
         self.dispatcher = self.plugins.command_dispatcher
         self.bot = irc3.IrcBot(nick=temp_username, autojoins=[temp_channel],
                                host=temp_server)
@@ -118,7 +120,7 @@ class IRCPlugin(BasePlugin):
 
     def on_chat_sent(self, data, protocol):
         if not data['parsed']['message'].startswith(
-                self.config.config.command_prefix):
+                self.prefix):
             asyncio.Task(self.bot_write("<%s> %s" %
                                         (protocol.player.name,
                                          data['parsed']['message'])))
