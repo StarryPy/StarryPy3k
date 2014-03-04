@@ -24,7 +24,6 @@ class Pushover(BasePlugin):
  
     def on_connect_response(self, data, protocol):
         name = protocol.player.name
-        print(self.__dict__)
         if self.plugin_config.send_join and name not in self.plugin_config.ignored_players:
             message = "Player %s has joined the server" % name
             
