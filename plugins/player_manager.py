@@ -31,7 +31,11 @@ class Moderator(Admin):
     is_meta = True
 
 
-class Guest(Moderator):
+class Registered(Moderator):
+    is_meta = True
+
+
+class Guest(Registered):
     is_meta = True
 
 
