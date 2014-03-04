@@ -8,9 +8,10 @@ class Pushover(BasePlugin):
     Sends a Pushover (pushover.net) notification whenever a player joins.
     """
     name = "pushover"
-    default_config = {}
+    default_config = {"sound_depart": "none", "sound_join": "none"}
+
     @asyncio.coroutine
-    def send_pushover(self, msg, sound = 'none'):
+    def send_pushover(self, msg, sound):
         payload = {'token': self.plugin_config.api_key, 
                    'user': self.plugin_config.user_key, 
                    'message': msg,
