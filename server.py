@@ -182,7 +182,7 @@ class ServerFactory:
 def start_server():
     server_factory = ServerFactory()
     try:
-        yield from asyncio.start_server(server_factory, '0.0.0.0', 21050)
+        yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)
     except OSError as e:
         logger.exception("Error while trying to start server.")
         logger.exception(e)

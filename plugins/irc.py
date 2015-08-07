@@ -84,7 +84,8 @@ class IRCPlugin(BasePlugin):
         self.bot = irc3.IrcBot(nick=temp_username, autojoins=[temp_channel],
                                host=temp_server)
         self.bot.log = self.logger
-        self.bot.include('irc3.plugins.core')
+        #self.bot.include('irc3.plugins.core') # commented out,
+        # as interpreter was warning of being initialized twice.
         self.bot.include('irc3.plugins.userlist')
         x = irc3.event(irc3.rfc.PRIVMSG, self.forward)
         x.compile(None)

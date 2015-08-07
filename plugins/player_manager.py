@@ -7,6 +7,8 @@ import shelve
 import asyncio
 import re
 
+import binascii
+
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import StarString, ConnectFailure
 import packets
@@ -267,6 +269,7 @@ class PlayerManager(SimpleCommandPlugin):
         if isinstance(uuid, bytes):
             uuid = uuid.decode("ascii")
         if isinstance(name, bytes):
+            self.logger.debug(name)
             name = name.decode("utf-8")
         if uuid in self.shelf['players']:
             self.logger.info("Returning existing player.")

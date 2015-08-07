@@ -402,6 +402,7 @@ class SpawnCoordinates(Struct):
     y = BFloat32
 
 
+
 class ClientConnect(Struct):
     asset_digest = StarByteArray
     uuid = UUID
@@ -411,7 +412,7 @@ class ClientConnect(Struct):
     shipworld = StarByteArray
     ship_level = UBInt32
     max_fuel = UBInt32
-    capabilities_length = StarString
+    capabilities = StarByteArray
     account = StarString
 
 
