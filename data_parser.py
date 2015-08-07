@@ -380,18 +380,8 @@ class GreedyArray(Struct):
             return res
 
 
-
 class ProtocolVersion(Struct):
     server_build = UBInt32
-
-
-class ClientConnect(Struct):
-    asset_digest = StarByteArray
-    uuid = UUID
-    name = StarString
-    species = StarString
-    shipworld = StarByteArray
-    account = StarString
 
 
 class ChatReceived(Struct):
@@ -412,11 +402,25 @@ class SpawnCoordinates(Struct):
     y = BFloat32
 
 
+class ClientConnect(Struct):
+    asset_digest = StarByteArray
+    uuid = UUID
+    name = StarString
+    species = StarString
+    shipdata = StarByteArray
+    shipworld = StarByteArray
+    ship_level = UBInt32
+    max_fuel = UBInt32
+    capabilities_length = StarString
+    account = StarString
+
+
 class WorldStart(Struct):
     planet = Variant
     sky_structure = StarByteArray
     weather_data = StarByteArray
     spawn = SpawnCoordinates
+    #dungeonid = StarString
     world_properties = Variant
     client_id = UBInt32
     local_interpolation = Flag
@@ -441,6 +445,12 @@ class ConnectSuccess(Struct):
     z_max = SBInt32
 
 
+class EntityCreate(GreedyArray):
+    entity_type = Byte
+    entity = StarString
+    entity_id = SignedVLQ
+
+
 class ConnectFailure(Struct):
     rejection_reason = StarString
 
@@ -450,22 +460,12 @@ class ChatSent(Struct):
     send_mode = Byte
 
 
-class EntityCreate(GreedyArray):
-    entity_type = Byte
-    entity = StarString
-    entity_id = SignedVLQ
-
-
-class BasePacket(Struct):
-    @classmethod
-    def _build(cls, obj, ctx: OrderedDotDict):
-        res = b''
-        res += Byte.build(obj['id'], ctx)
-        v = len(obj['data'])
-        if 'compressed' in ctx and ctx['compressed']:
-            v = -abs(v)
-        res += SignedVLQ.build(v)
-        if not isinstance(obj['data'], bytes):
-            obj['data'] = bytes(obj['data'].encode("utf-8"))
-        res += obj['data']
-        return res
+class WarpCommand(Struct):
+    warp_type = UBInt32
+    sector = StarString
+    x = SBInt32
+    y = SBInt32
+    z = SBInt32
+    planet = SBInt32
+    satellite = SBInt32
+    player = StarString
