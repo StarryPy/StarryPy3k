@@ -7,6 +7,8 @@ import shelve
 import asyncio
 import re
 
+import binascii
+
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import StarString, ConnectSuccess
 import packets
@@ -186,16 +188,12 @@ class PlayerManager(SimpleCommandPlugin):
 
     def on_connect_success(self, data, protocol):
         response = data['parsed']
-        if response['success']:
-            protocol.player.logged_in = True
-            protocol.player.client_id = response['client_id']
-            protocol.player.protocol = protocol
-            protocol.player.location = yield from self.add_or_get_ship(
-                protocol.player.name)
-            protocol.state = State.CONNECTED
-        else:
-            protocol.player.logged_in = False
-            protocol.player.client_id = -1
+        protocol.player.logged_in = True
+        protocol.player.client_id = response['client_id']
+        protocol.player.protocol = protocol
+        protocol.player.location = yield from self.add_or_get_ship(
+            protocol.player.name)
+        protocol.state = State.CONNECTED
         return True
 
     def build_rejection(self, rejection_reason):
@@ -273,6 +271,7 @@ class PlayerManager(SimpleCommandPlugin):
         if isinstance(uuid, bytes):
             uuid = uuid.decode("ascii")
         if isinstance(name, bytes):
+            self.logger.debug(name)
             name = name.decode("utf-8")
         if uuid in self.shelf['players']:
             self.logger.info("Returning existing player.")

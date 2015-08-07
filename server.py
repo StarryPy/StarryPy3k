@@ -32,7 +32,7 @@ class StarryPyServer:
     @asyncio.coroutine
     def server_loop(self):
         (self._client_reader,
-         self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
+         self._client_writer) = yield from asyncio.open_connection("starbound.end-ga.me",
                                                                    31025)
         self._client_loop_future = asyncio.Task(self.client_loop())
         try:
@@ -182,7 +182,7 @@ class ServerFactory:
 def start_server():
     server_factory = ServerFactory()
     try:
-        yield from asyncio.start_server(server_factory, '0.0.0.0', 21050)
+        yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)
     except OSError as e:
         logger.exception("Error while trying to start server.")
         logger.exception(e)

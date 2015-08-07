@@ -12,8 +12,7 @@ class Announcer(BasePlugin):
         broadcast(self.factory, "%s %s" % (protocol.player.name, message))
 
     def on_connect_success(self, data, protocol):
-        if data['parsed']['success']:
-            asyncio.Task(self.send_announce(protocol, "joined."))
+        asyncio.Task(self.send_announce(protocol, "joined."))
         return True
 
     def on_client_disconnect(self, data, protocol):

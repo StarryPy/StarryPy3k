@@ -84,15 +84,16 @@ class IRCPlugin(BasePlugin):
         self.bot = irc3.IrcBot(nick=temp_username, autojoins=[temp_channel],
                                host=temp_server)
         self.bot.log = self.logger
-        self.bot.include('irc3.plugins.core')
+        #self.bot.include('irc3.plugins.core') # commented out,
+        # as interpreter was warning of being initialized twice.
         self.bot.include('irc3.plugins.userlist')
         x = irc3.event(irc3.rfc.PRIVMSG, self.forward)
         x.compile(None)
         y = irc3.event(r'^:\S+ 353 [^&#]+(?P<channel>\S+) :(?P<nicknames>.*)',
                        self.name_check)
         y.compile(None)
-        self.bot.add_event(x)
-        self.bot.add_event(y)
+        self.bot.attach_events(x)
+        self.bot.attach_events(y)
         self.bot.create_connection()
         self.ops = set()
         asyncio.Task(self.update_ops())

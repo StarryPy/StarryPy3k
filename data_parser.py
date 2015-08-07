@@ -378,10 +378,7 @@ class BasePacket(Struct):
 class UUID(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        if Flag.parse(stream, ctx):
-            return binascii.hexlify(stream.read(16))
-        else:
-            return None
+        return binascii.hexlify(stream.read(16))
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -414,6 +411,7 @@ class SpawnCoordinates(Struct):
 ##
 #
 
+
 class ClientConnect(Struct):
     asset_digest = StarByteArray
     uuid = UUID
@@ -423,7 +421,7 @@ class ClientConnect(Struct):
     shipworld = StarByteArray
     ship_level = UBInt32
     max_fuel = UBInt32
-    capabilities_length = StarString
+    capabilities = StarByteArray
     account = StarString
 
 
