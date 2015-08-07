@@ -33,7 +33,7 @@ class StarryPyServer:
     def server_loop(self):
         (self._client_reader,
          self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
-                                                                   21024)
+                                                                   31025)
         self._client_loop_future = asyncio.Task(self.client_loop())
         try:
             while True:
@@ -182,7 +182,7 @@ class ServerFactory:
 def start_server():
     server_factory = ServerFactory()
     try:
-        yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)
+        yield from asyncio.start_server(server_factory, '0.0.0.0', 21050)
     except OSError as e:
         logger.exception("Error while trying to start server.")
         logger.exception(e)
@@ -191,7 +191,7 @@ def start_server():
 
 
 if __name__ == "__main__":
-    DEBUG = False
+    DEBUG = True
     formatter = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     aiologger = logging.getLogger("asyncio")

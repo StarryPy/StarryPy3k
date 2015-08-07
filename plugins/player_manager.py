@@ -8,7 +8,7 @@ import asyncio
 import re
 
 from base_plugin import Role, SimpleCommandPlugin
-from data_parser import StarString, ConnectResponse
+from data_parser import StarString, ConnectSuccess
 import packets
 from pparser import build_packet
 from server import StarryPyServer
@@ -184,7 +184,7 @@ class PlayerManager(SimpleCommandPlugin):
         protocol.state = State.HANDSHAKE_RESPONSE_RECEIVED
         return True
 
-    def on_connect_response(self, data, protocol):
+    def on_connect_success(self, data, protocol):
         response = data['parsed']
         if response['success']:
             protocol.player.logged_in = True
@@ -199,11 +199,12 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def build_rejection(self, rejection_reason):
-        return build_packet(packets.packets['connect_response'],
-                            ConnectResponse.build(
-                                dict(success=False, client_id=0,
-                                     message=rejection_reason)) +
-                            self.unlocked_sector_magic)
+        return
+        #return build_packet(packets.packets['connect_success'],
+        #                    ConnectSuccess.build(
+        #                        dict(success=False, client_id=0,
+        #                             message=rejection_reason)) +
+        #                    self.unlocked_sector_magic)
 
     def on_client_connect(self, data, protocol: StarryPyServer):
         try:

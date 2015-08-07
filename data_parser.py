@@ -299,25 +299,6 @@ class BDouble(Struct):
         return struct.pack(">d", obj)
 
 
-class UUID(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        if Flag.parse(stream, ctx):
-            return binascii.hexlify(stream.read(16))
-        else:
-            return None
-
-    @classmethod
-    def _build(cls, obj, ctx: OrderedDotDict):
-        res = b''
-        if obj:
-            res += Flag.build(True)
-            res += obj
-        else:
-            res += Flag.build(False)
-        return res
-
-
 class VariantVariant(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
@@ -362,70 +343,6 @@ class Variant(Struct):
             return DictVariant.parse(stream, ctx)
 
 
-class ClientConnect(Struct):
-    asset_digest = StarByteArray
-    claim = Variant
-    uuid = UUID
-    name = StarString
-    species = StarString
-    shipworld = StarByteArray
-    account = StarString
-
-
-class ChatReceived(Struct):
-    channel = Byte
-    world = StarString
-    client_id = UBInt32
-    name = StarString
-    message = StarString
-
-
-class WarpCommand(Struct):
-    warp_type = UBInt32
-    sector = StarString
-    x = SBInt32
-    y = SBInt32
-    z = SBInt32
-    planet = SBInt32
-    satellite = SBInt32
-    player = StarString
-
-
-class SpawnCoordinates(Struct):
-    x = BFloat32
-    y = BFloat32
-
-
-class WorldStart(Struct):
-    planet = Variant
-    world_structure = Variant
-    sky_structure = StarByteArray
-    weather_data = StarByteArray
-    spawn = SpawnCoordinates
-    world_properties = Variant
-    client_id = UBInt32
-    local_interpolation = Flag
-
-
-class GiveItem(Struct):
-    name = StarString
-    count = VLQ
-    variant_type = Byte
-    extra = Byte
-    #description = StarString
-
-
-class ConnectResponse(Struct):
-    success = Flag
-    client_id = VLQ
-    message = StarString
-
-
-class ChatSent(Struct):
-    message = StarString
-    channel = Byte
-
-
 class GreedyArray(Struct):
     @classmethod
     def parse_stream(cls, stream, ctx=None):
@@ -443,12 +360,6 @@ class GreedyArray(Struct):
             return res
 
 
-class EntityCreate(GreedyArray):
-    entity_type = Byte
-    entity = StarString
-    entity_id = SignedVLQ
-
-
 class BasePacket(Struct):
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -462,3 +373,111 @@ class BasePacket(Struct):
             obj['data'] = bytes(obj['data'].encode("utf-8"))
         res += obj['data']
         return res
+
+
+class UUID(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        if Flag.parse(stream, ctx):
+            return binascii.hexlify(stream.read(16))
+        else:
+            return None
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        if obj:
+            res += Flag.build(True)
+            res += obj
+        else:
+            res += Flag.build(False)
+        return res
+
+
+class CelestialData(Struct):
+    planet = SBInt32
+    satellite = SBInt32
+    chunk = SBInt32
+    xymin = SBInt32
+    xymax = SBInt32
+    zmin = SBInt32
+    zmax = SBInt32
+
+
+class SpawnCoordinates(Struct):
+    x = BFloat32
+    y = BFloat32
+
+#
+##
+# Packet types
+##
+#
+
+class ClientConnect(Struct):
+    asset_digest = StarByteArray
+    uuid = UUID
+    name = StarString
+    species = StarString
+    shipdata = StarByteArray
+    shipworld = StarByteArray
+    ship_level = UBInt32
+    max_fuel = UBInt32
+    capabilities_length = StarString
+    account = StarString
+
+
+class ConnectSuccess(Struct):
+    client_id = VLQ
+    uuid = UUID
+    message = CelestialData
+
+
+class WorldStart(Struct):
+    planet = Variant
+    sky_structure = StarByteArray
+    weather_data = StarByteArray
+    spawn = SpawnCoordinates
+    #dungeonid = StarString
+    world_properties = Variant
+    client_id = UBInt32
+    local_interpolation = Flag
+
+
+class EntityCreate(GreedyArray):
+    entity_type = Byte
+    entity = StarString
+    entity_id = SignedVLQ
+
+
+class ChatSent(Struct):
+    message = StarString
+    channel = Byte
+
+
+class ChatReceived(Struct):
+    channel = Byte
+    world = StarString
+    client_id = UBInt32
+    name = StarString
+    message = StarString
+
+
+class GiveItem(Struct):
+    name = StarString
+    count = VLQ
+    variant_type = Byte
+    extra = Byte
+    #description = StarString
+
+
+class WarpCommand(Struct):
+    warp_type = UBInt32
+    sector = StarString
+    x = SBInt32
+    y = SBInt32
+    z = SBInt32
+    planet = SBInt32
+    satellite = SBInt32
+    player = StarString
+

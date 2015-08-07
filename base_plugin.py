@@ -180,7 +180,7 @@ class BasePlugin(metaclass=BaseMeta):
     def on_heartbeat(self, data, protocol):
         return True
 
-    def on_connect_response(self, data, protocol):
+    def on_connect_success(self, data, protocol):
         return True
 
     def on_chat_sent(self, data, protocol):
