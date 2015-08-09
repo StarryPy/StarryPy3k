@@ -22,9 +22,40 @@ class State(IntEnum):
 
 
 class Direction(IntEnum):
-    TO_STARBOUND_CLIENT = 0
-    TO_STARBOUND_SERVER = 1
+    TO_CLIENT = 0
+    TO_SERVER = 1
 
+
+class WarpType(IntEnum):
+    TO_WORLD = 1
+    TO_PLAYER = 2
+    TO_ALIAS = 3
+
+
+class WarpWorldType(IntEnum):
+    UNIQUE_WORLD = 1
+    CELESTIAL_WORLD = 2
+    PLAYER_WORLD = 3
+    MISSION_WORLD = 4
+
+
+class ChatMode(IntEnum):
+    UNIVERSE = 0
+    WORLD = 1
+    ADMIN = 2
+
+
+class ChatSendMode(IntEnum):
+    BROADCAST = 0
+    LOCAL = 1
+    PARTY = 2
+
+
+class ChatReceiveMode(IntEnum):
+    CHANNEL = 0
+    BROADCAST = 1
+    WHISPER = 2
+    COMMAND_RESULT = 3
 
 def recursive_dictionary_update(d, u):
     for k, v in u.items():

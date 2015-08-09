@@ -405,12 +405,6 @@ class SpawnCoordinates(Struct):
     x = BFloat32
     y = BFloat32
 
-#
-##
-# Packet types
-##
-#
-
 
 class ClientConnect(Struct):
     asset_digest = StarByteArray
@@ -431,9 +425,13 @@ class ConnectSuccess(Struct):
     message = CelestialData
 
 
+class ConnectFailure(Struct):
+    reason = StarString
+
+
 class WorldStart(Struct):
     planet = Variant
-    sky_structure = StarByteArray
+    sky_data = StarByteArray
     weather_data = StarByteArray
     spawn = SpawnCoordinates
     #dungeonid = StarString
@@ -450,12 +448,12 @@ class EntityCreate(GreedyArray):
 
 class ChatSent(Struct):
     message = StarString
-    channel = Byte
+    send_mode = Byte
 
 
 class ChatReceived(Struct):
-    channel = Byte
-    world = StarString
+    mode = Byte
+    channel = StarString
     client_id = UBInt32
     name = StarString
     message = StarString
@@ -469,13 +467,14 @@ class GiveItem(Struct):
     #description = StarString
 
 
-class WarpCommand(Struct):
-    warp_type = UBInt32
-    sector = StarString
-    x = SBInt32
-    y = SBInt32
-    z = SBInt32
-    planet = SBInt32
-    satellite = SBInt32
-    player = StarString
-
+class PlayerWarp(Struct):
+    warp_type = Byte
+# class WarpCommand(Struct):
+#     warp_type = UBInt32
+#     sector = StarString
+#     x = SBInt32
+#     y = SBInt32
+#     z = SBInt32
+#     planet = SBInt32
+#     satellite = SBInt32
+#     player = StarString

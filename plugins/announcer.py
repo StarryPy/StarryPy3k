@@ -15,6 +15,6 @@ class Announcer(BasePlugin):
         asyncio.Task(self.send_announce(protocol, "joined."))
         return True
 
-    def on_client_disconnect(self, data, protocol):
+    def on_client_disconnect_request(self, data, protocol):
         asyncio.Task(self.send_announce(protocol, "left."))
         return True

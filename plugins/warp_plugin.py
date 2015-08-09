@@ -2,7 +2,7 @@ import asyncio
 import re
 
 from base_plugin import SimpleCommandPlugin
-from data_parser import WarpCommand
+from data_parser import PlayerWarp
 import packets
 import plugins.player_manager as player_manager
 from pparser import build_packet
@@ -61,9 +61,9 @@ class WarpPlugin(SimpleCommandPlugin):
         :param to_player: Player
         :return: None
         """
-        coords = dict(sector="", x=0, y=0, z=0, planet=0, satellite=0)
-        wp = WarpCommand.build(dict(warp_type=3, coordinate=coords,
-                                    player=to_player.name, sector="", x=0, y=0,
+        coords = dict(x=0, y=0, z=0, planet=0, satellite=0)
+        wp = PlayerWarp.build(dict(warp_type=3, coordinate=coords,
+                                    player=to_player.name, x=0, y=0,
                                     z=0, planet=0, satellite=0))
         full = build_packet(id=packets.packets['warp_command'], data=wp)
         yield from from_player.protocol.client_raw_write(full)

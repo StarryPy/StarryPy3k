@@ -147,7 +147,7 @@ class PlanetProtect(StorageCommandPlugin):
                                                  players))
 
     def on_entity_interact(self, data, protocol):
-        if data['direction'] == Direction.TO_STARBOUND_CLIENT:
+        if data['direction'] == Direction.TO_CLIENT:
             return True
         if not self.check_protection(protocol.player.location):
             return True
@@ -162,7 +162,7 @@ class PlanetProtect(StorageCommandPlugin):
             return False
 
     def on_entity_create(self, data, protocol):
-        if data['direction'] == Direction.TO_STARBOUND_SERVER:
+        if data['direction'] == Direction.TO_SERVER:
             if data['data'][0] == 0x00:
                 return True  # A player is being sent, let's let it through.
         return (yield from self.on_entity_interact(data, protocol))

@@ -115,7 +115,7 @@ class IRCPlugin(BasePlugin):
         asyncio.Task(self.announce_join(protocol))
         return True
 
-    def on_client_disconnect(self, data, protocol):
+    def on_client_disconnect_request(self, data, protocol):
         asyncio.Task(self.announce_leave(protocol.player))
         return True
 
