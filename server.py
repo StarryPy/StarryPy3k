@@ -11,6 +11,9 @@ from utilities import path, read_packet, State, Direction
 
 
 class StarryPyServer:
+    """
+    Primary server class. Handles all the things.
+    """
     def __init__(self, reader, writer, factory):
         logger.warning("Initializing protocol.")
         self._reader = reader
@@ -31,6 +34,12 @@ class StarryPyServer:
 
     @asyncio.coroutine
     def server_loop(self):
+        """
+        Main server loop. As clients connect to the proxy, pass the
+        connection on to the upstream server and bind it to a 'protocol'. Start
+        sniffing all packets as they fly by.
+        :return:
+        """
         (self._client_reader,
          self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
                                                                    21020)
@@ -46,6 +55,11 @@ class StarryPyServer:
 
     @asyncio.coroutine
     def client_loop(self):
+        """
+        Main client loop. Sniff packets originating from the server and bound
+        for the clients.
+        :return:
+        """
         try:
             while True:
                 packet = yield from read_packet(self._client_reader,
@@ -59,6 +73,16 @@ class StarryPyServer:
     @asyncio.coroutine
     def send_message(self, message, *messages, channel="", client_id=0, name="",
                      mode=0):
+        """
+        Method for passing chat messages to the clients/server.
+        :param message:
+        :param messages:
+        :param world:
+        :param client_id:
+        :param name:
+        :param channel:
+        :return:
+        """
         if messages:
             for m in messages:
                 yield from self.send_message(m,
@@ -87,11 +111,6 @@ class StarryPyServer:
             yield from self.raw_write(to_send)
 
     @asyncio.coroutine
-    def write(self, packet):
-        self._writer.write(packet['original_data'])
-        yield from self._writer.drain()
-
-    @asyncio.coroutine
     def raw_write(self, data):
         self._writer.write(data)
         yield from self._writer.drain()
@@ -102,10 +121,19 @@ class StarryPyServer:
         yield from self._client_writer.drain()
 
     @asyncio.coroutine
+    def write(self, packet):
+        self._writer.write(packet['original_data'])
+        yield from self._writer.drain()
+
+    @asyncio.coroutine
     def write_client(self, packet):
         yield from self.client_raw_write(packet['original_data'])
 
     def die(self):
+        """
+        Handle closeout from player disconnecting.
+        :return:
+        """
         if self._alive:
             if hasattr(self, "player"):
                 logger.info("Removing player %s.", self.player.name)
@@ -156,6 +184,9 @@ class ServerFactory:
     @asyncio.coroutine
     def broadcast(self, messages, *, channel="", name="", mode=0,
                   client_id=0):
+        """
+        Make a server-wide announcement.
+        """
         for protocol in self.protocols:
             try:
                 yield from protocol.send_message(messages,
@@ -167,6 +198,9 @@ class ServerFactory:
                 continue
 
     def remove(self, protocol):
+        """
+        Remove a single protocol connection.
+        """
         self.protocols.remove(protocol)
 
     def __call__(self, reader, writer):
@@ -174,12 +208,19 @@ class ServerFactory:
         self.protocols.append(server)
 
     def kill_all(self):
+        """
+        Drop all protocol connections.
+        """
         for protocol in self.protocols:
             protocol.die()
 
 
 @asyncio.coroutine
 def start_server():
+    """
+    Main function for kicking off the server factory.
+    :return:
+    """
     server_factory = ServerFactory()
     try:
         yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)

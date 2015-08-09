@@ -1,20 +1,17 @@
 import base64
 import datetime
-from enum import IntEnum
 from operator import attrgetter
 import pprint
 import shelve
 import asyncio
 import re
 
-import binascii
-
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import StarString, ConnectFailure
 import packets
 from pparser import build_packet
 from server import StarryPyServer
-from utilities import Command, send_message, broadcast, DotDict
+from utilities import Command, send_message, broadcast, DotDict, State
 
 
 class Owner(Role):
@@ -57,20 +54,28 @@ class Revoke(Owner):
     pass
 
 
-class State(IntEnum):
-    VERSION_SENT = 0
-    CLIENT_CONNECT_RECEIVED = 1
-    HANDSHAKE_CHALLENGE_SENT = 2
-    HANDSHAKE_RESPONSE_RECEIVED = 3
-    CONNECT_RESPONSE_SENT = 4
-    CONNECTED = 5
-    CONNECTED_WITH_HEARTBEAT = 6
-
-
 class Player:
+    """
+    Prototype class for a player.
+    """
     def __init__(self, uuid, name='', last_seen=None, roles=None,
                  logged_in=True, protocol=None, client_id=-1, ip="0.0.0.0",
                  planet='', muted=False, state=None):
+        """
+        When a player connects, let be sure we store all the right things.
+        :param uuid:
+        :param name:
+        :param last_seen:
+        :param roles:
+        :param logged_in:
+        :param protocol:
+        :param client_id:
+        :param ip:
+        :param planet:
+        :param muted:
+        :param state:
+        :return:
+        """
         self.uuid = uuid
         self.name = name
         if last_seen is None:
@@ -89,9 +94,18 @@ class Player:
         self.muted = muted
 
     def __str__(self):
+        """
+        Convenience method for peeking at the player object.
+        :return:
+        """
         return pprint.pformat(self.__dict__)
 
     def check_role(self, role):
+        """
+        Find out what roles a player has.
+        :param role:
+        :return:
+        """
         for r in self.roles:
             if r.lower() == role.__name__.lower():
                 return True
@@ -99,6 +113,9 @@ class Player:
 
 
 class Ship:
+    """
+    Prototype class for a ship.
+    """
     def __init__(self, player):
         self.player = player
 
@@ -107,6 +124,9 @@ class Ship:
 
 
 class Planet:
+    """
+    Prototype class for a planet.
+    """
     def __init__(self, sector='alpha', location=(0, 0, 0), planet=0,
                  satellite=0):
         self.sector = sector
@@ -203,6 +223,12 @@ class PlayerManager(SimpleCommandPlugin):
                                 dict(rejection_reason=rejection_reason)))
 
     def on_client_connect(self, data, protocol: StarryPyServer):
+        """
+        When we see a client_connect packet, handle it.
+        :param data:
+        :param protocol:
+        :return:
+        """
         try:
             player = yield from self.add_or_get_player(**data['parsed'])
             self.check_bans(protocol)
