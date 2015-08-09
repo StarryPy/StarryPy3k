@@ -402,7 +402,6 @@ class SpawnCoordinates(Struct):
     y = BFloat32
 
 
-
 class ClientConnect(Struct):
     asset_digest = StarByteArray
     uuid = UUID
@@ -416,9 +415,19 @@ class ClientConnect(Struct):
     account = StarString
 
 
+class ConnectSuccess(Struct):
+    client_id = VLQ
+    uuid = UUID
+    message = CelestialData
+
+
+class ConnectFailure(Struct):
+    reason = StarString
+
+
 class WorldStart(Struct):
     planet = Variant
-    sky_structure = StarByteArray
+    sky_data = StarByteArray
     weather_data = StarByteArray
     spawn = SpawnCoordinates
     #dungeonid = StarString
@@ -461,12 +470,14 @@ class ChatSent(Struct):
     send_mode = Byte
 
 
-class WarpCommand(Struct):
-    warp_type = UBInt32
-    sector = StarString
-    x = SBInt32
-    y = SBInt32
-    z = SBInt32
-    planet = SBInt32
-    satellite = SBInt32
-    player = StarString
+class PlayerWarp(Struct):
+    warp_type = Byte
+# class WarpCommand(Struct):
+#     warp_type = UBInt32
+#     sector = StarString
+#     x = SBInt32
+#     y = SBInt32
+#     z = SBInt32
+#     planet = SBInt32
+#     satellite = SBInt32
+#     player = StarString

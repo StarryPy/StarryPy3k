@@ -68,4 +68,6 @@ entity_type = BiDict({
     'projectile': 4,
     'plant': 5,
     'plantdrop': 6,
-    'effect': 7})
+    'effect': 7,
+    'npc': 8})
+

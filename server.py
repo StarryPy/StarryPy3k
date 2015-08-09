@@ -7,7 +7,7 @@ from data_parser import ChatReceived
 from packets import packets
 from pparser import build_packet
 from plugin_manager import PluginManager
-from utilities import path, read_packet, State, Direction
+from utilities import path, read_packet, State, Direction, ChatSendMode
 
 
 class StarryPyServer:
@@ -47,7 +47,7 @@ class StarryPyServer:
         try:
             while True:
                 packet = yield from read_packet(self._reader,
-                                                Direction.TO_STARBOUND_SERVER)
+                                                Direction.TO_SERVER)
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
         finally:
@@ -63,7 +63,7 @@ class StarryPyServer:
         try:
             while True:
                 packet = yield from read_packet(self._client_reader,
-                                                Direction.TO_STARBOUND_CLIENT)
+                                                Direction.TO_CLIENT)
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
@@ -71,44 +71,52 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message, *messages, channel="", client_id=0, name="",
-                     mode=0):
+    def send_message(self, message, *messages, mode=ChatSendMode.BROADCAST,
+                     client_id=0, name="", channel=""):
         """
-        Method for passing chat messages to the clients/server.
-        :param message:
-        :param messages:
+        Convenience function to send chat messages to the client. Note that
+        this does *not* send messages to the server at large; broadcast
+        should be used for messages to all clients, or manually constructed
+        chat messages otherwise.
+
+        :param message: message text
+        :param messages: used if there are more that one message to be sent
         :param world:
-        :param client_id:
+        :param client_id: who sent the message
         :param name:
         :param channel:
         :return:
         """
-        if messages:
-            for m in messages:
-                yield from self.send_message(m,
-                                             mode=mode,
-                                             client_id=client_id,
-                                             name=name,
-                                             channel=channel)
-        if "\n" in message:
-            for m in message.splitlines():
-                yield from self.send_message(m,
-                                             mode=mode,
-                                             client_id=client_id,
-                                             name=name,
-                                             channel=channel)
-            return
+        try:
+            if messages:
+                for m in messages:
+                    yield from self.send_message(m,
+                                                 mode=mode,
+                                                 client_id=client_id,
+                                                 name=name,
+                                                 channel=channel)
+            if "\n" in message:
+                for m in message.splitlines():
+                    yield from self.send_message(m,
+                                                 mode=mode,
+                                                 client_id=client_id,
+                                                 name=name,
+                                                 channel=channel)
+                return
 
-        if self.state == State.CONNECTED_WITH_HEARTBEAT:
-            chat_packet = ChatReceived.build(
-                {"message": message,
-                 "mode": mode,
-                 "client_id": client_id,
-                 "name": name,
-                 "channel": channel})
+            if self.state == State.CONNECTED_WITH_HEARTBEAT:
+                chat_packet = ChatReceived.build(
+                    {"message": message,
+                     "mode": mode,
+                     "client_id": client_id,
+                     "name": name,
+                     "channel": channel})
 
-            to_send = build_packet(4, chat_packet)
-            yield from self.raw_write(to_send)
+                to_send = build_packet(5, chat_packet)
+                yield from self.raw_write(to_send)
+        except Exception as e:
+            logger.exception("Error while trying to broadcast.")
+            logger.exception(e)
 
     @asyncio.coroutine
     def raw_write(self, data):
@@ -182,8 +190,7 @@ class ServerFactory:
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, messages, *, channel="", name="", mode=0,
-                  client_id=0):
+    def broadcast(self, messages, *, name="", client_id=0):
         """
         Make a server-wide announcement.
         """
@@ -192,9 +199,11 @@ class ServerFactory:
                 yield from protocol.send_message(messages,
                                                  mode=mode,
                                                  name=name,
-                                                 channel=channel,
+                                                 mode=ChatSendMode.BROADCAST,
                                                  client_id=client_id)
-            except ConnectionError:
+            except Exception as e:
+                logger.exception("Error while trying to broadcast.")
+                logger.exception(e)
                 continue
 
     def remove(self, protocol):
@@ -246,7 +255,7 @@ if __name__ == "__main__":
         aiologger.addHandler(fh_d)
         logger.addHandler(fh_d)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
+    ch.setLevel(logging.DEBUG)
     ch.setFormatter(formatter)
     aiologger.addHandler(ch)
     logger.addHandler(ch)
@@ -271,4 +280,4 @@ if __name__ == "__main__":
         factory.configuration_manager.save_config()
         loop.stop()
         loop.close()
-        logger.warning("Running commit %s", ver)
+        logger.info("Finished.")

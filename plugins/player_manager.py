@@ -11,7 +11,7 @@ from data_parser import StarString, ConnectFailure
 import packets
 from pparser import build_packet
 from server import StarryPyServer
-from utilities import Command, send_message, broadcast, DotDict, State
+from utilities import Command, send_message, broadcast, DotDict, State, WarpType
 
 
 class Owner(Role):
@@ -127,15 +127,14 @@ class Planet:
     """
     Prototype class for a planet.
     """
-    def __init__(self, sector='alpha', location=(0, 0, 0), planet=0,
+    def __init__(self, location=(0, 0, 0), planet=0,
                  satellite=0):
-        self.sector = sector
         self.a, self.x, self.y = location
         self.planet = planet
         self.satellite = satellite
 
     def __str__(self):
-        return "%s:%d:%d:%d:%d:%d" % (self.sector, self.a, self.x, self.y,
+        return "%d:%d:%d:%d:%d" % (self.a, self.x, self.y,
                                       self.planet, self.satellite)
 
 class IPBan:
@@ -252,12 +251,12 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_player_warp(self, data, protocol):
-        if data['parsed']['warp_type'] == 3:
-            protocol.player.location = yield from \
-                self.add_or_get_ship(data['parsed']['player'])
-        elif data['parsed']['warp_type'] == 2:
-            protocol.player.location = self.add_or_get_ship(
-                protocol.player.name)
+        if data['parsed']['warp_type'] == WarpType.TO_ALIAS:
+            pass
+        elif data['parsed']['warp_type'] == WarpType.TO_PLAYER:
+            pass
+        elif data['parsed']['warp_type'] == WarpType.TO_WORLD:
+            pass
         return True
 
     def on_world_start(self, data, protocol: StarryPyServer):
@@ -405,15 +404,15 @@ class PlayerManager(SimpleCommandPlugin):
                          "Couldn't find a player by the name %s" % name)
 
     @asyncio.coroutine
-    def add_or_get_planet(self, sector, location, planet, satellite,
+    def add_or_get_planet(self, location, planet, satellite,
                           **kwargs) -> Planet:
         a, x, y = location
-        loc_string = "%s:%d:%d:%d:%d:%d" % (sector, a, x, y, planet, satellite)
+        loc_string = "%d:%d:%d:%d:%d" % (a, x, y, planet, satellite)
         if loc_string in self.shelf['planets']:
             self.logger.info("Returning already existing planet.")
             planet = self.shelf['planets'][loc_string]
         else:
-            planet = Planet(sector=sector, location=location, planet=planet,
+            planet = Planet(location=location, planet=planet,
                             satellite=satellite)
             self.shelf['planets'][str(planet)] = planet
         return planet

@@ -63,6 +63,12 @@ class BasePlugin(metaclass=BaseMeta):
     def on_server_disconnect(self, data, protocol):
         return True
 
+    def on_connect_success(self, data, protocol):
+        return True
+
+    def on_connect_failure(self, data, protocol):
+        return True
+
     def on_handshake_challenge(self, data, protocol):
         return True
 
@@ -72,7 +78,31 @@ class BasePlugin(metaclass=BaseMeta):
     def on_universe_time_update(self, data, protocol):
         return True
 
+    def on_celestial_response(self, data, protocol):
+        return True
+
+    def on_player_warp_result(self, data, protocol):
+        return True
+
+    def on_client_connect(self, data, protocol):
+        return True
+
+    def on_client_disconnect_request(self, data, protocol):
+        return True
+
     def on_handshake_response(self, data, protocol):
+        return True
+
+    def on_player_warp(self, data, protocol):
+        return True
+
+    def on_fly_ship(self, data, protocol):
+        return True
+
+    def on_chat_sent(self, data, protocol):
+        return True
+
+    def on_celestial_request(self, data, protocol):
         return True
 
     def on_client_context_update(self, data, protocol):
@@ -82,6 +112,9 @@ class BasePlugin(metaclass=BaseMeta):
         return True
 
     def on_world_stop(self, data, protocol):
+        return True
+
+    def on_central_structure_update(self, data, protocol):
         return True
 
     def on_tile_array_update(self, data, protocol):
@@ -111,10 +144,16 @@ class BasePlugin(metaclass=BaseMeta):
     def on_entity_interact_result(self, data, protocol):
         return True
 
+    def on_update_tile_protection(self, data, protocol):
+        return True
+
     def on_modify_tile_list(self, data, protocol):
         return True
 
     def on_damage_tile_group(self, data, protocol):
+        return True
+
+    def on_collect_liquid(self, data, protocol):
         return True
 
     def on_request_drop(self, data, protocol):
@@ -186,7 +225,7 @@ class BasePlugin(metaclass=BaseMeta):
     def on_damage_notification(self, data, protocol):
         return True
 
-    def on_client_connect(self, data, protocol):
+    def on_call_scripted_entity(self, data, protocol):
         return True
 
     def on_client_disconnect_request(self, data, protocol):
