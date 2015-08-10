@@ -14,7 +14,7 @@ class StarryPyServer:
     """
     Primary server class. Handles all the things.
     """
-    def __init__(self, reader, writer, factory):
+    def __init__(self, reader, writer, config: ConfigurationManager, factory):
         logger.warning("Initializing protocol.")
         self._reader = reader
         self._writer = writer
@@ -25,6 +25,7 @@ class StarryPyServer:
         self._server_loop_future = asyncio.Task(self.server_loop())
         self.state = None
         self._alive = True
+        self.config = config.config
         self.client_ip = reader._transport.get_extra_info('peername')[0]
         self._server_read_future = None
         self._client_read_future = None
@@ -40,9 +41,9 @@ class StarryPyServer:
         sniffing all packets as they fly by.
         :return:
         """
-        (self._client_reader,
-         self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
-                                                                   21020)
+        (self._client_reader, self._client_writer) = \
+            yield from asyncio.open_connection(self.config['upstream_host'],
+                                               self.config['upstream_port'])
         self._client_loop_future = asyncio.Task(self.client_loop())
         try:
             while True:
@@ -213,7 +214,8 @@ class ServerFactory:
         self.protocols.remove(protocol)
 
     def __call__(self, reader, writer):
-        server = StarryPyServer(reader, writer, factory=self)
+        server = StarryPyServer(reader, writer, self.configuration_manager,
+                                factory=self)
         self.protocols.append(server)
 
     def kill_all(self):
@@ -231,8 +233,10 @@ def start_server():
     :return:
     """
     server_factory = ServerFactory()
+    config = server_factory.configuration_manager.config
     try:
-        yield from asyncio.start_server(server_factory, '0.0.0.0', 21025)
+        yield from asyncio.start_server(server_factory, '0.0.0.0',
+                                        config['listen_port'])
     except OSError as e:
         logger.exception("Error while trying to start server.")
         logger.exception(e)
@@ -242,6 +246,7 @@ def start_server():
 
 if __name__ == "__main__":
     DEBUG = True
+
     formatter = logging.Formatter(
         '%(asctime)s - %(levelname)s - %(name)s # %(message)s')
     aiologger = logging.getLogger("asyncio")
@@ -262,11 +267,14 @@ if __name__ == "__main__":
     with open("commit_count") as f:
         ver = f.read()
     logger.info("Running commit %s", ver)
+
     loop = asyncio.get_event_loop()
     #loop.set_debug(True)  # Removed in commit to avoid errors.
     #loop.executor = ThreadPoolExecutor(max_workers=100)
     #loop.set_default_executor(loop.executor)
+
     logger.info("Starting server")
+
     server_factory = asyncio.Task(start_server())
 
     try:
