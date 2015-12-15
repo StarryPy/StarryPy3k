@@ -43,3 +43,11 @@ nosetests.xml
 .idea/
 
 */config.json
+
+# Cleanup after vim
+*.swp
+*.un~
+.ropeproject/
+
+# Cleanup after Macs
+.DS_Store
