@@ -7,7 +7,7 @@ from plugins.player_manager import Owner, Guest
 from utilities import broadcast
 
 temp_server = "irc.freenode.net"
-temp_channel = "##starrypy"
+temp_channel = "#starrypy"
 temp_username = "starrypytest"
 
 
@@ -91,8 +91,8 @@ class IRCPlugin(BasePlugin):
         y = irc3.event(r'^:\S+ 353 [^&#]+(?P<channel>\S+) :(?P<nicknames>.*)',
                        self.name_check)
         y.compile(None)
-        self.bot.add_event(x)
-        self.bot.add_event(y)
+        self.bot.attach_events(x)
+        self.bot.attach_events(y)
         self.bot.create_connection()
         self.ops = set()
         asyncio.Task(self.update_ops())
