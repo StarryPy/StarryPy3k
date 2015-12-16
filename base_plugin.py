@@ -219,7 +219,7 @@ class BasePlugin(metaclass=BaseMeta):
     def on_connect_failure(self, data, protocol):
         return True
 
-    def on_chat_sent(self, data, protocol):
+    def on_damage_request(self, data, protocol):
         return True
 
     def on_damage_notification(self, data, protocol):

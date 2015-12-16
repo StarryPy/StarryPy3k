@@ -455,10 +455,12 @@ class ConnectSuccess(Struct):
     z_max = SBInt32
 
 
-class EntityCreate(GreedyArray):
-    entity_type = Byte
-    entity = StarString
-    entity_id = SignedVLQ
+class GiveItem(Struct):
+    name = StarString
+    count = VLQ
+    variant_type = Byte
+    extra = Byte
+    #description = StarString
 
 
 class ConnectFailure(Struct):
