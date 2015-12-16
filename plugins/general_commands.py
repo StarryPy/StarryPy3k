@@ -83,8 +83,8 @@ class GeneralCommands(SimpleCommandPlugin):
         if target is None:
             raise NameError(target)
         target = target.protocol
-        if count > 1000 and item != "money":
-            count = 1000
+        if count > 10000 and item != "money":
+            count = 10000
         count += 1
         item_base = data_parser.GiveItem.build(dict(name=item,
                                                     count=count,

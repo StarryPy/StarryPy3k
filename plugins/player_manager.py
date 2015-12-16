@@ -1,6 +1,5 @@
 import base64
 import datetime
-from enum import IntEnum
 from operator import attrgetter
 import pprint
 import shelve
@@ -12,7 +11,7 @@ from data_parser import StarString, ConnectFailure
 import packets
 from pparser import build_packet
 from server import StarryPyServer
-from utilities import Command, send_message, broadcast, DotDict
+from utilities import Command, send_message, broadcast, DotDict, State, WarpType
 
 
 class Owner(Role):
@@ -55,20 +54,28 @@ class Revoke(Owner):
     pass
 
 
-class State(IntEnum):
-    VERSION_SENT = 0
-    CLIENT_CONNECT_RECEIVED = 1
-    HANDSHAKE_CHALLENGE_SENT = 2
-    HANDSHAKE_RESPONSE_RECEIVED = 3
-    CONNECT_RESPONSE_SENT = 4
-    CONNECTED = 5
-    CONNECTED_WITH_HEARTBEAT = 6
-
-
 class Player:
+    """
+    Prototype class for a player.
+    """
     def __init__(self, uuid, name='', last_seen=None, roles=None,
                  logged_in=True, protocol=None, client_id=-1, ip="0.0.0.0",
                  planet='', muted=False, state=None):
+        """
+        When a player connects, let be sure we store all the right things.
+        :param uuid:
+        :param name:
+        :param last_seen:
+        :param roles:
+        :param logged_in:
+        :param protocol:
+        :param client_id:
+        :param ip:
+        :param planet:
+        :param muted:
+        :param state:
+        :return:
+        """
         self.uuid = uuid
         self.name = name
         if last_seen is None:
@@ -87,9 +94,18 @@ class Player:
         self.muted = muted
 
     def __str__(self):
+        """
+        Convenience method for peeking at the player object.
+        :return:
+        """
         return pprint.pformat(self.__dict__)
 
     def check_role(self, role):
+        """
+        Find out what roles a player has.
+        :param role:
+        :return:
+        """
         for r in self.roles:
             if r.lower() == role.__name__.lower():
                 return True
@@ -97,6 +113,9 @@ class Player:
 
 
 class Ship:
+    """
+    Prototype class for a ship.
+    """
     def __init__(self, player):
         self.player = player
 
@@ -105,15 +124,17 @@ class Ship:
 
 
 class Planet:
-    def __init__(self, sector='alpha', location=(0, 0, 0), planet=0,
+    """
+    Prototype class for a planet.
+    """
+    def __init__(self, location=(0, 0, 0), planet=0,
                  satellite=0):
-        self.sector = sector
         self.a, self.x, self.y = location
         self.planet = planet
         self.satellite = satellite
 
     def __str__(self):
-        return "%s:%d:%d:%d:%d:%d" % (self.sector, self.a, self.x, self.y,
+        return "%d:%d:%d:%d:%d" % (self.a, self.x, self.y,
                                       self.planet, self.satellite)
 
 class IPBan:
@@ -201,6 +222,12 @@ class PlayerManager(SimpleCommandPlugin):
                                 dict(rejection_reason=rejection_reason)))
 
     def on_client_connect(self, data, protocol: StarryPyServer):
+        """
+        When we see a client_connect packet, handle it.
+        :param data:
+        :param protocol:
+        :return:
+        """
         try:
             player = yield from self.add_or_get_player(**data['parsed'])
             self.check_bans(protocol)
@@ -224,12 +251,12 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_player_warp(self, data, protocol):
-        if data['parsed']['warp_type'] == 3:
-            protocol.player.location = yield from \
-                self.add_or_get_ship(data['parsed']['player'])
-        elif data['parsed']['warp_type'] == 2:
-            protocol.player.location = self.add_or_get_ship(
-                protocol.player.name)
+        if data['parsed']['warp_type'] == WarpType.TO_ALIAS:
+            pass
+        elif data['parsed']['warp_type'] == WarpType.TO_PLAYER:
+            pass
+        elif data['parsed']['warp_type'] == WarpType.TO_WORLD:
+            pass
         return True
 
     def on_world_start(self, data, protocol: StarryPyServer):
@@ -267,6 +294,7 @@ class PlayerManager(SimpleCommandPlugin):
         if isinstance(uuid, bytes):
             uuid = uuid.decode("ascii")
         if isinstance(name, bytes):
+            self.logger.debug(name)
             name = name.decode("utf-8")
         if uuid in self.shelf['players']:
             self.logger.info("Returning existing player.")
@@ -376,15 +404,15 @@ class PlayerManager(SimpleCommandPlugin):
                          "Couldn't find a player by the name %s" % name)
 
     @asyncio.coroutine
-    def add_or_get_planet(self, sector, location, planet, satellite,
+    def add_or_get_planet(self, location, planet, satellite,
                           **kwargs) -> Planet:
         a, x, y = location
-        loc_string = "%s:%d:%d:%d:%d:%d" % (sector, a, x, y, planet, satellite)
+        loc_string = "%d:%d:%d:%d:%d" % (a, x, y, planet, satellite)
         if loc_string in self.shelf['planets']:
             self.logger.info("Returning already existing planet.")
             planet = self.shelf['planets'][loc_string]
         else:
-            planet = Planet(sector=sector, location=location, planet=planet,
+            planet = Planet(location=location, planet=planet,
                             satellite=satellite)
             self.shelf['planets'][str(planet)] = planet
         return planet

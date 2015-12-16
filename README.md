@@ -10,7 +10,7 @@ Python 3.3 or greater is required.
 If using Python 3.4, there are no requirements. In Python 3.3 asyncio, pathlib, and enum34 are all required.
 
 ## Installation
-If you are installing during the development phase, please clone the repository with git. It is recommended to install [Python 3.4](http://www.python.org/download/releases/3.4.0/) instead of Python 3.3; all pushes are tested against 3.4 but not 3.3.
+If you are installing during the development phase, please clone the repository with git. It is recommended to install [Python 3.5](http://www.python.org/download/releases/3.5.0/) instead of Python 3.3; all pushes are tested against 3.4 but not 3.3.
 
 ## Contributing
 As we gear up for a more general-purpose release, there is a great need for documentation, particularly in the plugins. If you wish to contribute to the docs, please use a sphinx format.

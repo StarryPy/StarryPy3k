@@ -380,18 +380,8 @@ class GreedyArray(Struct):
             return res
 
 
-
 class ProtocolVersion(Struct):
     server_build = UBInt32
-
-
-class ClientConnect(Struct):
-    asset_digest = StarByteArray
-    uuid = UUID
-    name = StarString
-    species = StarString
-    shipworld = StarByteArray
-    account = StarString
 
 
 class ChatReceived(Struct):
@@ -412,11 +402,41 @@ class SpawnCoordinates(Struct):
     y = BFloat32
 
 
+class ClientConnect(Struct):
+    asset_digest = StarByteArray
+    uuid = UUID
+    name = StarString
+    species = StarString
+    shipdata = StarByteArray
+    shipworld = StarByteArray
+    ship_level = UBInt32
+    max_fuel = UBInt32
+    capabilities = StarByteArray
+    account = StarString
+
+
+class ConnectSuccess(Struct):
+    client_id = VLQ
+    uuid = UUID
+    planet_orbital_levels = SBInt32
+    satellite_orbital_levels = SBInt32
+    chunk_size = SBInt32
+    xy_min = SBInt32
+    xy_max = SBInt32
+    z_min = SBInt32
+    z_max = SBInt32
+
+
+class ConnectFailure(Struct):
+    reason = StarString
+
+
 class WorldStart(Struct):
     planet = Variant
-    sky_structure = StarByteArray
+    sky_data = StarByteArray
     weather_data = StarByteArray
     spawn = SpawnCoordinates
+    #dungeonid = StarString
     world_properties = Variant
     client_id = UBInt32
     local_interpolation = Flag
@@ -441,6 +461,14 @@ class ConnectSuccess(Struct):
     z_max = SBInt32
 
 
+class GiveItem(Struct):
+    name = StarString
+    count = VLQ
+    variant_type = Byte
+    extra = Byte
+    #description = StarString
+
+
 class ConnectFailure(Struct):
     rejection_reason = StarString
 
@@ -450,11 +478,17 @@ class ChatSent(Struct):
     send_mode = Byte
 
 
-class EntityCreate(GreedyArray):
-    entity_type = Byte
-    entity = StarString
-    entity_id = SignedVLQ
-
+class PlayerWarp(Struct):
+    warp_type = Byte
+# class WarpCommand(Struct):
+#     warp_type = UBInt32
+#     sector = StarString
+#     x = SBInt32
+#     y = SBInt32
+#     z = SBInt32
+#     planet = SBInt32
+#     satellite = SBInt32
+#     player = StarString
 
 class BasePacket(Struct):
     @classmethod

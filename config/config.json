@@ -1,5 +1,5 @@
 {
-    "listen_port": 21025,
+    "listen_port": 21050,
     "min_cache_size": 16,
     "packet_reap_time": 600,
     "plugin_path": "./plugins",
@@ -23,5 +23,5 @@
         "warp_plugin": {}
     },
     "upstream_host": "localhost",
-    "upstream_port": 21024
+    "upstream_port": 31025
 }

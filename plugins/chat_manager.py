@@ -1,6 +1,6 @@
 from base_plugin import SimpleCommandPlugin
 from plugins.player_manager import Moderator
-from utilities import broadcast, Command, send_message
+from utilities import broadcast, Command, send_message, ChatSendMode, ChatReceiveMode
 
 
 class Mute(Moderator):
@@ -37,15 +37,14 @@ class ChatManager(SimpleCommandPlugin):
         if self.mute_check(protocol.player):
             send_message(protocol, "You are muted and cannot chat.")
             return False
-        if data['parsed']['channel'] == 1:
+        if data['parsed']['send_mode'] == ChatSendMode.LOCAL:
             self.plugins.player_manager.planetary_broadcast(protocol.player,
                                                             message)
             return False
-        elif data['parsed']['channel'] == 0:
+        elif data['parsed']['send_mode'] == ChatSendMode.BROADCAST:
             broadcast(self.factory,
                       data['parsed']['message'],
-                      name=protocol.player.name,
-                      channel=1)
+                      name=protocol.player.name)
             return False
         return True
 
