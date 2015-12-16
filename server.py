@@ -14,7 +14,7 @@ class StarryPyServer:
     """
     Primary server class. Handles all the things.
     """
-    def __init__(self, reader, writer, config: ConfigurationManager, factory):
+    def __init__(self, reader, writer, config:ConfigurationManager, factory):
         logger.warning("Initializing protocol.")
         self._reader = reader
         self._writer = writer
@@ -198,7 +198,6 @@ class ServerFactory:
         for protocol in self.protocols:
             try:
                 yield from protocol.send_message(messages,
-                                                 mode=mode,
                                                  name=name,
                                                  mode=ChatSendMode.BROADCAST,
                                                  client_id=client_id)

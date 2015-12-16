@@ -418,7 +418,13 @@ class ClientConnect(Struct):
 class ConnectSuccess(Struct):
     client_id = VLQ
     uuid = UUID
-    message = CelestialData
+    planet_orbital_levels = SBInt32
+    satellite_orbital_levels = SBInt32
+    chunk_size = SBInt32
+    xy_min = SBInt32
+    xy_max = SBInt32
+    z_min = SBInt32
+    z_max = SBInt32
 
 
 class ConnectFailure(Struct):
@@ -483,3 +489,17 @@ class PlayerWarp(Struct):
 #     planet = SBInt32
 #     satellite = SBInt32
 #     player = StarString
+
+class BasePacket(Struct):
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        res += Byte.build(obj['id'], ctx)
+        v = len(obj['data'])
+        if 'compressed' in ctx and ctx['compressed']:
+            v = -abs(v)
+        res += SignedVLQ.build(v)
+        if not isinstance(obj['data'], bytes):
+            obj['data'] = bytes(obj['data'].encode("utf-8"))
+        res += obj['data']
+        return res
