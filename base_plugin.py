@@ -114,9 +114,6 @@ class BasePlugin(metaclass=BaseMeta):
     def on_modify_tile_list(self, data, protocol):
         return True
 
-    def on_damage_tile(self, data, protocol):
-        return True
-
     def on_damage_tile_group(self, data, protocol):
         return True
 
@@ -159,7 +156,7 @@ class BasePlugin(metaclass=BaseMeta):
     def on_clear_container(self, data, protocol):
         return True
 
-    def on_world_update(self, data, protocol):
+    def on_world_client_state_update(self, data, protocol):
         return True
 
     def on_entity_create(self, data, protocol):
@@ -171,16 +168,16 @@ class BasePlugin(metaclass=BaseMeta):
     def on_entity_destroy(self, data, protocol):
         return True
 
-    def on_status_effect_request(self, data, protocol):
-        return True
-
     def on_update_world_properties(self, data, protocol):
         return True
 
-    def on_heartbeat(self, data, protocol):
+    def on_step_update(self, data, protocol):
         return True
 
-    def on_connect_response(self, data, protocol):
+    def on_connect_success(self, data, protocol):
+        return True
+
+    def on_connect_failure(self, data, protocol):
         return True
 
     def on_chat_sent(self, data, protocol):
@@ -192,10 +189,31 @@ class BasePlugin(metaclass=BaseMeta):
     def on_client_connect(self, data, protocol):
         return True
 
-    def on_client_disconnect(self, data, protocol):
+    def on_client_disconnect_request(self, data, protocol):
         return True
 
-    def on_warp_command(self, data, protocol):
+    def on_player_warp(self, data, protocol):
+        return True
+
+    def on_fly_ship(self, data, protocol):
+        return True
+
+    def on_central_structure_update(self, data, protocol):
+        return True
+
+    def on_update_tile_protection(self, data, protocol):
+        return True
+
+    def on_collect_liquid(self, data, protocol):
+        return True
+
+    def on_hit_request(self, data, protocol):
+        return True
+
+    def on_damage_request(self, data, protocol):
+        return True
+
+    def on_call_scripted_entity(self, data, protocol):
         return True
 
     def __repr__(self):

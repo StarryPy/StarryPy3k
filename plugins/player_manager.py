@@ -8,7 +8,7 @@ import asyncio
 import re
 
 from base_plugin import Role, SimpleCommandPlugin
-from data_parser import StarString, ConnectResponse
+from data_parser import StarString, ConnectFailure
 import packets
 from pparser import build_packet
 from server import StarryPyServer
@@ -182,28 +182,23 @@ class PlayerManager(SimpleCommandPlugin):
 
     def on_handshake_response(self, data, protocol):
         protocol.state = State.HANDSHAKE_RESPONSE_RECEIVED
+        self.logger.info("on_handshake_response")
         return True
 
-    def on_connect_response(self, data, protocol):
+    def on_connect_success(self, data, protocol):
         response = data['parsed']
-        if response['success']:
-            protocol.player.logged_in = True
-            protocol.player.client_id = response['client_id']
-            protocol.player.protocol = protocol
-            protocol.player.location = yield from self.add_or_get_ship(
-                protocol.player.name)
-            protocol.state = State.CONNECTED
-        else:
-            protocol.player.logged_in = False
-            protocol.player.client_id = -1
+        protocol.player.logged_in = True
+        protocol.player.client_id = response['client_id']
+        protocol.player.protocol = protocol
+        protocol.player.location = yield from self.add_or_get_ship(
+            protocol.player.name)
+        protocol.state = State.CONNECTED
         return True
 
     def build_rejection(self, rejection_reason):
-        return build_packet(packets.packets['connect_response'],
-                            ConnectResponse.build(
-                                dict(success=False, client_id=0,
-                                     message=rejection_reason)) +
-                            self.unlocked_sector_magic)
+        return build_packet(packets.packets['connect_failure'],
+                            ConnectFailure.build(
+                                dict(rejection_reason=rejection_reason)))
 
     def on_client_connect(self, data, protocol: StarryPyServer):
         try:
@@ -217,7 +212,7 @@ class PlayerManager(SimpleCommandPlugin):
         protocol.player = player
         return True
 
-    def on_client_disconnect(self, data, protocol):
+    def on_client_disconnect_request(self, data, protocol):
         protocol.player.protocol = None
         protocol.player.logged_in = False
         protocol.player.location = None
@@ -228,7 +223,7 @@ class PlayerManager(SimpleCommandPlugin):
         protocol.player.logged_in = False
         return True
 
-    def on_warp_command(self, data, protocol):
+    def on_player_warp(self, data, protocol):
         if data['parsed']['warp_type'] == 3:
             protocol.player.location = yield from \
                 self.add_or_get_ship(data['parsed']['player'])
@@ -252,7 +247,7 @@ class PlayerManager(SimpleCommandPlugin):
                          protocol.player.location)
         return True
 
-    def on_heartbeat(self, data, protocol):
+    def on_step_update(self, data, protocol):
         protocol.state = 6
         return True
 

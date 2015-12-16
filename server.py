@@ -33,7 +33,7 @@ class StarryPyServer:
     def server_loop(self):
         (self._client_reader,
          self._client_writer) = yield from asyncio.open_connection("127.0.0.1",
-                                                                   21024)
+                                                                   21020)
         self._client_loop_future = asyncio.Task(self.client_loop())
         try:
             while True:
@@ -57,19 +57,19 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message, *messages, world="", client_id=0, name="",
-                     channel=0):
+    def send_message(self, message, *messages, channel="", client_id=0, name="",
+                     mode=0):
         if messages:
             for m in messages:
                 yield from self.send_message(m,
-                                             world=world,
+                                             mode=mode,
                                              client_id=client_id,
                                              name=name,
                                              channel=channel)
         if "\n" in message:
             for m in message.splitlines():
                 yield from self.send_message(m,
-                                             world=world,
+                                             mode=mode,
                                              client_id=client_id,
                                              name=name,
                                              channel=channel)
@@ -78,7 +78,7 @@ class StarryPyServer:
         if self.state == State.CONNECTED_WITH_HEARTBEAT:
             chat_packet = ChatReceived.build(
                 {"message": message,
-                 "world": world,
+                 "mode": mode,
                  "client_id": client_id,
                  "name": name,
                  "channel": channel})
@@ -154,12 +154,12 @@ class ServerFactory:
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, messages, *, world="", name="", channel=0,
+    def broadcast(self, messages, *, channel="", name="", mode=0,
                   client_id=0):
         for protocol in self.protocols:
             try:
                 yield from protocol.send_message(messages,
-                                                 world=world,
+                                                 mode=mode,
                                                  name=name,
                                                  channel=channel,
                                                  client_id=client_id)
@@ -191,9 +191,9 @@ def start_server():
 
 
 if __name__ == "__main__":
-    DEBUG = False
+    DEBUG = True
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        '%(asctime)s - %(levelname)s - %(name)s # %(message)s')
     aiologger = logging.getLogger("asyncio")
     aiologger.setLevel(logging.DEBUG)
     logger = logging.getLogger('starrypy')
