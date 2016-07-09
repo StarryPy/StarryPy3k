@@ -57,6 +57,9 @@ class StarryPyServer:
                 #     logger.debug('{}'.format(hexlify(packet['data'])))
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
+        except Exception as e:
+            logger.error('Server loop exception occured:'
+                         '{}: {}'.format(e.__class__.__name__, e))
         finally:
             self.die()
 
@@ -74,6 +77,8 @@ class StarryPyServer:
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
+        except Exception as e:
+            logger.error('Client loop exception occured: {}'.format(e))
         finally:
             self.die()
 
@@ -172,7 +177,7 @@ class StarryPyServer:
         try:
             self.die()
         except:
-            pass
+            logger.error("An error occurred while a player was disconnecting.")
 
 
 class ServerFactory:
@@ -217,16 +222,19 @@ class ServerFactory:
         Remove a single protocol connection.
         """
         self.protocols.remove(protocol)
+        logger.debug('remaining protocols: {}'.format(self.protocols))
 
     def __call__(self, reader, writer):
         server = StarryPyServer(reader, writer, self.configuration_manager,
                                 factory=self)
         self.protocols.append(server)
+        logger.debug('New protocol added: {}'.format(server))
 
     def kill_all(self):
         """
         Drop all protocol connections.
         """
+        logger.debug('Dropping all connections.')
         for protocol in self.protocols:
             protocol.die()
 
@@ -286,6 +294,8 @@ if __name__ == "__main__":
         loop.run_forever()
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Exiting")
+    except Exception as e:
+        logger.warning('An exception occured: {}'.format(e))
     finally:
         factory = server_factory.result()
         factory.kill_all()
