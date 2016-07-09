@@ -548,17 +548,6 @@ class GiveItem(Struct):
     description = StarString
 
 
-# class WarpCommand(Struct):
-#     warp_type = UBInt32
-#     sector = StarString
-#     x = SBInt32
-#     y = SBInt32
-#     z = SBInt32
-#     planet = SBInt32
-#     satellite = SBInt32
-#     player = StarString
-
-
 class BasePacket(Struct):
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
