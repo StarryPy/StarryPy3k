@@ -20,7 +20,7 @@ parse_map = {
     10: ClientConnect,
     11: ClientDisconnectRequest,
     12: None,
-    13: None,
+    13: PlayerWarp,
     14: None,
     15: ChatSent,
     16: None,
