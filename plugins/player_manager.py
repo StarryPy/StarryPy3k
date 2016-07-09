@@ -260,18 +260,19 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_world_start(self, data, protocol: StarryPyServer):
-        planet = data['parsed']['planet']
-        if planet['celestialParameters'] is not None:
-            location = yield from self.add_or_get_planet(
-                **planet['celestialParameters']['coordinate'])
-            protocol.player.location = location
-        else:
-            if not isinstance(protocol.player.location, Ship):
-                protocol.player.location = yield from self.add_or_get_ship(
-                    protocol.player.name)
-        self.logger.info("Player %s is now at location: %s",
-                         protocol.player.name,
-                         protocol.player.location)
+        # FIXME: Planet information has been shifted out of on_world_start
+        # planet = data['parsed']['planet']
+        # if planet['celestialParameters'] is not None:
+        #     location = yield from self.add_or_get_planet(
+        #         **planet['celestialParameters']['coordinate'])
+        #     protocol.player.location = location
+        # else:
+        #     if not isinstance(protocol.player.location, Ship):
+        #         protocol.player.location = yield from self.add_or_get_ship(
+        #             protocol.player.name)
+        # self.logger.info("Player %s is now at location: %s",
+        #                  protocol.player.name,
+        #                  protocol.player.location)
         return True
 
     def on_step_update(self, data, protocol):

@@ -57,202 +57,212 @@ class BasePlugin(metaclass=BaseMeta):
     def deactivate(self):
         pass
 
-    def on_protocol_version(self, data, protocol):
+    def on_protocol_response(self, data, protocol):
+        """Packet type: 0 """
         return True
 
     def on_server_disconnect(self, data, protocol):
+        """Packet type: 1 """
         return True
 
     def on_connect_success(self, data, protocol):
+        """Packet type: 2 """
         return True
 
     def on_connect_failure(self, data, protocol):
+        """Packet type: 3 """
         return True
 
     def on_handshake_challenge(self, data, protocol):
+        """Packet type: 4 """
         return True
 
     def on_chat_received(self, data, protocol):
+        """Packet type: 5 """
         return True
 
     def on_universe_time_update(self, data, protocol):
+        """Packet type: 6 """
         return True
 
     def on_celestial_response(self, data, protocol):
+        """Packet type: 7 """
         return True
 
     def on_player_warp_result(self, data, protocol):
+        """Packet type: 8 """
+        return True
+
+    def on_protocol_request(self, data, protocol):
+        """Packet type: 9 """
         return True
 
     def on_client_connect(self, data, protocol):
+        """Packet type: 10 """
         return True
 
     def on_client_disconnect_request(self, data, protocol):
+        """Packet type: 11 """
         return True
 
     def on_handshake_response(self, data, protocol):
+        """Packet type: 12 """
         return True
 
     def on_player_warp(self, data, protocol):
+        """Packet type: 13 """
         return True
 
     def on_fly_ship(self, data, protocol):
+        """Packet type: 14 """
         return True
 
     def on_chat_sent(self, data, protocol):
+        """Packet type: 15 """
         return True
 
     def on_celestial_request(self, data, protocol):
+        """Packet type: 16 """
         return True
 
     def on_client_context_update(self, data, protocol):
+        """Packet type: 17 """
         return True
 
     def on_world_start(self, data, protocol):
+        """Packet type: 18 """
         return True
 
     def on_world_stop(self, data, protocol):
+        """Packet type: 19 """
         return True
 
     def on_central_structure_update(self, data, protocol):
+        """Packet type: 20 """
         return True
 
     def on_tile_array_update(self, data, protocol):
+        """Packet type: 21 """
         return True
 
     def on_tile_update(self, data, protocol):
+        """Packet type: 22 """
         return True
 
     def on_tile_liquid_update(self, data, protocol):
+        """Packet type: 23 """
         return True
 
     def on_tile_damage_update(self, data, protocol):
+        """Packet type: 24 """
         return True
 
     def on_tile_modification_failure(self, data, protocol):
+        """Packet type: 25 """
         return True
 
     def on_give_item(self, data, protocol):
-        return True
-
-    def on_swap_in_container_result(self, data, protocol):
+        """Packet type: 26 """
         return True
 
     def on_environment_update(self, data, protocol):
+        """Packet type: 27 """
         return True
 
     def on_entity_interact_result(self, data, protocol):
+        """Packet type: 28 """
         return True
 
     def on_update_tile_protection(self, data, protocol):
+        """Packet type: 29 """
+        return True
+
+    def on_set_player_start(self, data, protocol):
+        """Packet type: 30 """
+        return True
+
+    def on_find_unique_entity_response(self, data, protocol):
+        """Packet type: 31 """
         return True
 
     def on_modify_tile_list(self, data, protocol):
+        """Packet type: 32 """
         return True
 
     def on_damage_tile_group(self, data, protocol):
+        """Packet type: 33 """
         return True
 
     def on_collect_liquid(self, data, protocol):
+        """Packet type: 34 """
         return True
 
     def on_request_drop(self, data, protocol):
+        """Packet type: 35 """
         return True
 
     def on_spawn_entity(self, data, protocol):
+        """Packet type: 36 """
         return True
 
     def on_entity_interact(self, data, protocol):
+        """Packet type: 37 """
         return True
 
     def on_connect_wire(self, data, protocol):
+        """Packet type: 38 """
         return True
 
     def on_disconnect_all_wires(self, data, protocol):
-        return True
-
-    def on_open_container(self, data, protocol):
-        return True
-
-    def on_close_container(self, data, protocol):
-        return True
-
-    def on_swap_in_container(self, data, protocol):
-        return True
-
-    def on_item_apply_in_container(self, data, protocol):
-        return True
-
-    def on_start_crafting_in_container(self, data, protocol):
-        return True
-
-    def on_stop_crafting_in_container(self, data, protocol):
-        return True
-
-    def on_burn_container(self, data, protocol):
-        return True
-
-    def on_clear_container(self, data, protocol):
+        """Packet type: 39 """
         return True
 
     def on_world_client_state_update(self, data, protocol):
+        """Packet type: 40 """
+        return True
+
+    def on_find_unique_entity(self, data, protocol):
+        """Packet type: 41 """
         return True
 
     def on_entity_create(self, data, protocol):
+        """Packet type: 42 """
         return True
 
     def on_entity_update(self, data, protocol):
+        """Packet type: 43 """
         return True
 
     def on_entity_destroy(self, data, protocol):
-        return True
-
-    def on_update_world_properties(self, data, protocol):
-        return True
-
-    def on_step_update(self, data, protocol):
-        return True
-
-    def on_connect_success(self, data, protocol):
-        return True
-
-    def on_connect_failure(self, data, protocol):
-        return True
-
-    def on_damage_request(self, data, protocol):
-        return True
-
-    def on_damage_notification(self, data, protocol):
-        return True
-
-    def on_call_scripted_entity(self, data, protocol):
-        return True
-
-    def on_client_disconnect_request(self, data, protocol):
-        return True
-
-    def on_player_warp(self, data, protocol):
-        return True
-
-    def on_fly_ship(self, data, protocol):
-        return True
-
-    def on_central_structure_update(self, data, protocol):
-        return True
-
-    def on_update_tile_protection(self, data, protocol):
-        return True
-
-    def on_collect_liquid(self, data, protocol):
+        """Packet type: 44 """
         return True
 
     def on_hit_request(self, data, protocol):
+        """Packet type: 45 """
         return True
 
     def on_damage_request(self, data, protocol):
+        """Packet type: 46 """
         return True
 
-    def on_call_scripted_entity(self, data, protocol):
+    def on_damage_notification(self, data, protocol):
+        """Packet type: 47 """
+        return True
+
+    def on_entity_message(self, data, protocol):
+        """Packet type: 48 """
+        return True
+
+    def on_entity_message_response (self, data, protocol):
+        """Packet type: 49 """
+        return True
+
+    def on_update_world_properties(self, data, protocol):
+        """Packet type: 50 """
+        return True
+
+    def on_step_update(self, data, protocol):
+        """Packet type: 51 """
         return True
 
     def __repr__(self):

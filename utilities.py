@@ -57,6 +57,7 @@ class ChatReceiveMode(IntEnum):
     WHISPER = 2
     COMMAND_RESULT = 3
 
+
 def recursive_dictionary_update(d, u):
     for k, v in u.items():
         if isinstance(v, collections.Mapping):

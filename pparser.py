@@ -3,11 +3,12 @@ import traceback
 
 from configuration_manager import ConfigurationManager
 from data_parser import *
+from packets import packets
 
 
 parse_map = {
-    0: None,
-    1: None,
+    0: ProtocolResponse,
+    1: ServerDisconnect,
     2: ConnectSuccess,
     3: ConnectFailure,
     4: None,
@@ -15,17 +16,17 @@ parse_map = {
     6: None,
     7: None,
     8: None,
-    9: ClientConnect,
-    10: None,
-    11: None,
-    12: PlayerWarp,
+    9: ProtocolRequest,
+    10: ClientConnect,
+    11: ClientDisconnectRequest,
+    12: None,
     13: None,
-    14: ChatSent,
-    15: None,
+    14: None,
+    15: ChatSent,
     16: None,
-    17: WorldStart,
-    18: None,
-    19: None,
+    17: None,
+    18: WorldStart,
+    19: WorldStop,
     20: None,
     21: None,
     22: None,
@@ -57,12 +58,7 @@ parse_map = {
     48: None,
     49: None,
     50: None,
-    51: None,
-    52: None,
-    53: None,
-    54: None,
-    55: None,
-    56: None
+    51: None
 }
 
 
@@ -70,13 +66,17 @@ class PacketParser:
     def __init__(self, config: ConfigurationManager):
         self._cache = {}
         self._reaper = asyncio.Task(self._reap())
-        self._debug = asyncio.Task(self._debug_counter())
+        # self._debug = asyncio.Task(self._debug_counter())
         self.config = config
         self.loop = asyncio.get_event_loop()
 
     @asyncio.coroutine
     def parse(self, packet):
         try:
+            # # Don't cache the client connect packet. It causes issues.
+            # if packet['type'] == packets['client_connect']:
+            #     packet = yield from self._parse_packet(packet)
+            # elif packet['size'] >= self.config.config['min_cache_size']:
             if packet['size'] >= self.config.config['min_cache_size']:
                 packet['hash'] = hash(packet['original_data'])
                 if packet['hash'] in self._cache:

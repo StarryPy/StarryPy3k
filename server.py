@@ -49,6 +49,12 @@ class StarryPyServer:
             while True:
                 packet = yield from read_packet(self._reader,
                                                 Direction.TO_SERVER)
+                # Break in case of emergencies:
+                # if packet['type'] not in [17, 40, 43, 48, 51]:
+                #     logger.debug('c->s  {}'.format(packet['type']))
+                # from binascii import hexlify
+                # if packet['type'] in [10]:
+                #     logger.debug('{}'.format(hexlify(packet['data'])))
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
         finally:
@@ -234,8 +240,8 @@ def start_server():
     server_factory = ServerFactory()
     config = server_factory.configuration_manager.config
     try:
-        yield from asyncio.start_server(server_factory, '0.0.0.0',
-                                        config['listen_port'])
+        yield from asyncio.start_server(server_factory,
+                                        port=config['listen_port'])
     except OSError as e:
         logger.exception("Error while trying to start server.")
         logger.exception(e)
@@ -268,9 +274,9 @@ if __name__ == "__main__":
     logger.info("Running commit %s", ver)
 
     loop = asyncio.get_event_loop()
-    #loop.set_debug(True)  # Removed in commit to avoid errors.
-    #loop.executor = ThreadPoolExecutor(max_workers=100)
-    #loop.set_default_executor(loop.executor)
+    # loop.set_debug(False)  # Removed in commit to avoid errors.
+    # loop.executor = ThreadPoolExecutor(max_workers=100)
+    # loop.set_default_executor(loop.executor)
 
     logger.info("Starting server")
 

@@ -1,5 +1,5 @@
 {
-    "listen_port": 21050,
+    "listen_port": 21025,
     "min_cache_size": 16,
     "packet_reap_time": 600,
     "plugin_path": "./plugins",
@@ -12,6 +12,7 @@
         "general_commands": {},
         "help_plugin": {},
         "irc_bot": {},
+        "packet_logger": {},
         "planet_protect": {},
         "player_manager": {
             "owner_uuid": "871ba366a1e8c104c018b2f4577decb5",

@@ -4,9 +4,14 @@ from io import BytesIO
 import io
 import struct
 import binascii
+import copy
 
 from utilities import DotDict
 
+
+#
+## Packet Helpers
+#
 
 class NotFound:
     pass
@@ -51,9 +56,6 @@ def composed(*decs):
     return deco
 
 
-import copy
-
-
 def make_hash(o):
     """
     Makes a hash from a dictionary, list, tuple or set to any level, that
@@ -62,11 +64,8 @@ def make_hash(o):
     """
 
     if isinstance(o, (set, tuple, list)):
-
         return tuple([make_hash(e) for e in o])
-
     elif not isinstance(o, dict):
-
         return hash(o)
 
     new_o = copy.deepcopy(o)
@@ -107,17 +106,21 @@ class Struct(metaclass=MetaStruct):
                     string = bytes(string, encoding="utf-8")
                 string = BytesIO(string)
             string = io.BufferedReader(string)
-        d = string.peek()
-        big_enough = len(d) > 1
-        if big_enough:
-            _c = cacher.retrieve(cls, d)
-            if _c is not None:
-                return _c
+
+        # FIXME: Stream caching appears to be causing a parsing issue. Disabling
+        #  for now...
+        # d = string.peek()
+        # big_enough = len(d) > 1
+        # if big_enough:
+        #     _c = cacher.retrieve(cls, d)
+        #     if _c is not None:
+        #         return _c
+
         if ctx is None:
             ctx = {}
         res = cls.parse_stream(string, ctx)
-        if big_enough:
-            cacher.set(cls, res, d)
+        # if big_enough:
+        #     cacher.set(cls, res, d)
         return res
 
     @classmethod
@@ -214,6 +217,26 @@ class SignedVLQ(Struct):
         return VLQ.build(value, ctx)
 
 
+class UBInt16(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        return struct.unpack(">H", stream.read(2))[0]
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">H", obj)
+
+
+class SBInt16(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        return struct.unpack(">h", stream.read(2))[0]
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">h", obj)
+
+
 class UBInt32(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
@@ -303,10 +326,6 @@ class UUID(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         return binascii.hexlify(stream.read(16))
-        #if Flag.parse(stream, ctx):
-        #    return binascii.hexlify(stream.read(16))
-        #else:
-        #    return None
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -363,6 +382,46 @@ class Variant(Struct):
             return DictVariant.parse(stream, ctx)
 
 
+class StringSet(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        l = VLQ.parse(stream, ctx)
+        c = []
+        for _ in range(l):
+            value = StarString.parse(stream, ctx)
+            if isinstance(value, bytes):
+                try:
+                    value = value.decode('utf-8')
+                except UnicodeDecodeError:
+                    pass
+            c.append(value)
+        return c
+
+
+class WorldChunks(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        l = VLQ.parse(stream, ctx)
+        d = {}
+        c = []
+        n = 0
+        for _ in range(l):
+            # value1 = StarByteArray.parse(stream, ctx)
+            # sep = Byte.parse(stream, ctx)
+            # value2 = StarByteArray.parse(stream, ctx)
+            # c.append((value1, value2))
+            v1 = VLQ.parse(stream, ctx)
+            c1 = stream.read(v1)
+            sep = Byte.parse(stream, ctx)
+            v2 = VLQ.parse(stream, ctx)
+            c2 = stream.read(v2)
+            c.append((n, v1, c1, sep, v2, c2))
+            n += 1
+        d['length'] = l
+        d['content'] = c
+        return d
+
+
 class GreedyArray(Struct):
     @classmethod
     def parse_stream(cls, stream, ctx=None):
@@ -380,44 +439,44 @@ class GreedyArray(Struct):
             return res
 
 
-class ProtocolVersion(Struct):
-    server_build = UBInt32
-
-
-class ChatReceived(Struct):
-    mode = Byte
-    channel = StarString
-    client_id = UBInt32
-    name = StarString
-    message = StarString
-
-
-class PlayerWarp(Struct):
-    warp_type = Byte
-    everything_else = StarString
-
-
 class SpawnCoordinates(Struct):
     x = BFloat32
     y = BFloat32
 
+#
+## Packet implementations
+#
+
+class ProtocolRequest(Struct):
+    """packet type: 9"""
+    client_build = UBInt32
+
+
+class ProtocolResponse(Struct):
+    """packet type 0"""
+    server_response = Byte
+
 
 class ClientConnect(Struct):
+    """packet type: 10"""
     asset_digest = StarByteArray
     uuid = UUID
     name = StarString
     species = StarString
-    shipdata = StarByteArray
-    shipworld = StarByteArray
+    shipdata = WorldChunks
     ship_level = UBInt32
     max_fuel = UBInt32
-    capabilities = StarByteArray
+    # Junk means, I don't know what this value represents... <_<
+    junk1 = UBInt32
+    ship_upgrades = StringSet
+    intro_complete = Byte
     account = StarString
 
 
 class ConnectSuccess(Struct):
+    """packet type: 2"""
     client_id = VLQ
-    uuid = UUID
+    server_uuid = UUID
     planet_orbital_levels = SBInt32
     satellite_orbital_levels = SBInt32
     chunk_size = SBInt32
@@ -428,58 +487,67 @@ class ConnectSuccess(Struct):
 
 
 class ConnectFailure(Struct):
+    """packet type: 3"""
     reason = StarString
 
 
+class ClientDisconnectRequest(Struct):
+    """packet type: 11"""
+    request = Byte
+
+
+class ServerDisconnect(Struct):
+    """packet type: 11"""
+    reason = StarString
+
+
+class ChatReceived(Struct):
+    """packet type: 5"""
+    mode = Byte
+    channel = StarString
+    client_id = UBInt16
+    name = StarString
+    message = StarString
+
+
+class PlayerWarp(Struct):
+    """packet type: 13"""
+    warp_type = Byte
+    everything_else = StarString
+
+
+class ChatSent(Struct):
+    """packet type: 15"""
+    message = StarString
+    send_mode = Byte
+
+
 class WorldStart(Struct):
-    planet = Variant
+    """packet type: 18"""
+    template_data = Variant
     sky_data = StarByteArray
     weather_data = StarByteArray
     spawn = SpawnCoordinates
+    respawn_in_world = Flag
     #dungeonid = StarString
     world_properties = Variant
-    client_id = UBInt32
+    client_id = UBInt16
     local_interpolation = Flag
 
 
+class WorldStop(Struct):
+    """packet type: 19"""
+    reason = StarString
+
+
 class GiveItem(Struct):
+    """packet type: 26"""
     name = StarString
     count = VLQ
     variant_type = Byte
     description = StarString
 
 
-class ConnectSuccess(Struct):
-    client_id = VLQ
-    uuid = UUID
-    planet_orbital_levels = SBInt32
-    satellite_orbital_levels = SBInt32
-    chunk_size = SBInt32
-    xy_min = SBInt32
-    xy_max = SBInt32
-    z_min = SBInt32
-    z_max = SBInt32
-
-
-class GiveItem(Struct):
-    name = StarString
-    count = VLQ
-    variant_type = Byte
-    extra = Byte
-    #description = StarString
-
-
-class ConnectFailure(Struct):
-    rejection_reason = StarString
-
-
-class ChatSent(Struct):
-    message = StarString
-    send_mode = Byte
-
-
-class PlayerWarp(Struct):
-    warp_type = Byte
 # class WarpCommand(Struct):
 #     warp_type = UBInt32
 #     sector = StarString
@@ -489,6 +557,7 @@ class PlayerWarp(Struct):
 #     planet = SBInt32
 #     satellite = SBInt32
 #     player = StarString
+
 
 class BasePacket(Struct):
     @classmethod
