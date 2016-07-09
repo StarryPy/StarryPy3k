@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+# from binascii import hexlify
 
 from configuration_manager import ConfigurationManager
 from data_parser import ChatReceived
@@ -52,11 +53,13 @@ class StarryPyServer:
                 # Break in case of emergencies:
                 # if packet['type'] not in [17, 40, 43, 48, 51]:
                 #     logger.debug('c->s  {}'.format(packet['type']))
-                # from binascii import hexlify
-                # if packet['type'] in [10]:
+                # if packet['type'] in [5, 15]:
                 #     logger.debug('{}'.format(hexlify(packet['data'])))
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
+        except asyncio.IncompleteReadError:
+            # Pass on these errors. These occur when a player disconnects badly
+            pass
         except Exception as e:
             logger.error('Server loop exception occured:'
                          '{}: {}'.format(e.__class__.__name__, e))
@@ -74,6 +77,11 @@ class StarryPyServer:
             while True:
                 packet = yield from read_packet(self._client_reader,
                                                 Direction.TO_CLIENT)
+                # Break in case of emergencies:
+                # if packet['type'] not in [6, 17, 23, 27, 43, 49, 51]:
+                #     logger.debug('s->c  {}'.format(packet['type']))
+                # if packet['type'] in [5, 15]:
+                #     logger.debug('{}'.format(hexlify(packet['data'])))
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
@@ -84,7 +92,7 @@ class StarryPyServer:
 
     @asyncio.coroutine
     def send_message(self, message, *messages, mode=ChatSendMode.BROADCAST,
-                     client_id=0, name="", channel=""):
+                     client_id=0, name="", channel="", junk=0):
         """
         Convenience function to send chat messages to the client. Note that
         this does *not* send messages to the server at large; broadcast
@@ -93,10 +101,11 @@ class StarryPyServer:
 
         :param message: message text
         :param messages: used if there are more that one message to be sent
-        :param world:
         :param client_id: who sent the message
         :param name:
         :param channel:
+        :param mode:
+        :param junk: just a padding value with no utility currently
         :return:
         """
         try:
@@ -122,12 +131,12 @@ class StarryPyServer:
                      "mode": mode,
                      "client_id": client_id,
                      "name": name,
+                     "junk": junk,
                      "channel": channel})
-
-                to_send = build_packet(5, chat_packet)
+                to_send = build_packet(packets['chat_received'], chat_packet)
                 yield from self.raw_write(to_send)
         except Exception as e:
-            logger.exception("Error while trying to broadcast.")
+            logger.exception("Error while trying to send message.")
             logger.exception(e)
 
     @asyncio.coroutine

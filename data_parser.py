@@ -504,9 +504,10 @@ class ServerDisconnect(Struct):
 class ChatReceived(Struct):
     """packet type: 5"""
     mode = Byte
-    channel = StarString
+    junk = Byte
     client_id = UBInt16
     name = StarString
+    channel = StarString
     message = StarString
 
 

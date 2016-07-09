@@ -1,6 +1,6 @@
 from base_plugin import SimpleCommandPlugin
 from plugins.player_manager import Moderator
-from utilities import broadcast, Command, send_message, ChatSendMode, ChatReceiveMode
+from utilities import broadcast, Command, send_message, ChatSendMode
 
 
 class Mute(Moderator):
@@ -87,4 +87,3 @@ class ChatManager(SimpleCommandPlugin):
 
     def mute_check(self, player):
         return player in self.storage.mutes
-

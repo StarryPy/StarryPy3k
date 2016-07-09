@@ -9,7 +9,7 @@ class Announcer(BasePlugin):
 
     @asyncio.coroutine
     def send_announce(self, protocol, message):
-        broadcast(self.factory, "%s %s" % (protocol.player.name, message))
+        broadcast(self.factory, "{} {}".format(protocol.player.name, message))
 
     def on_connect_success(self, data, protocol):
         asyncio.Task(self.send_announce(protocol, "joined."))

@@ -6,7 +6,7 @@ import collections
 from types import FunctionType
 import re
 import zlib
-#from server import logger
+# from server import logger
 
 path = Path(__file__).parent
 
@@ -221,7 +221,7 @@ def send_message(protocol, *messages, **kwargs):
     Sends a message to a player on a protocol.
     :param protocol: The protocol to send the message to.
     :param messages: The message(s) to send.
-    :return: A future for tthe message sending.
+    :return: A future for the message sending.
     """
     return asyncio.Task(protocol.send_message(*messages, **kwargs))
 

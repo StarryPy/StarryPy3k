@@ -137,6 +137,7 @@ class Planet:
         return "%d:%d:%d:%d:%d" % (self.a, self.x, self.y,
                                       self.planet, self.satellite)
 
+
 class IPBan:
     def __init__(self, ip, reason, banned_by, timeout=None):
         self.ip = ip
@@ -193,7 +194,7 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf['ships'] = {}
         self.shelf.sync()
 
-    def on_protocol_version(self, data, protocol):
+    def on_protocol_request(self, data, protocol):
         protocol.state = State.VERSION_SENT
         return True
 
@@ -216,10 +217,10 @@ class PlayerManager(SimpleCommandPlugin):
         protocol.state = State.CONNECTED
         return True
 
-    def build_rejection(self, rejection_reason):
+    def build_rejection(self, reason):
         return build_packet(packets.packets['connect_failure'],
                             ConnectFailure.build(
-                                dict(rejection_reason=rejection_reason)))
+                                dict(reason=reason)))
 
     def on_client_connect(self, data, protocol: StarryPyServer):
         """
@@ -276,7 +277,7 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     def on_step_update(self, data, protocol):
-        protocol.state = 6
+        protocol.state = State.CONNECTED_WITH_HEARTBEAT
         return True
 
     def deactivate(self):
