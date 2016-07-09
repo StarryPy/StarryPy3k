@@ -37,15 +37,6 @@ class ChatManager(SimpleCommandPlugin):
         if self.mute_check(protocol.player):
             send_message(protocol, "You are muted and cannot chat.")
             return False
-        if data['parsed']['send_mode'] == ChatSendMode.LOCAL:
-            self.plugins.player_manager.planetary_broadcast(protocol.player,
-                                                            message)
-            return False
-        elif data['parsed']['send_mode'] == ChatSendMode.BROADCAST:
-            broadcast(self.factory,
-                      data['parsed']['message'],
-                      name=protocol.player.name)
-            return False
         return True
 
     @Command("mute", doc="Mutes a user",

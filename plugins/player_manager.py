@@ -169,17 +169,17 @@ class PlayerManager(SimpleCommandPlugin):
         self.unlocked_sector_magic = base64.decodebytes(
             self.plugin_config.unlocked_sector_magic.encode("ascii"))
 
-    @Command("test_broadcast")
-    def test_broadcast(self, data, protocol):
-        self.planetary_broadcast(protocol.player, " ".join(data))
-
-    def planetary_broadcast(self, player, message):
-        for p in self.players.values():
-            if p.logged_in and p.location is player.location:
-                send_message(p.protocol,
-                             message,
-                             name=p.name)
-        return None
+    # @Command("test_broadcast")
+    # def test_broadcast(self, data, protocol):
+    #     self.planetary_broadcast(protocol.player, " ".join(data))
+    #
+    # def planetary_broadcast(self, player, message):
+    #     for p in self.players.values():
+    #         if p.logged_in and p.location is player.location:
+    #             send_message(p.protocol,
+    #                          message,
+    #                          name=p.name)
+    #     return None
 
     def sync(self):
         if 'players' not in self.shelf:

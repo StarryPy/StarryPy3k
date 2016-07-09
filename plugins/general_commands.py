@@ -121,3 +121,11 @@ class GeneralCommands(SimpleCommandPlugin):
     def whoami(self, data, protocol):
         send_message(protocol,
                      self.generate_whois(protocol.player))
+
+    @Command("broadcast", "bc", "shout",
+             doc="Displays your current nickname for chat.")
+    def universe_broadcast(self, data, protocol):
+        message = " ".join(data)
+        broadcast(self.factory,
+                  message,
+                  name=protocol.player.name)
