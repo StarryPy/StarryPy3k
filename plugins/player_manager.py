@@ -1,14 +1,14 @@
+import asyncio
 import base64
 import datetime
-from operator import attrgetter
 import pprint
-import shelve
-import asyncio
 import re
+import shelve
+from operator import attrgetter
 
+import packets
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import StarString, ConnectFailure
-import packets
 from pparser import build_packet
 from server import StarryPyServer
 from utilities import Command, send_message, broadcast, DotDict, State, WarpType

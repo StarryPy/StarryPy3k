@@ -3,8 +3,6 @@ import traceback
 
 from configuration_manager import ConfigurationManager
 from data_parser import *
-from packets import packets
-
 
 parse_map = {
     0: ProtocolResponse,
