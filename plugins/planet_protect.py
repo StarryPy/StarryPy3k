@@ -9,10 +9,6 @@ class Protect(Admin):
     pass
 
 
-class Unprotect(Admin):
-    pass
-
-
 class ProtectedLocation:
     def __init__(self, location, allowed_builder):
         self.protected = True
@@ -86,7 +82,7 @@ class PlanetProtect(StorageCommandPlugin):
         self.add_protection(location, protocol.player)
         send_message(protocol, "Protected location: %s" % location)
 
-    @Command("unprotect", doc="Unprotects a planet", syntax="", role=Unprotect)
+    @Command("unprotect", doc="Unprotects a planet", syntax="", role=Protect)
     def unprotect(self, data, protocol):
         location = protocol.player.location
         self.disable_protection(location)
@@ -119,6 +115,7 @@ class PlanetProtect(StorageCommandPlugin):
 
     @Command("del_builder",
              doc="Deletes a player from the current location's build list",
+             role=Protect,
              syntax="[\"](player name)[\"]")
     def del_builder(self, data, protocol):
         p = self.plugins.player_manager.get_player_by_name(" ".join(data))
@@ -134,6 +131,7 @@ class PlanetProtect(StorageCommandPlugin):
     @Command("list_builders",
              doc="Lists all players granted build permissions "
                  "at current location",
+             role=Protect,
              syntax="")
     def list_builders(self, data, protocol):
         if not self.check_protection(protocol.player.location):

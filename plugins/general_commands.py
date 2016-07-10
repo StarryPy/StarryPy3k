@@ -14,6 +14,10 @@ class GiveItem(Admin):
     pass
 
 
+class Broadcast(Admin):
+    pass
+
+
 class GeneralCommands(SimpleCommandPlugin):
     name = "general_commands"
     depends = ["command_dispatcher", "player_manager"]
@@ -122,7 +126,8 @@ class GeneralCommands(SimpleCommandPlugin):
         send_message(protocol,
                      self.generate_whois(protocol.player))
 
-    @Command("broadcast", "bc", "shout",
+    @Command("broadcast",
+             role=Broadcast,
              doc="Displays your current nickname for chat.")
     def universe_broadcast(self, data, protocol):
         message = " ".join(data)
