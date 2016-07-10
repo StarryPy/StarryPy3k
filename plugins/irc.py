@@ -6,10 +6,6 @@ from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
 from utilities import broadcast
 
-temp_server = "irc.freenode.net"
-temp_channel = "#starrypy"
-temp_username = "starrypytest"
-
 
 class MockPlayer:
     """
@@ -77,15 +73,22 @@ class IRCPlugin(BasePlugin):
 
     def activate(self):
         super().activate()
+        self.storage = self.plugins.player_manager.get_storage(self)
         self.protocol = MockProtocol(self)
         self.prefix = self.config.get_plugin_config('command_dispatcher')[
             'command_prefix']
+        if "server" not in self.storage:
+            self.storage['server'] = "irc.freenode.net"
+        if "channel" not in self.storage:
+            self.storage['channel'] = "#starrypy"
+        if "username" not in self.storage:
+            self.storage['username'] = "starrypy3k_bot"
         self.dispatcher = self.plugins.command_dispatcher
-        self.bot = irc3.IrcBot(nick=temp_username, autojoins=[temp_channel],
-                               host=temp_server)
+        self.bot = irc3.IrcBot(nick=self.storage['username'],
+                               autojoins=[self.storage['channel']],
+                               host=self.storage['server'])
         self.bot.log = self.logger
-        #self.bot.include('irc3.plugins.core') # commented out,
-        # as interpreter was warning of being initialized twice.
+        self.bot.include('irc3.plugins.core')
         self.bot.include('irc3.plugins.userlist')
         x = irc3.event(irc3.rfc.PRIVMSG, self.forward)
         x.compile(None)
@@ -106,7 +109,7 @@ class IRCPlugin(BasePlugin):
     def forward(self, mask, event, target, data):
         if data[0] == ".":
             asyncio.Task(self.handle_command(target, data[1:], mask))
-        elif target == temp_channel:
+        elif target == self.storage['channel']:
             nick = mask.split("!")[0]
             asyncio.Task(self.send_message(data, nick))
         return None
@@ -120,27 +123,26 @@ class IRCPlugin(BasePlugin):
         return True
 
     def on_chat_sent(self, data, protocol):
-        if not data['parsed']['message'].startswith(
-                self.prefix):
-            asyncio.Task(self.bot_write("<%s> %s" %
-                                        (protocol.player.name,
-                                         data['parsed']['message'])))
+        if not data['parsed']['message'].startswith(self.prefix):
+            asyncio.Task(
+                self.bot_write("<{}> {}".format(protocol.player.name,
+                                                data['parsed']['message'])))
         return True
 
     @asyncio.coroutine
     def announce_join(self, protocol):
         yield from asyncio.sleep(1)
-        yield from self.bot_write(
-            "%s joined the server." % color(bold(protocol.player.name), '10'))
+        yield from self.bot_write("{} joined the server.".format(
+            color(bold(protocol.player.name), '10')))
 
     @asyncio.coroutine
     def announce_leave(self, player):
-        yield from self.bot_write("%s has left the server." % player.name)
+        yield from self.bot_write("{} has left the server.".format(player.name))
 
     @asyncio.coroutine
     def bot_write(self, msg, target=None):
         if target is None:
-            target = temp_channel
+            target = self.storage['channel']
         self.bot.privmsg(target, msg)
 
     @asyncio.coroutine
@@ -166,4 +168,4 @@ class IRCPlugin(BasePlugin):
     def update_ops(self):
         while True:
             yield from asyncio.sleep(10)
-            self.bot.send("NAMES %s" % temp_channel)
+            self.bot.send("NAMES {}".format(self.storage['channel']))
