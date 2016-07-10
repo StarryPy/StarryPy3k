@@ -39,16 +39,10 @@ class WarpWorldType(IntEnum):
     MISSION_WORLD = 4
 
 
-class ChatMode(IntEnum):
+class ChatSendMode(IntEnum):
     UNIVERSE = 0
     WORLD = 1
     ADMIN = 2
-
-
-class ChatSendMode(IntEnum):
-    BROADCAST = 0
-    LOCAL = 1
-    PARTY = 2
 
 
 class ChatReceiveMode(IntEnum):

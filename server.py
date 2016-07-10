@@ -91,7 +91,7 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message, *messages, mode=ChatSendMode.BROADCAST,
+    def send_message(self, message, *messages, mode=ChatSendMode.UNIVERSE,
                      client_id=0, name="", channel="", junk=0):
         """
         Convenience function to send chat messages to the client. Note that
@@ -219,7 +219,7 @@ class ServerFactory:
             try:
                 yield from protocol.send_message(messages,
                                                  name=name,
-                                                 mode=ChatSendMode.BROADCAST,
+                                                 mode=ChatSendMode.UNIVERSE,
                                                  client_id=client_id)
             except Exception as e:
                 logger.exception("Error while trying to broadcast.")

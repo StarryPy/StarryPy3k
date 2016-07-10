@@ -1,6 +1,6 @@
 from base_plugin import SimpleCommandPlugin
 from plugins.player_manager import Moderator
-from utilities import broadcast, Command, send_message, ChatSendMode
+from utilities import Command, send_message
 
 
 class Mute(Moderator):
