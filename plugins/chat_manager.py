@@ -31,8 +31,8 @@ class ChatManager(SimpleCommandPlugin):
 
     def on_chat_sent(self, data, protocol):
         message = data['parsed']['message']
-        if message[
-            0] == self.plugins.command_dispatcher.plugin_config.command_prefix:
+        if message.startswith(
+                self.plugins.command_dispatcher.plugin_config.command_prefix):
             return True
         if self.mute_check(protocol.player):
             send_message(protocol, "You are muted and cannot chat.")
