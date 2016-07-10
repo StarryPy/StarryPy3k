@@ -6,7 +6,9 @@
     "plugins": {
         "announcer": {},
         "chat_manager": {},
+        "colored_names": {},
         "command_dispatcher": {
+            "chattimestamps": true,
             "command_prefix": "/"
         },
         "general_commands": {},
