@@ -514,7 +514,6 @@ class ChatReceived(Struct):
 class PlayerWarp(Struct):
     """packet type: 13"""
     warp_type = Byte
-    everything_else = StarString
 
 
 class ChatSent(Struct):

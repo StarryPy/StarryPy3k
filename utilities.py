@@ -39,6 +39,12 @@ class WarpWorldType(IntEnum):
     MISSION_WORLD = 4
 
 
+class WarpAliasType(IntEnum):
+    RETURN = 0
+    ORBITED = 1
+    SHIP = 2
+
+
 class ChatSendMode(IntEnum):
     UNIVERSE = 0
     WORLD = 1
