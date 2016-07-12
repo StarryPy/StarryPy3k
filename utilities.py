@@ -227,7 +227,7 @@ def send_message(protocol, *messages, **kwargs):
 
 
 def broadcast(factory, *messages, **kwargs):
-    return asyncio.Task(factory.broadcast(*messages, **kwargs))
+    return asyncio.ensure_future(factory.broadcast(*messages, **kwargs))
 
 
 class Command:
