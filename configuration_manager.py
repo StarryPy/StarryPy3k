@@ -1,7 +1,11 @@
 import json
+import logging
+import sys
 from pathlib import Path
 
 from utilities import recursive_dictionary_update, DotDict
+
+logger = logging.getLogger("starrypy.configuration_manager")
 
 
 class ConfigurationManager:
@@ -32,7 +36,12 @@ class ConfigurationManager:
                 f.write("{}")
             self._raw_config = "{}"
         self._path = path
-        recursive_dictionary_update(self._config, json.loads(self._raw_config))
+        try:
+            recursive_dictionary_update(self._config, json.loads(self._raw_config))
+        except ValueError as e:
+            logger.error("Error while loading config.json file:\n\t"
+                         "{}".format(e))
+            sys.exit(1)
         if "plugins" not in self._config:
             self._config['plugins'] = DotDict({})
 
