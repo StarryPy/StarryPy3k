@@ -8,7 +8,7 @@ from data_parser import ChatReceived
 from packets import packets
 from pparser import build_packet
 from plugin_manager import PluginManager
-from utilities import path, read_packet, State, Direction, ChatSendMode
+from utilities import path, read_packet, State, Direction, ChatReceiveMode
 
 
 class StarryPyServer:
@@ -91,7 +91,7 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message, *messages, mode=ChatSendMode.UNIVERSE,
+    def send_message(self, message, *messages, mode=ChatReceiveMode.CHANNEL,
                      client_id=0, name="", channel="", junk=0):
         """
         Convenience function to send chat messages to the client. Note that
@@ -219,7 +219,7 @@ class ServerFactory:
             try:
                 yield from protocol.send_message(messages,
                                                  name=name,
-                                                 mode=ChatSendMode.UNIVERSE,
+                                                 mode=ChatReceiveMode.CHANNEL,
                                                  client_id=client_id)
             except Exception as e:
                 logger.exception("Error while trying to broadcast.")
