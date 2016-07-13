@@ -42,8 +42,8 @@ class ColoredNames(BasePlugin):
     @asyncio.coroutine
     def load_config(self):
         """
-        Utility function for loading colored names. Check if definitions exit in
-        config.json. If not, use defaults.
+        Utility function for loading colored names. Check if definitions exists
+        in config.json. If not, use defaults.
         :return: DotDict. Contains Role:Color definitions.
         """
         # TODO: These roles are hard-coded. Ideally, we should let server admins
