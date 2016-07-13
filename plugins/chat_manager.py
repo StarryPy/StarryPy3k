@@ -45,6 +45,7 @@ class ChatManager(SimpleCommandPlugin):
     def on_chat_sent(self, data, connection):
         """
         Catch when someone sends a message.
+
         :param data: The packet containing the message.
         :param connection: The connection from which the packet came.
         :return: Boolean. True if we're done with the packet here, False if the
@@ -68,9 +69,13 @@ class ChatManager(SimpleCommandPlugin):
              syntax="(username)")
     def mute(self, data, connection):
         """
-        Mute command.
-        Pulls target's name from data stream. Check if valid player. Also check
-        if player can be muted, or is already muted. Otherwise, mute target.
+        Mute command. Pulls target's name from data stream. Check if valid
+        player. Also check if player can be muted, or is already muted.
+        Mute target when possible.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
         """
         name = " ".join(data)
         player = self.plugins.player_manager.get_player_by_name(name)
@@ -94,9 +99,12 @@ class ChatManager(SimpleCommandPlugin):
              syntax="(username)")
     def unmute(self, data, connection):
         """
-        Unmute command.
-        Pulls target's name from data stream. Check if valid player. Check that
-        player is actually muted. Otherwise, unmute target.
+        Unmute command. Pulls target's name from data stream. Check if valid
+        player. Check that player is actually muted. If possible, unmute target.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
         """
         name = " ".join(data)
         player = self.plugins.player_manager.get_player_by_name(name)
@@ -113,8 +121,9 @@ class ChatManager(SimpleCommandPlugin):
 
     def mute_check(self, player):
         """
-        Utility function for verifying target player's mute status.
+        Utility function to verifying if target player is muted.
+
         :param player: Target player to check.
-        :return: Boolean. True if player is mutes, False if they are not.
+        :return: Boolean. True if player is muted, False if they are not.
         """
         return player in self.storage.mutes
