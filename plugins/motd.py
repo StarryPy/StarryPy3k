@@ -39,13 +39,15 @@ class MOTD(SimpleCommandPlugin):
 
     def on_connect_success(self, data, connection):
         """
-        Client succesfully connected hook. If a client connects, show them the
+        Client successfully connected hook. If a client connects, show them the
         Message of the day. We have to wrap the display of the MOTD in a future
         so that we can delay its display by one second. Otherwise, the packet
         gets sent to the client before it has a chance to render it.
+
         :param data: The packet saying the client connected.
         :param connection: The connection from which the packet came.
-        :return: Null.
+        :return: Boolean. True. Anything else stops the client from being able
+                 to connect.
         """
         asyncio.ensure_future(self._display_motd(connection))
         return True
@@ -55,6 +57,7 @@ class MOTD(SimpleCommandPlugin):
         """
         Helper routine for displaying the MOTD on client connect. Sleeps for one
         second before displaying the MOTD. Do this in a non-blocking fashion.
+
         :param connection: The connection we're showing the message to.
         :return: Null.
         """
@@ -69,15 +72,15 @@ class MOTD(SimpleCommandPlugin):
     def _set_motd(self, data, connection):
         """
         Sets the 'Message of the Day' text.
+
         :param data: The packet containing the message.
         :param connection: The connection from which the packet came.
         :return: Boolean. True if successful, False if failed.
         """
-        # TODO: This is not persistent through restarts of the server.
         if data:
             new_message = " ".join(data)
             self.motd = new_message
-            self.config.motd["message"] = new_message
+            self.config.update_config("motd", {"message": new_message})
             send_message(connection, "MOTD set.")
             return True
 
@@ -86,6 +89,7 @@ class MOTD(SimpleCommandPlugin):
     def _motd(self, data, connection):
         """
         Displays the 'Message of the Day' text to the requesting user.
+
         :param data: The packet containing the command.
         :param connection: The connection from which the packet came.
         :return: Boolean. True if successful, False if failed.
