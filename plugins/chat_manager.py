@@ -36,10 +36,6 @@ class ChatManager(SimpleCommandPlugin):
     name = "chat_manager"
     depends = ["player_manager", "command_dispatcher"]
 
-    def __init__(self):
-        super().__init__()
-        self.storage = None
-
     def activate(self):
         super().activate()
         self.storage = self.plugins.player_manager.get_storage(self)
@@ -59,9 +55,11 @@ class ChatManager(SimpleCommandPlugin):
         if message.startswith(
                 self.plugins.command_dispatcher.plugin_config.command_prefix):
             return True
+
         if self.mute_check(connection.player):
             send_message(connection, "You are muted and cannot chat.")
             return False
+
         return True
 
     @Command("mute",

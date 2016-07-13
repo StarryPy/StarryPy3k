@@ -26,10 +26,6 @@ class MOTD(SimpleCommandPlugin):
     default_config = {"message": "Insert your MOTD message here. "
                                  "^red;Note^reset; color codes work."}
 
-    def __init__(self):
-        super().__init__()
-        self.motd = ""
-
     def activate(self):
         super().activate()
         self.motd = self.config.get_plugin_config(self.name)["message"]
@@ -43,7 +39,7 @@ class MOTD(SimpleCommandPlugin):
 
         :param data: The packet saying the client connected.
         :param connection: The connection from which the packet came.
-        :return: Boolean. True. Anything else stops the client from being able
+        :return: Boolean: True. Anything else stops the client from being able
                  to connect.
         """
         asyncio.ensure_future(self._display_motd(connection))
@@ -89,6 +85,6 @@ class MOTD(SimpleCommandPlugin):
 
         :param data: The packet containing the command.
         :param connection: The connection from which the packet came.
-        :return: Boolean. True if successful, False if failed.
+        :return: Null.
         """
-        send_message(connection, "{}".format(self.motd))
+        asyncio.ensure_future(send_message(connection, "{}".format(self.motd)))

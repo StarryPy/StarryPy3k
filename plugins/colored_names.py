@@ -15,8 +15,6 @@ Updated for release: kharidiron
 #       attached. Instead, the message body itself contains all the trappings:
 #       timestamp, username, colors and finally the message itself.
 
-import asyncio
-
 from utilities import DotDict
 from datetime import datetime
 from base_plugin import BasePlugin
@@ -28,29 +26,28 @@ from utilities import ChatSendMode
 class ColoredNames(BasePlugin):
     name = "colored_names"
     depends = ["player_manager", "command_dispatcher"]
-    default_config = DotDict({
-                "Owner": "^#F7434C;",
-                "SuperAdmin": "^#E23800;",
-                "Admin": "^#C443F7;",
-                "Moderator": "^#4385F7;",
-                "Registered": "^#A0F743;",
-                "default": "^reset;"
-            })
-
-    def __init__(self):
-        super().__init__()
-        self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
-        self.colors = {}
+    default_config = {"chat_timestamps": True,
+                      "colors": DotDict({
+                          "Owner": "^#F7434C;",
+                          "SuperAdmin": "^#E23800;",
+                          "Admin": "^#C443F7;",
+                          "Moderator": "^#4385F7;",
+                          "Registered": "^#A0F743;",
+                          "default": "^reset;"
+                      })}
 
     def activate(self):
         super().activate()
-        self.colors = self.config.get_plugin_config(self.name)
+        self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
+        self.colors = self.config.get_plugin_config(self.name)["colors"]
+        self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
 
     def on_chat_sent(self, data, connection):
         """
         Catch when someone sends a message. Add a timestamp to the message (if
         that feature is turned on). Colorize the player's name based on their
         role.
+
         :param data: The packet containing the message.
         :param connection: The connection from which the packet came.
         :return: Boolean. True if an error occurred while generating a colored
@@ -61,17 +58,12 @@ class ColoredNames(BasePlugin):
         message = data['parsed']['message']
         if not message.startswith(
                 self.command_dispatcher.command_prefix):
-            now = datetime.now()
-            try:
-                # Check if option is set in config.json
-                if self.command_dispatcher.chattimestamps:
-                    timestamp = "[{}]".format(now.strftime("%H:%M"))
-                else:
-                    timestamp = ""
-            except ValueError:
-                # If not, use the default case (True)
-                self.command_dispatcher.chattimestamps = True
+
+            if self.cts:
+                now = datetime.now()
                 timestamp = "[{}]".format(now.strftime("%H:%M"))
+            else:
+                timestamp = ""
 
             # Determine message sender for later
             sender = self.plugins['player_manager'].get_player_by_name(
@@ -128,6 +120,7 @@ class ColoredNames(BasePlugin):
     def colored_name(self, data):
         """
         Generate colored name based on target's role.
+
         :param data: target to check against
         :return: DotDict. Name of target will be colorized.
         """
