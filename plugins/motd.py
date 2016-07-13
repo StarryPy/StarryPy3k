@@ -23,7 +23,8 @@ class SetMOTD(Moderator):
 class MOTD(SimpleCommandPlugin):
     name = "motd"
     depends = ["command_dispatcher"]
-    default_config = {"message": "MOTD Message here."}
+    default_config = {"message": "Insert your MOTD message here. "
+                                 "^red;Note^reset; color codes work."}
 
     def __init__(self):
         super().__init__()
@@ -31,11 +32,7 @@ class MOTD(SimpleCommandPlugin):
 
     def activate(self):
         super().activate()
-        try:
-            self.motd = self.config.motd["message"]
-        except AttributeError:
-            self.config.motd = self.default_config
-            self.motd = self.default_config["message"]
+        self.motd = self.config.get_plugin_config(self.name)["message"]
 
     def on_connect_success(self, data, connection):
         """
@@ -80,7 +77,7 @@ class MOTD(SimpleCommandPlugin):
         if data:
             new_message = " ".join(data)
             self.motd = new_message
-            self.config.update_config("motd", {"message": new_message})
+            self.config.update_config(self.name, {"message": new_message})
             send_message(connection, "MOTD set.")
             return True
 

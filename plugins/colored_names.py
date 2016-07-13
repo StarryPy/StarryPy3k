@@ -28,34 +28,7 @@ from utilities import ChatSendMode
 class ColoredNames(BasePlugin):
     name = "colored_names"
     depends = ["player_manager", "command_dispatcher"]
-
-    def __init__(self):
-        super().__init__()
-        self.config = None
-        self.colors = {}
-
-    def activate(self):
-        super().activate()
-        self.config = self.plugins.command_dispatcher.plugin_config
-        asyncio.ensure_future(self.load_config())
-
-    @asyncio.coroutine
-    def load_config(self):
-        """
-        Utility function for loading colored names. Check if definitions exists
-        in config.json. If not, use defaults.
-        :return: DotDict. Contains Role:Color definitions.
-        """
-        # TODO: These roles are hard-coded. Ideally, we should let server admins
-        #       define their own roles and colors-per-role.
-        #       See StarryPy/StarryPy3k#4.
-        try:
-            self.colors = DotDict(self.config.config.colors)
-            self.logger.sender("Configuration loaded!")
-        except AttributeError:
-            self.logger.warning(
-                "Failed to load from config! Initiating with default values")
-            self.colors = DotDict({
+    default_config = DotDict({
                 "Owner": "^#F7434C;",
                 "SuperAdmin": "^#E23800;",
                 "Admin": "^#C443F7;",
@@ -63,6 +36,15 @@ class ColoredNames(BasePlugin):
                 "Registered": "^#A0F743;",
                 "default": "^reset;"
             })
+
+    def __init__(self):
+        super().__init__()
+        self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
+        self.colors = {}
+
+    def activate(self):
+        super().activate()
+        self.colors = self.config.get_plugin_config(self.name)
 
     def on_chat_sent(self, data, connection):
         """
@@ -77,17 +59,18 @@ class ColoredNames(BasePlugin):
                  or if the message is a command.
         """
         message = data['parsed']['message']
-        if not message.startswith(self.config.command_prefix):
+        if not message.startswith(
+                self.command_dispatcher.command_prefix):
             now = datetime.now()
             try:
                 # Check if option is set in config.json
-                if self.config.chattimestamps:
+                if self.command_dispatcher.chattimestamps:
                     timestamp = "[{}]".format(now.strftime("%H:%M"))
                 else:
                     timestamp = ""
             except ValueError:
                 # If not, use the default case (True)
-                self.config.chattimestamps = True
+                self.command_dispatcher.chattimestamps = True
                 timestamp = "[{}]".format(now.strftime("%H:%M"))
 
             # Determine message sender for later
