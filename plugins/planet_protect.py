@@ -1,7 +1,7 @@
 import asyncio
 
 from base_plugin import StorageCommandPlugin
-from plugins.player_manager import Admin, Ship
+from plugins.player_manager import Admin, Registered, Ship
 from utilities import Direction, Command, send_message
 
 
@@ -137,7 +137,7 @@ class PlanetProtect(StorageCommandPlugin):
              syntax="")
     def list_builders(self, data, protocol):
         if not self.check_protection(protocol.player.location):
-            send_message(protocol, "This location has never been"
+            send_message(protocol, "This location has never been "
                                    "protected.")
         else:
             protection = self.get_protection(protocol.player.location)
@@ -150,6 +150,9 @@ class PlanetProtect(StorageCommandPlugin):
         if data['direction'] == Direction.TO_CLIENT:
             return True
         if not self.check_protection(protocol.player.location):
+            if self.config.config.protect_everything and not protocol.player.check_role(Registered) and not(
+                    protocol.player.name == str(protocol.player.location)[:len(protocol.player.name)]):
+                return False
             return True
         protection = self.get_protection(protocol.player.location)
         if not protection.protected:
