@@ -93,7 +93,7 @@ class GeneralCommands(SimpleCommandPlugin):
         item_base = data_parser.GiveItem.build(dict(name=item,
                                                     count=count,
                                                     variant_type=7,
-                                                    extra=0))
+                                                    description=""))
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
         yield from target.raw_write(item_packet)
