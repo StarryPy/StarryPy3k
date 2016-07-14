@@ -1,6 +1,6 @@
 import packets
 import pparser
-from data_parser import GiveItem
+import data_parser
 from base_plugin import SimpleCommandPlugin
 from plugins.player_manager import Admin, Moderator
 from utilities import send_message, Command, broadcast
@@ -93,10 +93,10 @@ class GeneralCommands(SimpleCommandPlugin):
         if count > 10000 and item != "money":
             count = 10000
         count += 1
-        item_base = GiveItem.build(dict(name=item,
-                                        count=count,
-                                        variant_type=7,
-                                        description=""))
+        item_base = data_parser.GiveItem.build(dict(name=item,
+                                                    count=count,
+                                                    variant_type=7,
+                                                    description=""))
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
         yield from target.raw_write(item_packet)

@@ -1,7 +1,8 @@
 """
 StarryPy Chat Manager Plugin
 
-Provides core chat management features, such as mute... and that's it right now.
+Provides core chat management features, such as mute...and that's it right now.
+Future features could be added...
 
 Original authors: AMorporkian
 Updated for release: kharidiron
@@ -35,6 +36,10 @@ class UnmutePlayer(Mute):
 class ChatManager(SimpleCommandPlugin):
     name = "chat_manager"
     depends = ["player_manager", "command_dispatcher"]
+
+    def __init__(self):
+        super().__init__()
+        self.storage = None
 
     def activate(self):
         super().activate()
@@ -82,14 +87,17 @@ class ChatManager(SimpleCommandPlugin):
         if player is None:
             raise NameError
         elif self.mute_check(player):
-            send_message(connection, "{} is already muted.".format(player.name))
+            send_message(connection,
+                         "{} is already muted.".format(player.name))
             return
         elif player.check_role(Unmuteable):
-            send_message(connection, "{} is unmuteable.".format(player.name))
+            send_message(connection,
+                         "{} is unmuteable.".format(player.name))
             return
         else:
             self.storage.mutes.add(player)
-            send_message(connection, "{} has been muted.".format(player.name))
+            send_message(connection,
+                         "{} has been muted.".format(player.name))
             send_message(player.connection,
                          "{} has muted you.".format(connection.player.name))
 
@@ -100,7 +108,8 @@ class ChatManager(SimpleCommandPlugin):
     def unmute(self, data, connection):
         """
         Unmute command. Pulls target's name from data stream. Check if valid
-        player. Check that player is actually muted. If possible, unmute target.
+        player. Check that player is actually muted. If possible, unmute
+        the target.
 
         :param data: The packet containing the command.
         :param connection: The connection from which the packet came.
@@ -111,11 +120,13 @@ class ChatManager(SimpleCommandPlugin):
         if player is None:
             raise NameError
         elif not self.mute_check(player):
-            send_message(connection, "{} isn't muted.".format(player.name))
+            send_message(connection,
+                         "{} isn't muted.".format(player.name))
             return
         else:
             self.storage.mutes.remove(player)
-            send_message(connection, "{} has been unmuted.".format(player.name))
+            send_message(connection,
+                         "{} has been unmuted.".format(player.name))
             send_message(player.connection,
                          "{} has unmuted you.".format(connection.player.name))
 

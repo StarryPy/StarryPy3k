@@ -1,9 +1,11 @@
 """
-StarryPy Colored Names Plugin
+StarryPy Chat Enhancements Plugin
 
-Provides colored names in the chat window for users based on role status. Does
-not effect players nametags directly. Also provides timestamps on messages, if
-so desired.
+Provides enhancements to the vanilla Starbound chat, including colored names
+based on user roles, and timestamps per message.
+
+Note: Name colors are in the wrapper only, and do not actually effect the
+player's name tag.
 
 Original authors: teihoo, FZFalzar
 Updated for release: kharidiron
@@ -23,8 +25,8 @@ from utilities import ChatSendMode
 
 ###
 
-class ColoredNames(BasePlugin):
-    name = "colored_names"
+class ChatEnhancements(BasePlugin):
+    name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
     default_config = {"chat_timestamps": True,
                       "colors": DotDict({
@@ -35,6 +37,12 @@ class ColoredNames(BasePlugin):
                           "Registered": "^#A0F743;",
                           "default": "^reset;"
                       })}
+
+    def __init__(self):
+        super().__init__()
+        self.command_dispatcher = None
+        self.colors = None
+        self.cts = None
 
     def activate(self):
         super().activate()
@@ -52,8 +60,8 @@ class ColoredNames(BasePlugin):
         :param connection: The connection from which the packet came.
         :return: Boolean. True if an error occurred while generating a colored
                  name (so that we don't stop the packet from flowing). Null if
-                 the message came from the server (since it doesn't need colors)
-                 or if the message is a command.
+                 the message came from the server (since it doesn't need
+                 colors) or if the message is a command.
         """
         message = data['parsed']['message']
         if not message.startswith(
@@ -76,9 +84,9 @@ class ColoredNames(BasePlugin):
                     return
 
                 # Colorize message based on SendMode [OBSOLETE]
-                # TODO: Only one chat channel now. Either this should be deleted
-                #       or chat-channels will need to be re-implemented in
-                #       StarryPy.
+                # TODO: Only one chat channel now. Either this should be
+                # deleted or chat-channels will need to be re-implemented in
+                # StarryPy.
                 if p['send_mode'] == ChatSendMode.WORLD:
                     cts_color = "^green;"
                 elif p['send_mode'] == ChatSendMode.UNIVERSE:

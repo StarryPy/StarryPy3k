@@ -15,7 +15,6 @@ import datetime
 import pprint
 import re
 import shelve
-from binascii import hexlify
 from operator import attrgetter
 
 import packets
@@ -23,7 +22,8 @@ from base_plugin import Role, SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
 from server import StarryPyServer
-from utilities import Command, send_message, broadcast, DotDict, State, WarpType
+from utilities import Command, send_message, broadcast, DotDict, State, \
+    WarpType
 from packets import packets
 
 
@@ -221,8 +221,8 @@ class PlayerManager(SimpleCommandPlugin):
     def on_handshake_response(self, data, protocol):
         """
         Catch when the server responds to a client's handshake. Update the
-        'state' variable to keep track of this. Note: This step only occurs when
-        a server requires name/password authentication.
+        'state' variable to keep track of this. Note: This step only occurs
+        when a server requires name/password authentication.
 
         :param data:
         :param protocol:
@@ -233,13 +233,15 @@ class PlayerManager(SimpleCommandPlugin):
 
     def on_client_connect(self, data, protocol: StarryPyServer):
         """
-        Catch when a the client updates the server with its connection details.
-        This is a key step to fingerprinting the client, and ensuring they stay
-        in the wrapper. This is also where we apply our bans.
+        Catch when a the client updates the server with its connection
+        details. This is a key step to fingerprinting the client, and
+        ensuring they stay in the wrapper. This is also where we apply our
+        bans.
 
         :param data:
         :param protocol:
-        :return: Boolean: True on successful connection, False on unsuccessful.
+        :return: Boolean: True on successful connection, False on a
+                 failed connection.
         """
         try:
             player = yield from self.add_or_get_player(**data["parsed"])
@@ -255,8 +257,9 @@ class PlayerManager(SimpleCommandPlugin):
     def on_connect_success(self, data, protocol):
         """
         Catch when a successful connection is established. Update the 'state'
-        variable to keep track of this. Since the client successfully connected,
-        update their details in storage (client id, location, logged_in state).
+        variable to keep track of this. Since the client successfully
+        connected, update their details in storage (client id, location,
+        logged_in state).
 
         :param data:
         :param protocol:
@@ -281,8 +284,8 @@ class PlayerManager(SimpleCommandPlugin):
         :param protocol:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        # TODO: This likely needs more attention as clients disconnecting cause
-        # an error in the client_loop in the server factory.
+        # TODO: This likely needs more attention as clients disconnecting
+        # cause an error in the client_loop in the server factory.
         protocol.player.protocol = None
         protocol.player.logged_in = False
         protocol.player.location = None
@@ -322,15 +325,15 @@ class PlayerManager(SimpleCommandPlugin):
     def on_world_start(self, data, protocol: StarryPyServer):
         """
         Hook when a new world instance is started. Use the details passed to
-        determine the location of the world, and update the player's information
-        accordingly.
+        determine the location of the world, and update the player's
+        information accordingly.
 
         :param data:
         :param protocol:
         :return: Boolean: True. Don't stop the packet here.
         """
-        # TODO: We only enumerate worlds and ships currently. We need to expand
-        # this to include mission worlds and instance worlds too.
+        # TODO: We only enumerate worlds and ships currently. We need to
+        # expand this to include mission worlds and instance worlds too.
         planet = data["parsed"]["template_data"]
         if planet["celestialParameters"] is not None:
             location = yield from self.add_or_get_planet(
@@ -412,8 +415,8 @@ class PlayerManager(SimpleCommandPlugin):
         if issubclass(role, Role):
             r = role.__name__
         else:
-            raise TypeError("add_role requires a Role subclass to be passed as"
-                            " the second argument.")
+            raise TypeError("add_role requires a Role subclass to be passed"
+                            " as the second argument.")
         player.roles.add(r)
         self.logger.info("Granted role {} to {}".format(r, player.name))
         for subrole in role.roles:
@@ -589,8 +592,8 @@ class PlayerManager(SimpleCommandPlugin):
         :param satellite:
         :return: Planet object.
         """
-        # TODO: add planet names to this, since people seem to like using those
-        # as a way to refer to the planets as well.
+        # TODO: add planet names to this, since people seem to like using
+        # those as a way to refer to the planets as well.
         a, x, y = location
         loc_string = "{}:{}:{}:{}:{}".format(a, x, y, planet, satellite)
         if loc_string in self.shelf["planets"]:
@@ -621,13 +624,21 @@ class PlayerManager(SimpleCommandPlugin):
 
         # FIXME: Kick is currently broken. Kicking someone will cause their
         # starbound client to crash (overkill).
-        name = data[0]
+        try:
+            name = data[0]
+        except IndexError:
+            raise SyntaxWarning("No target provided.")
+
         try:
             reason = " ".join(data[1:])
         except IndexError:
             reason = "No reason given."
 
         p = self.get_player_by_name(" ".join(data))
+        if not p.logged_in:
+            send_message(protocol,
+                         "Player {} is not currently logged in.".format(name))
+            return False
         if p is not None:
             kick_packet = ServerDisconnect.build({
                 "reason": "You were kicked.\n Reason: {}".format(reason)})
@@ -650,7 +661,8 @@ class PlayerManager(SimpleCommandPlugin):
         """
         Ban a player. You must specify either a name or an IP. You must also
         specify a 'reason' for banning the player. This information is stored
-        and, should the player try to connect again, are great with the message:
+        and, should the player try to connect again, are great with the
+        message:
 
         > You are banned!
         > Reason: <reason shows here>
@@ -757,15 +769,15 @@ class PlayerManager(SimpleCommandPlugin):
                      " ^red;NOT RECOMMENDED^reset;.]"))
     def delete_player(self, data, protocol):
         """
-        Removes a player from the player database. By default. you cannot remove
-        a logged-in player, so either they need to be removed from the server
-        first, or you have to apply the *force operation.
+        Removes a player from the player database. By default. you cannot
+        remove a logged-in player, so either they need to be removed from
+        the server first, or you have to apply the *force operation.
 
         :param data:
         :param protocol:
         :return: Null
-        :raise: NameError if is not available. ValueError if player is currently
-                logged in.
+        :raise: NameError if is not available. ValueError if player is
+                currently logged in.
         """
         if data[-1] == "*force":
             force = True
