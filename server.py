@@ -53,8 +53,8 @@ class StarryPyServer:
                 # Break in case of emergencies:
                 # if packet['type'] not in [17, 40, 43, 48, 51]:
                 #     logger.debug('c->s  {}'.format(packet['type']))
-                # if packet['type'] in [5, 15]:
-                #     logger.debug('{}'.format(hexlify(packet['data'])))
+                # if packet['type'] in [1]:
+                #     logger.debug('{}'.format(hexlify(packet['original_data'])))
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
         except asyncio.IncompleteReadError:
@@ -80,8 +80,8 @@ class StarryPyServer:
                 # Break in case of emergencies:
                 # if packet['type'] not in [6, 17, 23, 27, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
-                # if packet['type'] in [5, 15]:
-                #     logger.debug('{}'.format(hexlify(packet['data'])))
+                # if packet['type'] in [1]:
+                #     logger.debug('{}'.format(hexlify(packet['original_data'])))
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
@@ -231,19 +231,18 @@ class ServerFactory:
         Remove a single protocol connection.
         """
         self.protocols.remove(protocol)
-        logger.debug('remaining protocols: {}'.format(self.protocols))
 
     def __call__(self, reader, writer):
         server = StarryPyServer(reader, writer, self.configuration_manager,
                                 factory=self)
         self.protocols.append(server)
-        logger.debug('New protocol added: {}'.format(server))
+        logger.debug("New protocol added")
 
     def kill_all(self):
         """
         Drop all protocol connections.
         """
-        logger.debug('Dropping all connections.')
+        logger.debug("Dropping all connections.")
         for protocol in self.protocols:
             protocol.die()
 
