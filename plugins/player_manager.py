@@ -159,10 +159,7 @@ class PlayerManager(SimpleCommandPlugin):
     name = "player_manager"
 
     def __init__(self):
-        with open("config/sector_magic_string") as f:
-            ms = f.read()
         self.default_config = {"player_db": "config/player",
-                               "unlocked_sector_magic": ms,
                                "owner_uuid": "!--REPLACE IN CONFIG FILE--!"}
         super().__init__()
         self.shelf = shelve.open(self.plugin_config.player_db, writeback=True)
@@ -170,8 +167,6 @@ class PlayerManager(SimpleCommandPlugin):
         self.players = self.shelf['players']
         self.planets = self.shelf['planets']
         self.plugin_shelf = self.shelf['plugins']
-        self.unlocked_sector_magic = base64.decodebytes(
-            self.plugin_config.unlocked_sector_magic.encode("ascii"))
 
     # @Command("test_broadcast")
     # def test_broadcast(self, data, protocol):
