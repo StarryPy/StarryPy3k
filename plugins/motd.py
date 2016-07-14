@@ -26,6 +26,10 @@ class MOTD(SimpleCommandPlugin):
     default_config = {"message": "Insert your MOTD message here. "
                                  "^red;Note^reset; color codes work."}
 
+    def __init__(self):
+        super().__init__()
+        self.motd = None
+
     def activate(self):
         super().activate()
         self.motd = self.config.get_plugin_config(self.name)["message"]
@@ -48,8 +52,9 @@ class MOTD(SimpleCommandPlugin):
     @asyncio.coroutine
     def _display_motd(self, connection):
         """
-        Helper routine for displaying the MOTD on client connect. Sleeps for one
-        second before displaying the MOTD. Do this in a non-blocking fashion.
+        Helper routine for displaying the MOTD on client connect. Sleeps for
+        one second before displaying the MOTD. Do this in a non-blocking
+        fashion.
 
         :param connection: The connection we're showing the message to.
         :return: Null.
@@ -87,4 +92,5 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        asyncio.ensure_future(send_message(connection, "{}".format(self.motd)))
+        asyncio.ensure_future(
+            send_message(connection, "{}".format(self.motd)))
