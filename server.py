@@ -303,7 +303,7 @@ if __name__ == "__main__":
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Exiting")
     except Exception as e:
-        logger.warning('An exception occured: {}'.format(e))
+        logger.warning('An exception occurred: {}'.format(e))
     finally:
         factory = server_factory.result()
         factory.kill_all()
