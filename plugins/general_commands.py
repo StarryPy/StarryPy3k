@@ -2,7 +2,7 @@ import packets
 import pparser
 import data_parser
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import Admin, Moderator
+from plugins.player_manager import Admin, Moderator, Registered, Guest
 from utilities import send_message, Command, broadcast
 
 
@@ -18,11 +18,20 @@ class Broadcast(Admin):
     pass
 
 
+class Nick(Registered):
+    pass
+
+
+class Whoami(Guest):
+    pass
+
+
 class GeneralCommands(SimpleCommandPlugin):
     name = "general_commands"
     depends = ["command_dispatcher", "player_manager"]
 
-    @Command("who")
+    @Command("who",
+             doc="Lists players who are currently logged in.")
     def who(self, data, protocol):
         ret_list = []
         for player in self.plugins['player_manager'].players.values():
@@ -47,8 +56,10 @@ class GeneralCommands(SimpleCommandPlugin):
                     info.name, l, ", ".join(info.roles),
                     info.uuid, info.ip, info.location))
 
-    @Command("whois", doc="Returns client data about the specified user.",
-             syntax="(username)", role=Whois)
+    @Command("whois",
+             role=Whois,
+             doc="Returns client data about the specified user.",
+             syntax="(username)")
     def whois(self, data, protocol):
         if len(data) == 0:
             raise SyntaxWarning
@@ -105,7 +116,9 @@ class GeneralCommands(SimpleCommandPlugin):
         send_message(target, "%s gave you %s (count: %d)" %
                              (protocol.player.name, item, count - 1))
 
-    @Command("nick", doc="Changes your nickname to another one.",
+    @Command("nick",
+             role=Nick,
+             doc="Changes your nickname to another one.",
              syntax="(username)")
     def nick(self, data, protocol):
         name = " ".join(data)
@@ -124,7 +137,9 @@ class GeneralCommands(SimpleCommandPlugin):
             #asyncio.Task(protocol.client_raw_write(pparser.build_packet
             #                                            'chat_sent'], csp)))
 
-    @Command("whoami", doc="Displays your current nickname for chat.")
+    @Command("whoami",
+             role=Whoami,
+             doc="Displays your current nickname for chat.")
     def whoami(self, data, protocol):
         send_message(protocol,
                      self.generate_whois(protocol.player))
