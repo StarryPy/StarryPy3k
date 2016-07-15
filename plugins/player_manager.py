@@ -333,6 +333,7 @@ class PlayerManager(SimpleCommandPlugin):
         """
         # TODO: We only enumerate worlds and ships currently. We need to
         # expand this to include mission worlds and instance worlds too.
+        # TODO: beaming to another person's ship shows wrong name in log output
         planet = data["parsed"]["template_data"]
         if planet["celestialParameters"] is not None:
             location = yield from self._add_or_get_planet(
