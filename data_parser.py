@@ -1,10 +1,10 @@
-from collections import OrderedDict
-import functools
-from io import BytesIO
-import io
-import struct
 import binascii
 import copy
+import functools
+import io
+import struct
+from collections import OrderedDict
+from io import BytesIO
 
 from utilities import DotDict
 
@@ -107,8 +107,8 @@ class Struct(metaclass=MetaStruct):
                 string = BytesIO(string)
             string = io.BufferedReader(string)
 
-        # FIXME: Stream caching appears to be causing a parsing issue. Disabling
-        #  for now...
+        # FIXME: Stream caching appears to be causing a parsing issue.
+        # Disabling for now...
         # d = string.peek()
         # big_enough = len(d) > 1
         # if big_enough:
@@ -406,10 +406,6 @@ class WorldChunks(Struct):
         c = []
         n = 0
         for _ in range(l):
-            # value1 = StarByteArray.parse(stream, ctx)
-            # sep = Byte.parse(stream, ctx)
-            # value2 = StarByteArray.parse(stream, ctx)
-            # c.append((value1, value2))
             v1 = VLQ.parse(stream, ctx)
             c1 = stream.read(v1)
             sep = Byte.parse(stream, ctx)

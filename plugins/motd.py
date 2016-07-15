@@ -5,6 +5,7 @@ Provides a 'Message of the Day' text to players when the connect to the server.
 
 Ported by: kharidiron
 """
+
 import asyncio
 
 from base_plugin import SimpleCommandPlugin
@@ -34,6 +35,8 @@ class MOTD(SimpleCommandPlugin):
         super().activate()
         self.motd = self.config.get_plugin_config(self.name)["message"]
 
+    # Packet hooks - look for these packets and act on them
+
     def on_connect_success(self, data, connection):
         """
         Client successfully connected hook. If a client connects, show them the
@@ -49,6 +52,8 @@ class MOTD(SimpleCommandPlugin):
         asyncio.ensure_future(self._display_motd(connection))
         return True
 
+    # Helper functions - Used by commands
+
     @asyncio.coroutine
     def _display_motd(self, connection):
         """
@@ -62,6 +67,8 @@ class MOTD(SimpleCommandPlugin):
         yield from asyncio.sleep(1)
         yield from send_message(connection, "{}".format(self.motd))
         return
+
+    # Commands - In-game actions that can be performed
 
     @Command("set_motd",
              role=SetMOTD,

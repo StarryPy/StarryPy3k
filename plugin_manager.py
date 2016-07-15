@@ -34,7 +34,7 @@ class PluginManager:
     @asyncio.coroutine
     def do(self, protocol, action: str, packet: dict):
         """
-        Calls an action on all loaded plugins
+        Calls an action on all loaded plugins.
         """
         try:
             if ("on_%s" % action) in self._overrides:

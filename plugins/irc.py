@@ -160,29 +160,31 @@ class IRCPlugin(BasePlugin):
         self.ops = set()
         asyncio.Task(self.update_ops())
 
-    def on_connect_success(self, data, protocol):
+    # Packet hooks - look for these packets and act on them
+
+    def on_connect_success(self, data, connection):
         """
         Hook on bot successfully connecting to server.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.Task(self.announce_join(protocol))
+        asyncio.Task(self.announce_join(connection))
         return True
 
-    def on_client_disconnect_request(self, data, protocol):
+    def on_client_disconnect_request(self, data, connection):
         """
         Hook on bot disconnecting from the server.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.Task(self.announce_leave(protocol.player))
+        asyncio.Task(self.announce_leave(connection.player))
         return True
 
-    def on_chat_sent(self, data, protocol):
+    def on_chat_sent(self, data, connection):
         """
         Hook on message being broadcast on server. Display it in IRC.
 
@@ -191,7 +193,7 @@ class IRCPlugin(BasePlugin):
         ^red;Red^reset; Text -> Red Text.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
         if not data["parsed"]["message"].startswith(self.prefix):
@@ -199,8 +201,10 @@ class IRCPlugin(BasePlugin):
             if self.sc:
                 msg = self.color_strip.sub("", msg)
             asyncio.Task(
-                self.bot_write("<{}> {}".format(protocol.player.name, msg)))
+                self.bot_write("<{}> {}".format(connection.player.name, msg)))
         return True
+
+    # Helper functions - Used by commands
 
     def forward(self, mask, event, target, data):
         """
@@ -245,17 +249,17 @@ class IRCPlugin(BasePlugin):
         broadcast(self.factory, "IRC: <{}> {}".format(nick, message))
 
     @asyncio.coroutine
-    def announce_join(self, protocol):
+    def announce_join(self, connection):
         """
         Send a message to IRC when someone joins the server.
 
-        :param protocol: Connection of connecting player on server.
+        :param connection: Connection of connecting player on server.
         :return: Null.
         """
         yield from asyncio.sleep(1)
         yield from self.bot_write(
-            "{} joined the server.".format(_color(_bold(protocol.player.name),
-                                                  "10")))
+            "{} joined the server.".format(_color(_bold(
+                connection.player.name), "10")))
 
     @asyncio.coroutine
     def announce_leave(self, player):

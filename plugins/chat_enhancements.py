@@ -50,6 +50,8 @@ class ChatEnhancements(BasePlugin):
         self.colors = self.config.get_plugin_config(self.name)["colors"]
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
 
+    # Packet hooks - look for these packets and act on them
+
     def on_chat_sent(self, data, connection):
         """
         Catch when someone sends a message. Add a timestamp to the message (if
@@ -124,6 +126,8 @@ class ChatEnhancements(BasePlugin):
                                          sender.message))
                 return True
         return
+
+    # Helper functions - Used by commands
 
     def colored_name(self, data):
         """

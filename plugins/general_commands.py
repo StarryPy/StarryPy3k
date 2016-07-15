@@ -71,35 +71,36 @@ class GeneralCommands(SimpleCommandPlugin):
 
     @Command("who",
              doc="Lists players who are currently logged in.")
-    def _who(self, data, protocol):
+    def _who(self, data, connection):
         """
         Return a list of players currently logged in.
 
         :param data: The packet containing the command.
-        :param protocol: The connection from which the packet came.
+        :param connection: The connection from which the packet came.
         :return: Null.
         """
         ret_list = []
         for player in self.plugins['player_manager'].players.values():
             if player.logged_in:
-                if protocol.player.check_role(Moderator):
+                if connection.player.check_role(Moderator):
                     ret_list.append(
                         "[{}]{}".format(player.client_id, player.name))
                 else:
                     ret_list.append("{}".format(player.name))
-        send_message(protocol, "{} players online:\n"
-                               "{}".format(len(ret_list), ", ".join(ret_list)))
+        send_message(connection,
+                     "{} players online:\n{}".format(len(ret_list),
+                                                     ", ".join(ret_list)))
 
     @Command("whois",
              role=Whois,
              doc="Returns client data about the specified user.",
              syntax="(username)")
-    def _whois(self, data, protocol):
+    def _whois(self, data, connection):
         """
         Display information about a player.
 
         :param data: The packet containing the command.
-        :param protocol: The connection from which the packet came.
+        :param connection: The connection from which the packet came.
         :return: Null.
         :raise: SyntaxWarning if no name provided.
         """
@@ -108,21 +109,21 @@ class GeneralCommands(SimpleCommandPlugin):
         name = " ".join(data)
         info = self.plugins['player_manager'].get_player_by_name(name)
         if info is not None:
-            send_message(protocol, self.generate_whois(info))
+            send_message(connection, self.generate_whois(info))
         else:
-            send_message(protocol, "Player not found!")
+            send_message(connection, "Player not found!")
 
     @Command("give", "item", "give_item",
              role=GiveItem,
              doc="Gives an item to a player. "
                  "If player name is omitted, give item(s) to self.",
              syntax=("[player=self]", "(item name)", "[count=1]"))
-    def _give_item(self, data, protocol):
+    def _give_item(self, data, connection):
         """
         Give item(s) to a player.
 
         :param data: The packet containing the command.
-        :param protocol: The connection from which the packet came.
+        :param connection: The connection from which the packet came.
         :return: Null.
         :raise: SyntaxWarning if too many arguments provided or item count
                 cannot be properly converted. NameError if a target player
@@ -131,12 +132,12 @@ class GeneralCommands(SimpleCommandPlugin):
         arg_count = len(data)
         target = self.plugins.player_manager.get_player_by_name(data[0])
         if arg_count == 1:
-            target = protocol.player
+            target = connection.player
             item = data[0]
             count = 1
         elif arg_count == 2:
             if data[1].isdigit():
-                target = protocol.player
+                target = connection.player
                 item = data[0]
                 count = int(data[1])
             else:
@@ -163,32 +164,32 @@ class GeneralCommands(SimpleCommandPlugin):
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
         yield from target.raw_write(item_packet)
-        send_message(protocol,
+        send_message(connection,
                      "Gave {} (count: {}) to {}".format(
                          item,
                          count - 1,
                          target.player.name))
         send_message(target, "{} gave you {} (count: {})".format(
-            protocol.player.name, item, count - 1))
+            connection.player.name, item, count - 1))
 
     @Command("nick",
              role=Nick,
              doc="Changes your nickname to another one.",
              syntax="(username)")
-    def _nick(self, data, protocol):
+    def _nick(self, data, connection):
         """
         Change your name as it is displayed in the chat window.
 
         :param data: The packet containing the command.
-        :param protocol: The connection from which the packet came.
+        :param connection: The connection from which the packet came.
         :return: Null.
         """
         name = " ".join(data)
         if self.plugins.player_manager.get_player_by_name(name):
             raise ValueError("There's already a user by that name.")
         else:
-            old_name = protocol.player.name
-            protocol.player.name = name
+            old_name = connection.player.name
+            connection.player.name = name
             broadcast(self.factory,
                       "{}'s name has been changed to {}".format(old_name,
                                                                 name))
@@ -196,33 +197,33 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("whoami",
              role=Whoami,
              doc="Displays your current nickname for chat.")
-    def _whoami(self, data, protocol):
+    def _whoami(self, data, connection):
         """
         Displays your current nickname and connection information.
 
         :param data: The packet containing the command.
-        :param protocol: The connection from which the packet came.
+        :param connection: The connection from which the packet came.
         :return: Null.
         """
         # TODO: currently this is buggy, and will sometime not work...
         # instead, the Starbound version of /whoami will take over.
-        send_message(protocol,
-                     self.generate_whois(protocol.player))
+        send_message(connection,
+                     self.generate_whois(connection.player))
 
     @Command("broadcast",
              role=Broadcast,
              doc="Sends a message to everyone on the server.")
-    def _universe_broadcast(self, data, protocol):
+    def _universe_broadcast(self, data, connection):
         """
         Broadcast a message to everyone on the server. Currently, this is
         actually redundant, as sending a message regularly is already a
         broadcast.
 
         :param data: The packet containing the command.
-        :param protocol: The connection from which the packet came.
+        :param connection: The connection from which the packet came.
         :return: Null.
         """
         message = " ".join(data)
         broadcast(self.factory,
                   message,
-                  name=protocol.player.name)
+                  name=connection.player.name)

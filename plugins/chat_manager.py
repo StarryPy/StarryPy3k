@@ -47,6 +47,8 @@ class ChatManager(SimpleCommandPlugin):
         if "mutes" not in self.storage:
             self.storage["mutes"] = set()
 
+    # Packet hooks - look for these packets and act on them
+
     def on_chat_sent(self, data, connection):
         """
         Catch when someone sends a message.
@@ -62,13 +64,15 @@ class ChatManager(SimpleCommandPlugin):
                 self.plugins.command_dispatcher.plugin_config.command_prefix):
             return True
 
-        if self.mute_check(connection.player):
+        if self._mute_check(connection.player):
             send_message(connection, "You are muted and cannot chat.")
             return False
 
         return True
 
-    def mute_check(self, player):
+    # Helper functions - Used by commands
+
+    def _mute_check(self, player):
         """
         Utility function to verifying if target player is muted.
 
@@ -76,6 +80,8 @@ class ChatManager(SimpleCommandPlugin):
         :return: Boolean. True if player is muted, False if they are not.
         """
         return player in self.storage.mutes
+
+    # Commands - In-game actions that can be performed
 
     @Command("mute",
              role=MutePlayer,
@@ -95,7 +101,7 @@ class ChatManager(SimpleCommandPlugin):
         player = self.plugins.player_manager.get_player_by_name(name)
         if player is None:
             raise NameError
-        elif self.mute_check(player):
+        elif self._mute_check(player):
             send_message(connection,
                          "{} is already muted.".format(player.name))
             return
@@ -128,7 +134,7 @@ class ChatManager(SimpleCommandPlugin):
         player = self.plugins.player_manager.get_player_by_name(name)
         if player is None:
             raise NameError
-        elif not self.mute_check(player):
+        elif not self._mute_check(player):
             send_message(connection,
                          "{} isn't muted.".format(player.name))
             return

@@ -21,7 +21,6 @@ import packets
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
-from server import StarryPyServer
 from utilities import Command, send_message, broadcast, DotDict, State, \
     WarpType
 from packets import packets
@@ -78,7 +77,7 @@ class Player:
     Prototype class for a player.
     """
     def __init__(self, uuid, name="", last_seen=None, roles=None,
-                 logged_in=True, protocol=None, client_id=-1, ip="",
+                 logged_in=True, connection=None, client_id=-1, ip="",
                  planet="", muted=False, state=None):
         """
         Initialize a player object. Populate all the necessary details.
@@ -88,7 +87,7 @@ class Player:
         :param last_seen:
         :param roles:
         :param logged_in:
-        :param protocol:
+        :param connection:
         :param client_id:
         :param ip:
         :param planet:
@@ -107,7 +106,7 @@ class Player:
         else:
             self.roles = set(roles)
         self.logged_in = logged_in
-        self.protocol = protocol
+        self.protocol = connection
         self.client_id = client_id
         self.ip = ip
         self.location = planet
@@ -193,45 +192,45 @@ class PlayerManager(SimpleCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_protocol_request(self, data, protocol):
+    def on_protocol_request(self, data, connection):
         """
         Catch when a client first pings the server for a connection. Set the
         'state' variable to keep track of this.
 
-        :param data:
-        :param protocol:
+        :param data: The packet containing the action.
+        :param connection: The connection from which the packet came.
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        protocol.state = State.VERSION_SENT
+        connection.state = State.VERSION_SENT
         return True
 
-    def on_handshake_challenge(self, data, protocol):
+    def on_handshake_challenge(self, data, connection):
         """
         Catch when a client tries to handshake with server. Update the 'state'
         variable to keep track of this. Note: This step only occurs when a
         server requires name/password authentication.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        protocol.state = State.HANDSHAKE_CHALLENGE_SENT
+        connection.state = State.HANDSHAKE_CHALLENGE_SENT
         return True
 
-    def on_handshake_response(self, data, protocol):
+    def on_handshake_response(self, data, connection):
         """
         Catch when the server responds to a client's handshake. Update the
         'state' variable to keep track of this. Note: This step only occurs
         when a server requires name/password authentication.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        protocol.state = State.HANDSHAKE_RESPONSE_RECEIVED
+        connection.state = State.HANDSHAKE_RESPONSE_RECEIVED
         return True
 
-    def on_client_connect(self, data, protocol: StarryPyServer):
+    def on_client_connect(self, data, connection):
         """
         Catch when a the client updates the server with its connection
         details. This is a key step to fingerprinting the client, and
@@ -239,22 +238,22 @@ class PlayerManager(SimpleCommandPlugin):
         bans.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True on successful connection, False on a
                  failed connection.
         """
         try:
-            player = yield from self.add_or_get_player(**data["parsed"])
-            self.check_bans(protocol)
+            player = yield from self._add_or_get_player(**data["parsed"])
+            self.check_bans(connection)
         except (NameError, ValueError) as e:
-            yield from protocol.raw_write(self.build_rejection(str(e)))
-            protocol.die()
+            yield from connection.raw_write(self.build_rejection(str(e)))
+            connection.die()
             return False
-        player.ip = protocol.client_ip
-        protocol.player = player
+        player.ip = connection.client_ip
+        connection.player = player
         return True
 
-    def on_connect_success(self, data, protocol):
+    def on_connect_success(self, data, connection):
         """
         Catch when a successful connection is established. Update the 'state'
         variable to keep track of this. Since the client successfully
@@ -262,55 +261,55 @@ class PlayerManager(SimpleCommandPlugin):
         logged_in state).
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
         response = data["parsed"]
-        protocol.player.logged_in = True
-        protocol.player.client_id = response["client_id"]
-        protocol.player.protocol = protocol
-        protocol.player.location = yield from self.add_or_get_ship(
-            protocol.player.name)
-        protocol.state = State.CONNECTED
+        connection.player.logged_in = True
+        connection.player.client_id = response["client_id"]
+        connection.player.protocol = connection
+        connection.player.location = yield from self._add_or_get_ship(
+            connection.player.name)
+        connection.state = State.CONNECTED
         return True
 
-    def on_client_disconnect_request(self, data, protocol):
+    def on_client_disconnect_request(self, data, connection):
         """
         Catch when a client requests a disconnect from the server. At this
         point, we need to clean up the connection information we have for the
         client (logged_in state, location).
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
         # TODO: This likely needs more attention as clients disconnecting
         # cause an error in the client_loop in the server factory.
-        protocol.player.protocol = None
-        protocol.player.logged_in = False
-        protocol.player.location = None
+        connection.player.protocol = None
+        connection.player.logged_in = False
+        connection.player.location = None
         return True
 
-    def on_server_disconnect(self, data, protocol):
+    def on_server_disconnect(self, data, connection):
         """
         Catch when the server disconnects a client. Similar to the client
         disconnect packet, use this as a cue to perform cleanup, if it wasn't
         done already.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        protocol.player.protocol = None
-        protocol.player.logged_in = False
+        connection.player.protocol = None
+        connection.player.logged_in = False
         return True
 
-    def on_player_warp(self, data, protocol):
+    def on_player_warp(self, data, connection):
         """
         Hook when a player warps. Currently, nothing is done with this.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Even though we don't do anything with this, we
                  don't want to stop the packet here currently.
         """
@@ -322,43 +321,43 @@ class PlayerManager(SimpleCommandPlugin):
             pass
         return True
 
-    def on_world_start(self, data, protocol: StarryPyServer):
+    def on_world_start(self, data, connection):
         """
         Hook when a new world instance is started. Use the details passed to
         determine the location of the world, and update the player's
         information accordingly.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Don't stop the packet here.
         """
         # TODO: We only enumerate worlds and ships currently. We need to
         # expand this to include mission worlds and instance worlds too.
         planet = data["parsed"]["template_data"]
         if planet["celestialParameters"] is not None:
-            location = yield from self.add_or_get_planet(
+            location = yield from self._add_or_get_planet(
                 **planet["celestialParameters"]["coordinate"])
-            protocol.player.location = location
+            connection.player.location = location
         else:
-            if not isinstance(protocol.player.location, Ship):
-                protocol.player.location = yield from self.add_or_get_ship(
-                    protocol.player.name)
+            if not isinstance(connection.player.location, Ship):
+                connection.player.location = yield from self._add_or_get_ship(
+                    connection.player.name)
         self.logger.info("Player {} is now at location: {}".format(
-            protocol.player.name,
-            protocol.player.location))
+            connection.player.name,
+            connection.player.location))
         return True
 
-    def on_step_update(self, data, protocol):
+    def on_step_update(self, data, connection):
         """
         Catch when the first heartbeat packet is sent to a player. This is the
         final confirmation in the connection process. Update the 'state'
         variable to reflect this.
 
         :param data:
-        :param protocol:
+        :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        protocol.state = State.CONNECTED_WITH_HEARTBEAT
+        connection.state = State.CONNECTED_WITH_HEARTBEAT
         return True
 
     # Helper functions - Used by hooks and commands
@@ -453,22 +452,22 @@ class PlayerManager(SimpleCommandPlugin):
                 if not check_logged_in or player.logged_in:
                     return player
 
-    def ban_by_ip(self, ip, reason, protocol):
+    def ban_by_ip(self, ip, reason, connection):
         """
         Ban a player based on their IP address. Should be compatible with both
         IPv4 and IPv6.
 
         :param ip: String: IP of player to be banned.
         :param reason: String: Reason for player's ban.
-        :param protocol: Connection of target player to be banned.
+        :param connection: Connection of target player to be banned.
         :return: Null
         """
-        ban = IPBan(ip, reason, protocol.player.name)
+        ban = IPBan(ip, reason, connection.player.name)
         self.shelf["bans"][ip] = ban
-        send_message(protocol,
+        send_message(connection,
                      "Banned IP: {} with reason: {}".format(ip, reason))
 
-    def ban_by_name(self, name, reason, protocol):
+    def ban_by_name(self, name, reason, connection):
         """
         Ban a player based on their name. This is the easier route, as it is a
         more user friendly to target the player to be banned. Hooks to the
@@ -476,30 +475,30 @@ class PlayerManager(SimpleCommandPlugin):
 
         :param name: String: Name of the player to be banned.
         :param reason: String: Reason for player's ban.
-        :param protocol: Connection of target player to be banned.
+        :param connection: Connection of target player to be banned.
         :return: Null
         """
         p = self.get_player_by_name(name)
         if p is not None:
-            self.ban_by_ip(p.ip, reason, protocol)
+            self.ban_by_ip(p.ip, reason, connection)
         else:
-            send_message(protocol,
+            send_message(connection,
                          "Couldn't find a player by the name {}".format(name))
 
-    def check_bans(self, protocol):
+    def check_bans(self, connection):
         """
         Check if a ban on a player exists. Raise ValueError when true.
 
-        :param protocol: The connection of the target player.
+        :param connection: The connection of the target player.
         :return: Null.
         :raise: ValueError if player is banned. Pass reason message up with
                 exception.
         """
-        if protocol.client_ip in self.shelf["bans"]:
+        if connection.client_ip in self.shelf["bans"]:
             self.logger.info("Banned IP ({}) tried to log in.".format(
-                protocol.client_ip))
+                connection.client_ip))
             raise ValueError("You are banned!\nReason: {}".format(
-                self.shelf["bans"][protocol.client_ip].reason))
+                self.shelf["bans"][connection.client_ip].reason))
 
     def get_storage(self, caller):
         """
@@ -515,9 +514,9 @@ class PlayerManager(SimpleCommandPlugin):
         return self.plugin_shelf[name]
 
     @asyncio.coroutine
-    def add_or_get_player(self, uuid, name="", last_seen=None, roles=None,
-                          logged_in=True, protocol=None, client_id=-1, ip="",
-                          planet="", muted=False, **kwargs) -> Player:
+    def _add_or_get_player(self, uuid, name="", last_seen=None, roles=None,
+                           logged_in=True, connection=None, client_id=-1,
+                           ip="", planet="", muted=False, **kwargs) -> Player:
         """
         Given a UUID, try to find the player's info in storage. In the event
         that the player has never connected to the server before, add their
@@ -528,7 +527,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param last_seen: Date of last login
         :param roles: Roles granted to character
         :param logged_in: Boolean: Is character currently logged in
-        :param protocol: Connection of connecting player
+        :param connection: Connection of connecting player
         :param client_id: ID for connection given by server
         :param ip: IP address of connection
         :param planet: Current planet character is on/near
@@ -561,12 +560,12 @@ class PlayerManager(SimpleCommandPlugin):
             else:
                 roles = {x.__name__ for x in Guest.roles}
             new_player = Player(uuid, name, last_seen, roles, logged_in,
-                                protocol, client_id, ip, planet, muted)
+                                connection, client_id, ip, planet, muted)
             self.shelf["players"][uuid] = new_player
             return new_player
 
     @asyncio.coroutine
-    def add_or_get_ship(self, player_name):
+    def _add_or_get_ship(self, player_name):
         """
         Given a player's name, look up their ship in the ships shelf. If ship
         not in shelf, add it. Return a Ship object.
@@ -582,7 +581,7 @@ class PlayerManager(SimpleCommandPlugin):
             return ship
 
     @asyncio.coroutine
-    def add_or_get_planet(self, location, planet, satellite) -> Planet:
+    def _add_or_get_planet(self, location, planet, satellite) -> Planet:
         """
         Look up a planet in the planets shelf, return a Planet object. If not
         present, add it to the shelf. Return a Planet object.
@@ -612,14 +611,14 @@ class PlayerManager(SimpleCommandPlugin):
              role=Kick,
              doc="Kicks a player.",
              syntax=("[\"]player name[\"]", "[reason]"))
-    def kick(self, data, protocol):
+    def _kick(self, data, connection):
         """
         Kick a play off the server. You must specify a name. You may also
         specify an optional reason.
 
-        :param data:
-        :param protocol:
-        :return: Null
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
         """
 
         # FIXME: Kick is currently broken. Kicking someone will cause their
@@ -636,7 +635,7 @@ class PlayerManager(SimpleCommandPlugin):
 
         p = self.get_player_by_name(" ".join(data))
         if not p.logged_in:
-            send_message(protocol,
+            send_message(connection,
                          "Player {} is not currently logged in.".format(name))
             return False
         if p is not None:
@@ -646,18 +645,18 @@ class PlayerManager(SimpleCommandPlugin):
             yield from p.protocol.raw_write(to_send)
             broadcast(self.factory,
                       "{} has kicked {}. Reason: {}".format(
-                          protocol.player.name,
+                          connection.player.name,
                           p.name,
                           reason))
         else:
-            send_message(protocol,
+            send_message(connection,
                          "Couldn't find a player with name {}".format(name))
 
     @Command("ban",
              role=Ban,
              doc="Bans a user or an IP address.",
              syntax=("(ip | name)", "(reason)"))
-    def ban(self, data, protocol):
+    def _ban(self, data, connection):
         """
         Ban a player. You must specify either a name or an IP. You must also
         specify a 'reason' for banning the player. This information is stored
@@ -667,52 +666,52 @@ class PlayerManager(SimpleCommandPlugin):
         > You are banned!
         > Reason: <reason shows here>
 
-        :param data:
-        :param protocol:
-        :return: Null
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
         :raise: SyntaxWarning on incorrect input.
         """
         try:
             target, reason = data[0], " ".join(data[1:])
             if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target):
-                self.ban_by_ip(target, reason, protocol)
+                self.ban_by_ip(target, reason, connection)
             else:
-                self.ban_by_name(target, reason, protocol)
+                self.ban_by_name(target, reason, connection)
         except:
             raise SyntaxWarning
 
     @Command("list_bans",
              role=Ban,
              doc="Lists all active bans.")
-    def list_bans(self, data, protocol):
+    def _list_bans(self, data, connection):
         """
         List the current bans.
 
-        :param data:
-        :param protocol:
-        :return:
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
         """
         if len(self.shelf["bans"].keys()) == 0:
-            send_message(protocol, "There are no active bans.")
+            send_message(connection, "There are no active bans.")
         else:
             res = ["Active bans:"]
             for ban in self.shelf["bans"].values():
                 res.append("IP: {ip} - "
                            "Reason: {reason} - "
                            "Banned by: {banned_by}".format(**ban.__dict__))
-            send_message(protocol, "\n".join(res))
+            send_message(connection, "\n".join(res))
 
     @Command("grant", "promote",
              role=Grant,
              doc="Grants a role to a player.",
              syntax=("(role)", "(player)"))
-    def grant(self, data, protocol):
+    def _grant(self, data, connection):
         """
         Grant a role to a player.
 
-        :param data:
-        :param protocol:
-        :return: Null
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
         :raise: LookupError on unknown player or role entry.
         """
         try:
@@ -731,32 +730,32 @@ class PlayerManager(SimpleCommandPlugin):
             ro = [x for x in Owner.roles if
                   x.__name__.lower() == role.lower()][0]
             self.add_role(p, ro)
-            send_message(protocol,
+            send_message(connection,
                          "Granted role {} to {}.".format(ro.__name__, p.name))
             if p.protocol is not None:
                 send_message(p.protocol,
                              "You've been granted the role {} by {}".format(
-                                 ro.__name__, protocol.player.name))
+                                 ro.__name__, connection.player.name))
         except LookupError as e:
-            send_message(protocol, str(e))
+            send_message(connection, str(e))
 
     @Command("list_players",
              role=Whois,
              doc="Lists all players.",
              syntax=("[wildcards]",))
-    def list_players(self, data, protocol):
+    def _list_players(self, data, connection):
         """
         List the players in the database. Wildcard formats are allowed in this
         search (not really. NotImplemementedYet...) Careful, this list can get
         pretty big for a long running or popular server.
 
-        :param data:
-        :param protocol:
-        :return: Null
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
         """
         players = [player for player in self.players.values()]
         players.sort(key=attrgetter("name"))
-        send_message(protocol,
+        send_message(connection,
                      "{} players found:".format(len(players)))
         for x, player in enumerate(players):
             player_info = "  {0}. {1}{2}"
@@ -764,7 +763,7 @@ class PlayerManager(SimpleCommandPlugin):
                 l = " (logged-in, ID: {})".format(player.client_id)
             else:
                 l = ""
-            send_message(protocol, player_info.format(x + 1, player.name, l))
+            send_message(connection, player_info.format(x + 1, player.name, l))
 
     @Command("del_player",
              role=DeletePlayer,
@@ -772,15 +771,15 @@ class PlayerManager(SimpleCommandPlugin):
              syntax=("(username)",
                      "[*force=forces deletion of a logged in player."
                      " ^red;NOT RECOMMENDED^reset;.]"))
-    def delete_player(self, data, protocol):
+    def _delete_player(self, data, connection):
         """
         Removes a player from the player database. By default. you cannot
         remove a logged-in player, so either they need to be removed from
         the server first, or you have to apply the *force operation.
 
-        :param data:
-        :param protocol:
-        :return: Null
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
         :raise: NameError if is not available. ValueError if player is
                 currently logged in.
         """
@@ -799,7 +798,7 @@ class PlayerManager(SimpleCommandPlugin):
                 "absolutely necessary, append *force to the command.")
         self.players.pop(player.uuid)
         del player
-        send_message(protocol, "Player {} has been deleted.".format(name))
+        send_message(connection, "Player {} has been deleted.".format(name))
 
     # @Command("test_broadcast")
     # def test_broadcast(self, data, protocol):

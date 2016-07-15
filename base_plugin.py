@@ -8,7 +8,7 @@ class BaseMeta(type):
     def __new__(mcs, name, bases, clsdict):
         for key, value in clsdict.items():
             if callable(value) and (value.__name__.startswith("on_") or
-                                        hasattr(value, "_command")):
+                                    hasattr(value, "_command")):
                 clsdict[key] = asyncio.coroutine(value)
         c = type.__new__(mcs, name, bases, clsdict)
         return c
@@ -49,7 +49,6 @@ class BasePlugin(metaclass=BaseMeta):
 
         else:
             self.plugin_config = self.default_config
-
 
     def activate(self):
         pass
@@ -253,7 +252,7 @@ class BasePlugin(metaclass=BaseMeta):
         """Packet type: 48 """
         return True
 
-    def on_entity_message_response (self, data, protocol):
+    def on_entity_message_response(self, data, protocol):
         """Packet type: 49 """
         return True
 

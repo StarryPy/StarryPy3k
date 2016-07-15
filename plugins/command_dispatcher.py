@@ -25,6 +25,44 @@ class CommandDispatcher(BasePlugin):
         super().__init__()
         self.commands = {}
 
+    # Packet hooks - look for these packets and act on them
+
+    def on_chat_sent(self, data, connection):
+        """
+        Catch a chat packet as it goes by. If the first character in its
+        string is the command_prefix, it is a command. Grab it and start
+        interpreting its contents.
+
+        :param data: Packet which is being transmitted.
+        :param connection: Connection which sent the packet.
+        :return: Boolean: True if the message is not a command (or not one we
+                 know about), so that the packets keeps going. False if it is
+                 a command we know, so that it stops here after it is
+                 processed.
+        """
+        if data['parsed']['message'].startswith(
+                self.plugin_config.command_prefix):
+            to_parse = data['parsed']['message'][len(
+                self.plugin_config.command_prefix):].split()
+
+            try:
+                command = to_parse[0]
+            except IndexError:
+                return True  # It's just a slash.
+
+            if command not in self.commands:
+                return True  # There's no command here that we know of.
+            else:
+                asyncio.ensure_future(self.run_command(command,
+                                                       connection,
+                                                       to_parse[1:]))
+                return False  # We're handling the command in the event loop.
+        else:
+            # Not a command, just text, so pass it along.
+            return True
+
+    # Helper functions - Used by commands
+
     def register(self, fn, name, aliases=None):
         """
         Registers a function with a given name. Recursively applies itself
@@ -47,41 +85,41 @@ class CommandDispatcher(BasePlugin):
                             "{}".format(name))
         self.commands[name] = fn
 
-    def send_syntax_error(self, command, error, protocol):
+    def _send_syntax_error(self, command, error, connection):
         """
         Sends a syntax error to the user regarding a command.
 
         :param command: The command name
         :param error: The error (a string or an exception)
-        :param protocol: The player protocol.
+        :param connection: The player protocol.
         :return: None.
         """
-        send_message(protocol,
+        send_message(connection,
                      "Syntax error: {}".format(error),
                      get_syntax(command,
                                 self.commands[command],
                                 self.plugin_config.command_prefix))
         return None
 
-    def send_name_error(self, player_name, protocol):
+    def _send_name_error(self, player_name, connection):
         """
         Sends an error about an incorrect player name.
 
         :param player_name: The non-existent player's name
-        :param protocol: The active player protocol.
+        :param connection: The active player protocol.
         :return: None
         """
-        send_message(protocol, "Unknown player {}".format(player_name))
+        send_message(connection, "Unknown player {}".format(player_name))
         return None
 
     @asyncio.coroutine
-    def run_command(self, command, protocol, to_parse):
+    def run_command(self, command, connection, to_parse):
         """
         Evaluate the command passed in, passing along the arguments. Raise
         various errors depending on what might have gone wrong.
 
         :param command: Command to be executed. Looked up in commands dict.
-        :param protocol: Connection which is calling the command.
+        :param connection: Connection which is calling the command.
         :param to_parse: Arguments to provide to the command.
         :return: Null.
         :raise: SyntaxWarning on improper syntax usage. NameError when object
@@ -90,45 +128,13 @@ class CommandDispatcher(BasePlugin):
         """
         try:
             yield from self.commands[command](extractor(to_parse),
-                                              protocol)
+                                              connection)
         except SyntaxWarning as e:
-            self.send_syntax_error(command, e, protocol)
+            self._send_syntax_error(command, e, connection)
         except NameError as e:
-            self.send_name_error(e, protocol)
+            self._send_name_error(e, connection)
         except ValueError as e:
-            send_message(protocol, str(e))
+            send_message(connection, str(e))
         except:
             self.logger.exception("Unknown exception encountered. Ignoring.",
                                   exc_info=True)
-
-    def on_chat_sent(self, data, protocol):
-        """
-        Catch a chat packet as it goes by. If the first character in its
-        string is the command_prefix, it is a command. Grab it and start
-        interpreting its contents.
-
-        :param data: Packet which is being transmitted.
-        :param protocol: Connection which sent the packet.
-        :return: Boolean: True if the message is not a command (or not one we
-                 know about), so that the packets keeps going. False if it is
-                 a command we know, so that it stops here after it is
-                 processed.
-        """
-        if data['parsed']['message'].startswith(
-                self.plugin_config.command_prefix):
-            to_parse = data['parsed']['message'][len(
-                self.plugin_config.command_prefix):].split()
-
-            try:
-                command = to_parse[0]
-            except IndexError:
-                return True  # It's just a slash.
-
-            if command not in self.commands:
-                return True  # There's no command here that we know of.
-            else:
-                asyncio.Task(self.run_command(command, protocol, to_parse[1:]))
-                return False  # We're handling the command in the event loop.
-        else:
-            # Not a command, just text, so pass it along.
-            return True

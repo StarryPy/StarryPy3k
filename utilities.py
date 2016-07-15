@@ -20,6 +20,8 @@ from types import FunctionType
 path = Path(__file__).parent
 
 
+# Enums
+
 class State(IntEnum):
     VERSION_SENT = 0
     CLIENT_CONNECT_RECEIVED = 1
@@ -66,6 +68,8 @@ class ChatReceiveMode(IntEnum):
     WHISPER = 2
     COMMAND_RESULT = 3
 
+
+# Useful things
 
 def recursive_dictionary_update(d, u):
     """
