@@ -1,3 +1,12 @@
+"""
+StarryPy General Commands Plugin
+
+Plugin for handling most of the most basic (and most useful) commands.
+
+Original authors: AMorporkian
+Updated for release: kharidiron
+"""
+
 import packets
 import pparser
 import data_parser
@@ -5,6 +14,8 @@ from base_plugin import SimpleCommandPlugin
 from plugins.player_manager import Admin, Moderator, Registered, Guest
 from utilities import send_message, Command, broadcast
 
+
+# Roles
 
 class Whois(Admin):
     pass
@@ -26,13 +37,48 @@ class Whoami(Guest):
     pass
 
 
+###
+
 class GeneralCommands(SimpleCommandPlugin):
     name = "general_commands"
     depends = ["command_dispatcher", "player_manager"]
 
+    # Helper functions - Used by commands
+
+    def generate_whois(self, target):
+        """
+        Generate the whois data for a player, and return it as a formatted
+        string.
+
+        :param target: Player object to be looked up.
+        :return: String: The data about the player.
+        """
+        l = ""
+        if not target.logged_in:
+            l = "(^red;Offline^reset;)"
+        return ("Name: {} {}\n"
+                "Roles: ^yellow;{}^green;\n"
+                "UUID: ^yellow;{}^green;\n"
+                "IP address: ^cyan;{}^green;\n"
+                "Current location: ^yellow;{}^green;".format(
+                    target.name, l,
+                    ", ".join(target.roles),
+                    target.uuid,
+                    target.ip,
+                    target.location))
+
+    # Commands - In-game actions that can be performed
+
     @Command("who",
              doc="Lists players who are currently logged in.")
-    def who(self, data, protocol):
+    def _who(self, data, protocol):
+        """
+        Return a list of players currently logged in.
+
+        :param data: The packet containing the command.
+        :param protocol: The connection from which the packet came.
+        :return: Null.
+        """
         ret_list = []
         for player in self.plugins['player_manager'].players.values():
             if player.logged_in:
@@ -44,25 +90,21 @@ class GeneralCommands(SimpleCommandPlugin):
         send_message(protocol, "{} players online:\n"
                                "{}".format(len(ret_list), ", ".join(ret_list)))
 
-    def generate_whois(self, info):
-        l = ""
-        if not info.logged_in:
-            l = "(Offline)"
-        return ("Name: %s\n"
-                "Roles: ^yellow;%s^green;%s\n"
-                "UUID: ^yellow;%s^green;\n"
-                "IP address: ^cyan;%s^green;\n"
-                "Current location: ^yellow;%s^green;""" % (
-                    info.name, l, ", ".join(info.roles),
-                    info.uuid, info.ip, info.location))
-
     @Command("whois",
              role=Whois,
              doc="Returns client data about the specified user.",
              syntax="(username)")
-    def whois(self, data, protocol):
+    def _whois(self, data, protocol):
+        """
+        Display information about a player.
+
+        :param data: The packet containing the command.
+        :param protocol: The connection from which the packet came.
+        :return: Null.
+        :raise: SyntaxWarning if no name provided.
+        """
         if len(data) == 0:
-            raise SyntaxWarning
+            raise SyntaxWarning("No target provided.")
         name = " ".join(data)
         info = self.plugins['player_manager'].get_player_by_name(name)
         if info is not None:
@@ -75,7 +117,17 @@ class GeneralCommands(SimpleCommandPlugin):
              doc="Gives an item to a player. "
                  "If player name is omitted, give item(s) to self.",
              syntax=("[player=self]", "(item name)", "[count=1]"))
-    def give_item(self, data, protocol):
+    def _give_item(self, data, protocol):
+        """
+        Give item(s) to a player.
+
+        :param data: The packet containing the command.
+        :param protocol: The connection from which the packet came.
+        :return: Null.
+        :raise: SyntaxWarning if too many arguments provided or item count
+                cannot be properly converted. NameError if a target player
+                cannot be resolved.
+        """
         arg_count = len(data)
         target = self.plugins.player_manager.get_player_by_name(data[0])
         if arg_count == 1:
@@ -111,16 +163,26 @@ class GeneralCommands(SimpleCommandPlugin):
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
         yield from target.raw_write(item_packet)
-        send_message(protocol, "Gave %s (count: %d) to %s" %
-                               (item, count - 1, target.player.name))
-        send_message(target, "%s gave you %s (count: %d)" %
-                             (protocol.player.name, item, count - 1))
+        send_message(protocol,
+                     "Gave {} (count: {}) to {}".format(
+                         item,
+                         count - 1,
+                         target.player.name))
+        send_message(target, "{} gave you {} (count: {})".format(
+            protocol.player.name, item, count - 1))
 
     @Command("nick",
              role=Nick,
              doc="Changes your nickname to another one.",
              syntax="(username)")
-    def nick(self, data, protocol):
+    def _nick(self, data, protocol):
+        """
+        Change your name as it is displayed in the chat window.
+
+        :param data: The packet containing the command.
+        :param protocol: The connection from which the packet came.
+        :return: Null.
+        """
         name = " ".join(data)
         if self.plugins.player_manager.get_player_by_name(name):
             raise ValueError("There's already a user by that name.")
@@ -128,26 +190,38 @@ class GeneralCommands(SimpleCommandPlugin):
             old_name = protocol.player.name
             protocol.player.name = name
             broadcast(self.factory,
-                      "%s's name has been changed to %s" % (old_name, name))
-            # Removed for now as it's worthless.
-            # I've filed a report with the devs about /nick on the server side
-            # doing nothing but changing the chat name.
-            #csp = data_parser.ChatSent.build(dict(message="/nick %s" % name,
-            #                                      channel=0))
-            #asyncio.Task(protocol.client_raw_write(pparser.build_packet
-            #                                            'chat_sent'], csp)))
+                      "{}'s name has been changed to {}".format(old_name,
+                                                                name))
 
     @Command("whoami",
              role=Whoami,
              doc="Displays your current nickname for chat.")
-    def whoami(self, data, protocol):
+    def _whoami(self, data, protocol):
+        """
+        Displays your current nickname and connection information.
+
+        :param data: The packet containing the command.
+        :param protocol: The connection from which the packet came.
+        :return: Null.
+        """
+        # TODO: currently this is buggy, and will sometime not work...
+        # instead, the Starbound version of /whoami will take over.
         send_message(protocol,
                      self.generate_whois(protocol.player))
 
     @Command("broadcast",
              role=Broadcast,
-             doc="Displays your current nickname for chat.")
-    def universe_broadcast(self, data, protocol):
+             doc="Sends a message to everyone on the server.")
+    def _universe_broadcast(self, data, protocol):
+        """
+        Broadcast a message to everyone on the server. Currently, this is
+        actually redundant, as sending a message regularly is already a
+        broadcast.
+
+        :param data: The packet containing the command.
+        :param protocol: The connection from which the packet came.
+        :return: Null.
+        """
         message = " ".join(data)
         broadcast(self.factory,
                   message,
