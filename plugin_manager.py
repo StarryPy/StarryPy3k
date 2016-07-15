@@ -32,7 +32,7 @@ class PluginManager:
         return self._plugins
 
     @asyncio.coroutine
-    def do(self, protocol, action: str, packet: dict):
+    def do(self, connection, action: str, packet: dict):
         """
         Calls an action on all loaded plugins.
         """
@@ -42,7 +42,7 @@ class PluginManager:
                 send_flag = True
                 for plugin in self._plugins.values():
                     p = getattr(plugin, "on_%s" % action)
-                    if not (yield from p(packet, protocol)):
+                    if not (yield from p(packet, connection)):
                         send_flag = False
                 return send_flag
             else:

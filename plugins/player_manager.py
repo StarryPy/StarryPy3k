@@ -106,7 +106,7 @@ class Player:
         else:
             self.roles = set(roles)
         self.logged_in = logged_in
-        self.protocol = connection
+        self.connection = connection
         self.client_id = client_id
         self.ip = ip
         self.location = planet
@@ -267,7 +267,7 @@ class PlayerManager(SimpleCommandPlugin):
         response = data["parsed"]
         connection.player.logged_in = True
         connection.player.client_id = response["client_id"]
-        connection.player.protocol = connection
+        connection.player.connection = connection
         connection.player.location = yield from self._add_or_get_ship(
             connection.player.name)
         connection.state = State.CONNECTED
@@ -285,7 +285,7 @@ class PlayerManager(SimpleCommandPlugin):
         """
         # TODO: This likely needs more attention as clients disconnecting
         # cause an error in the client_loop in the server factory.
-        connection.player.protocol = None
+        connection.player.connection = None
         connection.player.logged_in = False
         connection.player.location = None
         return True
@@ -300,7 +300,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        connection.player.protocol = None
+        connection.player.connection = None
         connection.player.logged_in = False
         return True
 
@@ -399,7 +399,7 @@ class PlayerManager(SimpleCommandPlugin):
         :return: Null
         """
         for player in self.shelf["players"].values():
-            player.protocol = None
+            player.connection = None
             player.logged_in = False
         self.shelf.close()
         self.logger.debug("Closed the shelf")
@@ -555,7 +555,7 @@ class PlayerManager(SimpleCommandPlugin):
             if self.get_player_by_name(name) is not None:
                 raise NameError("A user with that name already exists.")
             self.logger.info("Adding new player to database: {} (UUID:{})"
-                             "".format(uuid, name))
+                             "".format(name, uuid))
             if uuid == self.plugin_config.owner_uuid:
                 roles = {x.__name__ for x in Owner.roles}
             else:
@@ -643,7 +643,7 @@ class PlayerManager(SimpleCommandPlugin):
             kick_packet = ServerDisconnect.build({
                 "reason": "You were kicked.\n Reason: {}".format(reason)})
             to_send = build_packet(packets['server_disconnect'], kick_packet)
-            yield from p.protocol.raw_write(to_send)
+            yield from p.connection.raw_write(to_send)
             broadcast(self.factory,
                       "{} has kicked {}. Reason: {}".format(
                           connection.player.name,
@@ -733,8 +733,8 @@ class PlayerManager(SimpleCommandPlugin):
             self.add_role(p, ro)
             send_message(connection,
                          "Granted role {} to {}.".format(ro.__name__, p.name))
-            if p.protocol is not None:
-                send_message(p.protocol,
+            if p.connection is not None:
+                send_message(p.connection,
                              "You've been granted the role {} by {}".format(
                                  ro.__name__, connection.player.name))
         except LookupError as e:
@@ -802,13 +802,13 @@ class PlayerManager(SimpleCommandPlugin):
         send_message(connection, "Player {} has been deleted.".format(name))
 
     # @Command("test_broadcast")
-    # def test_broadcast(self, data, protocol):
-    #     self.planetary_broadcast(protocol.player, " ".join(data))
+    # def test_broadcast(self, data, connection):
+    #     self.planetary_broadcast(connection.player, " ".join(data))
     #
     # def planetary_broadcast(self, player, message):
     #     for p in self.players.values():
     #         if p.logged_in and p.location is player.location:
-    #             send_message(p.protocol,
+    #             send_message(p.connection,
     #                          message,
     #                          name=p.name)
     #     return None

@@ -91,7 +91,7 @@ class CommandDispatcher(BasePlugin):
 
         :param command: The command name
         :param error: The error (a string or an exception)
-        :param connection: The player protocol.
+        :param connection: The player connection.
         :return: None.
         """
         send_message(connection,
@@ -106,7 +106,7 @@ class CommandDispatcher(BasePlugin):
         Sends an error about an incorrect player name.
 
         :param player_name: The non-existent player's name
-        :param connection: The active player protocol.
+        :param connection: The active player connection.
         :return: None
         """
         send_message(connection, "Unknown player {}".format(player_name))

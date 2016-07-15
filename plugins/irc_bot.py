@@ -53,9 +53,9 @@ class MockPlayer:
         return False
 
 
-class MockProtocol:
+class MockConnection:
     """
-    A mock protocol for command passing.
+    A mock connection object for command passing.
     """
     def __init__(self, owner):
         self.owner = owner
@@ -121,7 +121,7 @@ class IRCPlugin(BasePlugin):
         self.server = None
         self.channel = None
         self.username = None
-        self.protocol = None
+        self.connection = None
         self.prefix = None
         self.dispatcher = None
         self.bot = None
@@ -131,7 +131,7 @@ class IRCPlugin(BasePlugin):
 
     def activate(self):
         super().activate()
-        self.protocol = MockProtocol(self)
+        self.connection = MockConnection(self)
         self.dispatcher = self.plugins.command_dispatcher
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
             "command_prefix"]
@@ -298,12 +298,12 @@ class IRCPlugin(BasePlugin):
         split = data.split()
         command = split[0]
         to_parse = split[1:]
-        self.protocol.player.roles = self.protocol.player.guest
+        self.connection.player.roles = self.connection.player.guest
         if mask.split("!")[0] in self.ops:
-            self.protocol.player.roles = self.protocol.player.owner
+            self.connection.player.roles = self.connection.player.owner
         if command in self.dispatcher.commands:
             yield from self.dispatcher.run_command(command,
-                                                   self.protocol,
+                                                   self.connection,
                                                    to_parse)
         else:
             yield from self.bot_write(target, "Command not found.")
@@ -316,5 +316,5 @@ class IRCPlugin(BasePlugin):
         :return: Null.
         """
         while True:
-            yield from asyncio.sleep(10)
+            yield from asyncio.sleep(6)
             self.bot.send("NAMES {}".format(self.channel))

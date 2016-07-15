@@ -275,15 +275,15 @@ def get_syntax(command, fn, command_prefix):
         fn.syntax)
 
 
-def send_message(protocol, *messages, **kwargs):
+def send_message(connection, *messages, **kwargs):
     """
     Sends a message to a connected player.
 
-    :param protocol: The protocol to send the message to.
+    :param connection: The connection to send the message to.
     :param messages: The message(s) to send.
     :return: A Future for the message(s) being sent.
     """
-    return asyncio.Task(protocol.send_message(*messages, **kwargs))
+    return asyncio.Task(connection.send_message(*messages, **kwargs))
 
 
 def broadcast(factory, *messages, **kwargs):
@@ -329,14 +329,14 @@ class Command:
         :param f: The function the Command decorator is wrapping.
         :return: The now-wrapped command, with all the trappings.
         """
-        def wrapped(s, data, protocol):
+        def wrapped(s, data, connection):
             try:
                 for role in self.roles:
-                    if role not in protocol.player.roles:
+                    if role not in connection.player.roles:
                         raise PermissionError
-                return f(s, data, protocol)
+                return f(s, data, connection)
             except PermissionError:
-                send_message(protocol,
+                send_message(connection,
                              "You don't have permissions to do that.")
 
         wrapped._command = True

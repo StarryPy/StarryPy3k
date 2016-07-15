@@ -153,7 +153,7 @@ class GeneralCommands(SimpleCommandPlugin):
             raise SyntaxWarning("Too many arguments")
         if target is None:
             raise NameError(target)
-        target = target.protocol
+        target = target.connection
         if count > 10000 and item != "money":
             count = 10000
         count += 1

@@ -245,7 +245,7 @@ class PlanetProtect(StorageCommandPlugin):
                          "Added {} to allowed list for {}".format(
                              p.name, connection.player.location))
             try:
-                yield from p.protocol.send_message(
+                yield from p.connection.send_message(
                     "You've been granted build access on {} by {}".format(
                         connection.player.location, connection.player.name))
             except AttributeError:

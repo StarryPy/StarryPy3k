@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import sys
-# from binascii import hexlify
 
 from configuration_manager import ConfigurationManager
 from data_parser import ChatReceived
@@ -38,7 +37,7 @@ class StarryPyServer:
     def server_loop(self):
         """
         Main server loop. As clients connect to the proxy, pass the
-        connection on to the upstream server and bind it to a 'protocol'.
+        connection on to the upstream server and bind it to a 'connection'.
         Start sniffing all packets as they fly by.
 
         :return:
@@ -54,8 +53,6 @@ class StarryPyServer:
                 # Break in case of emergencies:
                 # if packet['type'] not in [17, 40, 43, 48, 51]:
                 #     logger.debug('c->s  {}'.format(packet['type']))
-                # if packet['type'] in [1]:
-                #     logger.debug('{}'.format(hexlify(packet['original_data'])))
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
         except asyncio.IncompleteReadError:
@@ -82,8 +79,6 @@ class StarryPyServer:
                 # Break in case of emergencies:
                 # if packet['type'] not in [6, 17, 23, 27, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
-                # if packet['type'] in [1]:
-                #     logger.debug('{}'.format(hexlify(packet['original_data'])))
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
@@ -195,7 +190,7 @@ class StarryPyServer:
 class ServerFactory:
     def __init__(self):
         try:
-            self.protocols = []
+            self.connections = []
             self.configuration_manager = ConfigurationManager()
             self.configuration_manager.load_config(
                 path / 'config' / 'config.json',
@@ -223,9 +218,9 @@ class ServerFactory:
         :param client_id: Client ID of player.
         :return: Null.
         """
-        for protocol in self.protocols:
+        for connection in self.connections:
             try:
-                yield from protocol.send_message(messages,
+                yield from connection.send_message(messages,
                                                  name=name,
                                                  mode=ChatReceiveMode.CHANNEL,
                                                  client_id=client_id)
@@ -241,7 +236,7 @@ class ServerFactory:
         :param connection: Connection to be removed.
         :return: Null.
         """
-        self.protocols.remove(connection)
+        self.connections.remove(connection)
 
     def __call__(self, reader, writer):
         """
@@ -254,8 +249,8 @@ class ServerFactory:
         """
         server = StarryPyServer(reader, writer, self.configuration_manager,
                                 factory=self)
-        self.protocols.append(server)
-        logger.debug("New protocol added")
+        self.connections.append(server)
+        logger.debug("New connection established.")
 
     def kill_all(self):
         """
@@ -264,7 +259,7 @@ class ServerFactory:
         :return: Null.
         """
         logger.debug("Dropping all connections.")
-        for connection in self.protocols:
+        for connection in self.connections:
             connection.die()
 
 
