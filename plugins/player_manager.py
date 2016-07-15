@@ -715,7 +715,12 @@ class PlayerManager(SimpleCommandPlugin):
         :return: Null
         :raise: LookupError on unknown player or role entry.
         """
-        role = data[0]
+        try:
+            role = data[0]
+        except IndexError:
+            raise SyntaxWarning("Please provide a Role and a target player.")
+        if not data[1:]:
+            raise SyntaxWarning("Please provide a target player.")
         name = " ".join(data[1:])
         p = self.get_player_by_name(name)
         try:
