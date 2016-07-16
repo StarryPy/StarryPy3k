@@ -301,9 +301,6 @@ if __name__ == "__main__":
     ch.setFormatter(formatter)
     aiologger.addHandler(ch)
     logger.addHandler(ch)
-    with open("commit_count") as f:
-        ver = f.read()
-    logger.info("Running commit %s", ver)
 
     loop = asyncio.get_event_loop()
     # loop.set_debug(False)  # Removed in commit to avoid errors.
