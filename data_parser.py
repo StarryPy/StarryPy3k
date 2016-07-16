@@ -6,7 +6,7 @@ import struct
 from collections import OrderedDict
 from io import BytesIO
 
-from utilities import DotDict
+from utilities import DotDict, WarpType, WarpWorldType
 
 
 #
@@ -398,6 +398,84 @@ class StringSet(Struct):
         return c
 
 
+class CelestialCoordinates(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        world_x = SBInt32.parse(stream, ctx)
+        world_y = SBInt32.parse(stream, ctx)
+        world_z = SBInt32.parse(stream, ctx)
+        world_planet = SBInt32.parse(stream, ctx)
+        world_satellite = SBInt32.parse(stream, ctx)
+        return {"x": world_x,
+                "y": world_y,
+                "z": world_z,
+                "planet": world_planet,
+                "satellite": world_satellite}
+
+
+class WarpAction(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        warp_type = Byte.parse(stream, ctx)
+        d = {"warp_type": warp_type}
+
+        if warp_type == WarpType.TO_WORLD:
+            # warp_type 1
+            world_id = Byte.parse(stream, ctx)
+            d["world_id"] = world_id
+
+            if world_id == WarpWorldType.CELESTIAL_WORLD:
+                # world_id 1
+                celestial_coordinates = CelestialCoordinates.parse(stream, ctx)
+                d["celestial_coordinates"] = celestial_coordinates
+                flag = Byte.parse(stream, ctx)
+                if flag == 1:
+                    teleporter = StarString.parse(stream, ctx)
+                    d["teleporter"] = teleporter
+            elif world_id == WarpWorldType.PLAYER_WORLD:
+                # world_id 2
+                ship_id = UUID.parse(stream, ctx)
+                d["ship_id"] = ship_id
+                flag = Byte.parse(stream, ctx)
+                if flag == 2:
+                    pos_x = UBInt32.parse(stream, ctx)
+                    d["pos_x"] = pos_x
+                    pos_y = UBInt32.parse(stream, ctx)
+                    d["pos_y"] = pos_y
+            elif world_id == WarpWorldType.UNIQUE_WORLD:
+                # world_id 3
+                world_name = StarString.parse(stream, ctx)
+                d["world_name"] = world_name
+                space = UBInt16.parse(stream, ctx)
+                flag = Byte.parse(stream, ctx)
+                if flag == 1:
+                    teleporter = StarString.parse(stream, ctx)
+                    d["teleporter"] = teleporter
+            elif world_id == WarpWorldType.MISSION_WORLD:
+                # world_id 4
+                world_name = StarString.parse(stream, ctx)
+                d["world_name"] = world_name
+
+        elif warp_type == WarpType.TO_PLAYER:
+            # warp_type 2
+            player_id = UUID.parse(stream, ctx)
+            d["player_id"] = player_id
+
+        elif warp_type == WarpType.TO_ALIAS:
+            # warp_type 3
+            alias_id = SBInt32.parse(stream, ctx)
+            d["alias_id"] = alias_id
+
+        return d
+
+    # @classmethod
+    # def _build(cls, obj, ctx: OrderedDotDict):
+    #     res = b''
+    #     res += Byte.build(obj["warp_type"])
+    #
+    #     return res
+
+
 class ChatHeader(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
@@ -531,6 +609,12 @@ class ChatReceived(Struct):
     name = StarString
     junk = Byte
     message = StarString
+
+
+class PlayerWarpResult(Struct):
+    """packet type: 8"""
+    warp_success = Flag
+    warp_action = WarpAction
 
 
 class PlayerWarp(Struct):

@@ -13,7 +13,7 @@ parse_map = {
     5: ChatReceived,
     6: None,
     7: None,
-    8: None,
+    8: PlayerWarpResult,
     9: ProtocolRequest,
     10: ClientConnect,
     11: ClientDisconnectRequest,
