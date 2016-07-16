@@ -11,12 +11,6 @@ Original authors: teihoo, FZFalzar
 Updated for release: kharidiron
 """
 
-# TODO: Fundamental issue - by colorizing names, we prevent player's messages
-#       from being logged in the 'players' chat tab. This is because messages
-#       are sent using the 'broadcast' bit, with no username or client_id
-#       attached. Instead, the message body itself contains all the trappings:
-#       timestamp, username, colors and finally the message itself.
-
 from utilities import DotDict, ChatReceiveMode
 from datetime import datetime
 from base_plugin import BasePlugin
@@ -27,7 +21,8 @@ from base_plugin import BasePlugin
 class ChatEnhancements(BasePlugin):
     name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
-    default_config = {"chat_timestamps": True,
+    default_config = {"chat_style": "universal",
+                      "chat_timestamps": True,
                       "timestamp_color": "^gray;",
                       "colors": DotDict({
                           "Owner": "^#F7434C;",
@@ -44,10 +39,13 @@ class ChatEnhancements(BasePlugin):
         self.colors = None
         self.cts = None
         self.cts_color = None
+        self.chat_style = "universal"
 
     def activate(self):
         super().activate()
         self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
+        self.chat_style = self.config.get_plugin_config(self.name)[
+            "chat_style"]
         self.colors = self.config.get_plugin_config(self.name)["colors"]
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
         self.cts_color = self.config.get_plugin_config(self.name)[
@@ -75,8 +73,8 @@ class ChatEnhancements(BasePlugin):
             if self.cts:
                 now = datetime.now()
                 timestamp = "{}{}{}> <".format(self.cts_color,
-                                              now.strftime("%H:%M"),
-                                              "^reset;")
+                                               now.strftime("%H:%M"),
+                                               "^reset;")
             else:
                 timestamp = ""
 
@@ -85,20 +83,32 @@ class ChatEnhancements(BasePlugin):
             sender = self.plugins['player_manager'].get_player_by_name(
                 connection.player.name)
             client_id = connection.player.client_id
+            msg = data['parsed']['message']
 
             try:
-                msg = data['parsed']['message']
-                # if sender.name == "server":
-                #     # Server messages don't get colorized
-                #     return
-
                 sender = timestamp + self.colored_name(sender)
 
-                for p in self.factory.connections:
-                    yield from p.send_message(msg,
-                                              client_id=client_id,
-                                              name=sender,
-                                              mode=ChatReceiveMode.BROADCAST)
+                if self.chat_style == "universal":
+                    send_mode = ChatReceiveMode.BROADCAST
+                    channel = ""
+
+                    for p in self.factory.connections:
+                        yield from p.send_message(msg,
+                                                  client_id=client_id,
+                                                  name=sender,
+                                                  mode=send_mode,
+                                                  channel=channel)
+                elif self.chat_style == "planetary":
+                    send_mode = ChatReceiveMode.CHANNEL
+                    channel = "FIXME"
+                    # TODO: Need to make Starbound-compatible location names
+                    for p in self.factory.connections:
+                        if p.player.location == connection.player.location:
+                            yield from p.send_message(msg,
+                                                      client_id=client_id,
+                                                      name=sender,
+                                                      mode=send_mode,
+                                                      channel=channel)
 
                 # Check if people are on the same planet. If so, and WORLD chat
                 # is enabled, send it only to them. Otherwise, send it to out
