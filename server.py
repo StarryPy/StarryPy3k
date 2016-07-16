@@ -53,6 +53,7 @@ class StarryPyServer:
                 # Break in case of emergencies:
                 # if packet['type'] not in [17, 40, 43, 48, 51]:
                 #     logger.debug('c->s  {}'.format(packet['type']))
+
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
         except asyncio.IncompleteReadError:
@@ -79,6 +80,7 @@ class StarryPyServer:
                 # Break in case of emergencies:
                 # if packet['type'] not in [6, 17, 23, 27, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
+
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
@@ -88,7 +90,7 @@ class StarryPyServer:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message, *messages, mode=ChatReceiveMode.CHANNEL,
+    def send_message(self, message, *messages, mode=ChatReceiveMode.BROADCAST,
                      client_id=0, name="", channel=""):
         """
         Convenience function to send chat messages to the client. Note that
