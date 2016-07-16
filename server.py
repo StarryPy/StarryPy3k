@@ -89,7 +89,7 @@ class StarryPyServer:
 
     @asyncio.coroutine
     def send_message(self, message, *messages, mode=ChatReceiveMode.CHANNEL,
-                     client_id=0, name="", channel="", junk=0):
+                     client_id=0, name="", channel=""):
         """
         Convenience function to send chat messages to the client. Note that
         this does *not* send messages to the server at large; broadcast
@@ -102,9 +102,9 @@ class StarryPyServer:
         :param name:
         :param channel:
         :param mode:
-        :param junk: just a padding value with no utility currently
         :return:
         """
+        header = {"mode": mode, "channel": channel, "client_id": client_id}
         try:
             if messages:
                 for m in messages:
@@ -123,13 +123,10 @@ class StarryPyServer:
                 return
 
             if self.state == State.CONNECTED_WITH_HEARTBEAT:
-                chat_packet = ChatReceived.build(
-                    {"message": message,
-                     "mode": mode,
-                     "client_id": client_id,
-                     "name": name,
-                     "junk": junk,
-                     "channel": channel})
+                chat_packet = ChatReceived.build({"message": message,
+                                                  "name": name,
+                                                  "junk": 0,
+                                                  "header": header})
                 to_send = build_packet(packets['chat_received'], chat_packet)
                 yield from self.raw_write(to_send)
         except Exception as err:

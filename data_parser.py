@@ -398,6 +398,34 @@ class StringSet(Struct):
         return c
 
 
+class ChatHeader(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        mode = Byte.parse(stream, ctx)
+        if mode == 0:
+            channel = StarString.parse(stream, ctx)
+            client_id = UBInt16.parse(stream, ctx)
+        else:
+            channel = ""
+            _ = Byte.parse(stream, ctx)
+            client_id = UBInt16.parse(stream, ctx)
+        return {"mode": mode,
+                "channel": channel,
+                "client_id": client_id}
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        res += Byte.build(obj["mode"])
+        if obj["mode"] == 0:
+            res += StarString.build(obj["channel"])
+            res += UBInt16.build(obj["client_id"])
+        else:
+            res += Byte.build(0)
+            res += UBInt16.build(obj["client_id"])
+        return res
+
+
 class WorldChunks(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
@@ -499,11 +527,9 @@ class ServerDisconnect(Struct):
 
 class ChatReceived(Struct):
     """packet type: 5"""
-    mode = Byte
-    junk = Byte
-    client_id = UBInt16
+    header = ChatHeader
     name = StarString
-    channel = StarString
+    junk = Byte
     message = StarString
 
 

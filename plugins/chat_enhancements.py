@@ -17,10 +17,9 @@ Updated for release: kharidiron
 #       attached. Instead, the message body itself contains all the trappings:
 #       timestamp, username, colors and finally the message itself.
 
-from utilities import DotDict
+from utilities import DotDict, ChatReceiveMode
 from datetime import datetime
 from base_plugin import BasePlugin
-from utilities import ChatSendMode
 
 
 ###
@@ -29,6 +28,7 @@ class ChatEnhancements(BasePlugin):
     name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
     default_config = {"chat_timestamps": True,
+                      "timestamp_color": "^gray;",
                       "colors": DotDict({
                           "Owner": "^#F7434C;",
                           "SuperAdmin": "^#E23800;",
@@ -43,12 +43,15 @@ class ChatEnhancements(BasePlugin):
         self.command_dispatcher = None
         self.colors = None
         self.cts = None
+        self.cts_color = None
 
     def activate(self):
         super().activate()
         self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
         self.colors = self.config.get_plugin_config(self.name)["colors"]
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
+        self.cts_color = self.config.get_plugin_config(self.name)[
+            "timestamp_color"]
 
     # Packet hooks - look for these packets and act on them
 
@@ -71,59 +74,49 @@ class ChatEnhancements(BasePlugin):
 
             if self.cts:
                 now = datetime.now()
-                timestamp = "[{}]".format(now.strftime("%H:%M"))
+                timestamp = "{}{}{}> <".format(self.cts_color,
+                                              now.strftime("%H:%M"),
+                                              "^reset;")
             else:
                 timestamp = ""
 
-            # Determine message sender for later
+            # Determine message sender for later; we do it this way so we
+            # can get the role information conveniently at the same time.
             sender = self.plugins['player_manager'].get_player_by_name(
                 connection.player.name)
+            client_id = connection.player.client_id
 
             try:
-                p = data['parsed']
-                if sender.name == "server":
-                    # Server messages don't get colorized
-                    return
+                msg = data['parsed']['message']
+                # if sender.name == "server":
+                #     # Server messages don't get colorized
+                #     return
 
-                # Colorize message based on SendMode [OBSOLETE]
-                # TODO: Only one chat channel now. Either this should be
-                # deleted or chat-channels will need to be re-implemented in
-                # StarryPy.
-                if p['send_mode'] == ChatSendMode.WORLD:
-                    cts_color = "^green;"
-                elif p['send_mode'] == ChatSendMode.UNIVERSE:
-                    cts_color = "^yellow;"  # <- Starbound default color
-                else:
-                    cts_color = "^gray;"
+                sender = timestamp + self.colored_name(sender)
 
-                sender = self.colored_name(sender)
-                msg = "{}{} <{}{}> {}".format(
-                    cts_color,
-                    timestamp,
-                    sender,
-                    cts_color,
-                    p['message']
-                )
+                for p in self.factory.connections:
+                    yield from p.send_message(msg,
+                                              client_id=client_id,
+                                              name=sender,
+                                              mode=ChatReceiveMode.BROADCAST)
 
                 # Check if people are on the same planet. If so, and WORLD chat
                 # is enabled, send it only to them. Otherwise, send it to out
                 # to broadcast (to everyone).
-                if p['send_mode'] == ChatSendMode.WORLD:
-                    for p in self.factory.protocols:
-                        if p.player.location == connection.player.location:
-                            yield from p.send_message(msg)
-                else:
-                    yield from self.factory.broadcast(msg)
-
+                # if p['send_mode'] == ChatSendMode.WORLD:
+                #     for p in self.factory.connections:
+                #         if p.player.location == connection.player.location:
+                #             yield from p.send_message(msg)
+                # else:
+                #     yield from self.factory.broadcast(msg)
             except AttributeError as e:
                 self.logger.warning(
                     "AttributeError in colored_name: {}".format(str(e)))
-                cts_color = ""
-                yield from connection.send_message(
-                    "{}<{}{}> {}".format(cts_color,
-                                         connection.player.name,
-                                         cts_color,
-                                         sender.message))
+                for p in self.factory.connections:
+                    yield from p.send_message(msg,
+                                              client_id=client_id,
+                                              name=connection.player.name,
+                                              mode=ChatReceiveMode.BROADCAST)
                 return True
         return
 
