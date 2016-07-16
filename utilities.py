@@ -44,9 +44,9 @@ class WarpType(IntEnum):
 
 
 class WarpWorldType(IntEnum):
-    UNIQUE_WORLD = 1
-    CELESTIAL_WORLD = 2
-    PLAYER_WORLD = 3
+    CELESTIAL_WORLD = 1
+    PLAYER_WORLD = 2
+    UNIQUE_WORLD = 3
     MISSION_WORLD = 4
 
 
