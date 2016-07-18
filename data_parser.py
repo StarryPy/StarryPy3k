@@ -426,45 +426,36 @@ class WarpAction(Struct):
 
             if world_id == WarpWorldType.CELESTIAL_WORLD:
                 # world_id 1
-                celestial_coordinates = CelestialCoordinates.parse(stream, ctx)
-                d["celestial_coordinates"] = celestial_coordinates
+                d["celestial_coordinates"] = CelestialCoordinates.parse(stream,
+                                                                        ctx)
                 flag = Byte.parse(stream, ctx)
                 if flag == 1:
-                    teleporter = StarString.parse(stream, ctx)
-                    d["teleporter"] = teleporter
+                    d["teleporter"] = StarString.parse(stream, ctx)
             elif world_id == WarpWorldType.PLAYER_WORLD:
                 # world_id 2
-                ship_id = UUID.parse(stream, ctx)
-                d["ship_id"] = ship_id
+                d["ship_id"] = UUID.parse(stream, ctx)
                 flag = Byte.parse(stream, ctx)
                 if flag == 2:
-                    pos_x = UBInt32.parse(stream, ctx)
-                    d["pos_x"] = pos_x
-                    pos_y = UBInt32.parse(stream, ctx)
-                    d["pos_y"] = pos_y
+                    d["pos_x"] = UBInt32.parse(stream, ctx)
+                    d["pos_y"] = UBInt32.parse(stream, ctx)
             elif world_id == WarpWorldType.UNIQUE_WORLD:
                 # world_id 3
-                world_name = StarString.parse(stream, ctx)
-                d["world_name"] = world_name
-                space = UBInt16.parse(stream, ctx)
-                flag = Byte.parse(stream, ctx)
-                if flag == 1:
-                    teleporter = StarString.parse(stream, ctx)
-                    d["teleporter"] = teleporter
+                d["world_name"] = StarString.parse(stream, ctx)
+                d["instance_flag"] = Byte.parse(stream, ctx)
+                d["instance_id"] = UUID.parse(stream, ctx)
+                d["teleporter_flag"] = Byte.parse(stream, ctx)
+                d["teleporter"] = StarString.parse(stream, ctx)
             elif world_id == WarpWorldType.MISSION_WORLD:
                 # world_id 4
-                world_name = StarString.parse(stream, ctx)
-                d["world_name"] = world_name
+                d["world_name"] = StarString.parse(stream, ctx)
 
         elif warp_type == WarpType.TO_PLAYER:
             # warp_type 2
-            player_id = UUID.parse(stream, ctx)
-            d["player_id"] = player_id
+            d["player_id"] = UUID.parse(stream, ctx)
 
         elif warp_type == WarpType.TO_ALIAS:
             # warp_type 3
-            alias_id = SBInt32.parse(stream, ctx)
-            d["alias_id"] = alias_id
+            d["alias_id"] = SBInt32.parse(stream, ctx)
 
         return d
 

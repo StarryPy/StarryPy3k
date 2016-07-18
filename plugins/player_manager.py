@@ -18,11 +18,12 @@ import shelve
 from operator import attrgetter
 
 import packets
+import utilities
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
 from utilities import Command, send_message, broadcast, DotDict, State, \
-    WarpType
+    WarpType, WarpWorldType, WarpAliasType
 from packets import packets
 
 
@@ -137,8 +138,13 @@ class Ship:
     """
     Prototype class for a Ship.
     """
-    def __init__(self, player):
+    def __init__(self, uuid, player):
+        self.uuid = uuid
         self.player = player
+
+    def _gen_ship_string(self):
+        s = "ClientShipWorld:"
+        s += "{}".format(self.player.uuid)
 
     def __str__(self):
         return "{}'s ship".format(self.player)
@@ -149,10 +155,18 @@ class Planet:
     Prototype class for a planet.
     """
     def __init__(self, location=(0, 0, 0), planet=0,
-                 satellite=0):
+                 satellite=0, name=""):
         self.a, self.x, self.y = location
         self.planet = planet
         self.satellite = satellite
+        self.name = name
+
+    def _gen_planet_string(self):
+        s = "CelestialWorld:"
+        s += "{}:{}:{}:{}".format(self.a, self.x, self.y, self.planet)
+        if self.satellite > int(0):
+            s += ":{}".format(self.satellite)
+        return s
 
     def __str__(self):
         return "{}:{}:{}:{}:{}".format(self.a, self.x, self.y,
@@ -268,8 +282,6 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.logged_in = True
         connection.player.client_id = response["client_id"]
         connection.player.connection = connection
-        connection.player.location = yield from self._add_or_get_ship(
-            connection.player.name)
         connection.state = State.CONNECTED
         return True
 
@@ -304,23 +316,6 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.logged_in = False
         return True
 
-    def on_player_warp(self, data, connection):
-        """
-        Hook when a player warps. Currently, nothing is done with this.
-
-        :param data:
-        :param connection:
-        :return: Boolean: True. Even though we don't do anything with this, we
-                 don't want to stop the packet here currently.
-        """
-        if data["parsed"]["warp_type"] == WarpType.TO_ALIAS:
-            pass
-        elif data["parsed"]["warp_type"] == WarpType.TO_PLAYER:
-            pass
-        elif data["parsed"]["warp_type"] == WarpType.TO_WORLD:
-            pass
-        return True
-
     def on_world_start(self, data, connection):
         """
         Hook when a new world instance is started. Use the details passed to
@@ -331,21 +326,53 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Don't stop the packet here.
         """
-        # TODO: We only enumerate worlds and ships currently. We need to
-        # expand this to include mission worlds and instance worlds too.
-        # TODO: beaming to another person's ship shows wrong name in log output
         planet = data["parsed"]["template_data"]
         if planet["celestialParameters"] is not None:
             location = yield from self._add_or_get_planet(
                 **planet["celestialParameters"]["coordinate"])
             connection.player.location = location
-        else:
-            if not isinstance(connection.player.location, Ship):
-                connection.player.location = yield from self._add_or_get_ship(
-                    connection.player.name)
         self.logger.info("Player {} is now at location: {}".format(
             connection.player.name,
             connection.player.location))
+        return True
+
+    def on_player_warp_result(self, data, connection):
+        """
+        Hook when a player warps to a world. This action is also used when
+        a player first logs in. Use the details passed to determine the
+        location of the world, and update the player's information accordingly.
+
+        :param data:
+        :param connection:
+        :return: Boolean: True. Don't stop the packet here.
+        """
+        warp_data = data["parsed"]["warp_action"]
+        if warp_data["warp_type"] == WarpType.TO_ALIAS:
+            if warp_data["alias_id"] == WarpAliasType.ORBITED:
+                pass
+                # down to planet, need coordinates from world_start
+            elif warp_data["alias_id"] == WarpAliasType.SHIP:
+                # back on own ship
+                connection.player.location = yield from self._add_or_get_ship(
+                    connection.player.uuid)
+        elif warp_data["warp_type"] == WarpType.TO_PLAYER:
+            # TODO: Currently broke, should fix eventually
+            # target = yield from self.get_player_by_uuid(warp_data["player_id"])
+            # connection.player.location = "With {} on an instance world: {}." \
+            #                              "".format(target.name,
+            #                                        target.location)
+            pass
+        elif warp_data["warp_type"] == WarpType.TO_WORLD:
+            if warp_data["world_id"] == WarpWorldType.CELESTIAL_WORLD:
+                pass
+            elif warp_data["world_id"] == WarpWorldType.PLAYER_WORLD:
+                connection.player.location = yield from self._add_or_get_ship(
+                    warp_data["ship_id"])
+            elif warp_data["world_id"] == WarpWorldType.UNIQUE_WORLD:
+                connection.player.location = yield from \
+                    self._add_or_get_instance(warp_data)
+            elif warp_data["world_id"] == WarpWorldType.MISSION_WORLD:
+                pass
         return True
 
     def on_step_update(self, data, connection):
@@ -452,6 +479,17 @@ class PlayerManager(SimpleCommandPlugin):
             if player.name.lower() == lname:
                 if not check_logged_in or player.logged_in:
                     return player
+
+    def get_player_by_uuid(self, uuid):
+        """
+        Grab a hook to a player by their uuid. Returns player object.
+
+        :param uuid: String: UUID of player to check.
+        :return: Mixed: Player object.
+        """
+        for player in self.shelf["players"].values():
+            if player.uuid == uuid:
+                return player
 
     def ban_by_ip(self, ip, reason, connection):
         """
@@ -566,19 +604,28 @@ class PlayerManager(SimpleCommandPlugin):
             return new_player
 
     @asyncio.coroutine
-    def _add_or_get_ship(self, player_name):
+    def _add_or_get_ship(self, uuid):
         """
-        Given a player's name, look up their ship in the ships shelf. If ship
-        not in shelf, add it. Return a Ship object.
+        Given a ship world's uuid, look up their ship in the ships shelf. If
+        ship not in shelf, add it. Return a Ship object.
 
-        :param player_name: Target player to look up
+        :param uuid: Target player to look up
         :return: Ship object.
         """
-        if player_name in self.shelf["ships"]:
-            return self.shelf["ships"][player_name]
+        def _get_player_name(uuid):
+            player = ""
+            if isinstance(uuid, bytes):
+                uuid = uuid.decode("utf-8")
+            for p in self.factory.connections:
+                if p.player.uuid == uuid:
+                    player = p.player.name
+                    return player
+
+        if uuid in self.shelf["ships"]:
+            return self.shelf["ships"][uuid]
         else:
-            ship = Ship(player_name)
-            self.shelf["ships"][player_name] = ship
+            ship = Ship(uuid, _get_player_name(uuid))
+            self.shelf["ships"][uuid] = ship
             return ship
 
     @asyncio.coroutine
@@ -604,7 +651,31 @@ class PlayerManager(SimpleCommandPlugin):
             planet = Planet(location=location, planet=planet,
                             satellite=satellite)
             self.shelf["planets"][str(planet)] = planet
+            self.junk = utilities.State
         return planet
+
+    @asyncio.coroutine
+    def _add_or_get_instance(self, data):
+        """
+        Look up a planet in the planets shelf, return a Planet object. If not
+        present, add it to the shelf. Return a Planet object.
+
+        :param data:
+        :return: Instance object.
+        """
+        instance_string = "InstanceWorld:"
+        instance_string += "{}".format(data["world_name"])
+        if data["instance_flag"]:
+            instance_string += ":{}".format(data["instance_id"])
+        else:
+            instance_string += ":-"
+        # Works... but is actually unnecessary, and kinda uglifies the output
+        # if data["teleporter_flag"]:
+        #     instance_string += ":{}".format(data["teleporter"])
+        # else:
+        #     instance_string += ":-"
+
+        return instance_string
 
     # Commands - In-game actions that can be performed
 
