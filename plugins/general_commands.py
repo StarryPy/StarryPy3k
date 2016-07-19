@@ -60,11 +60,13 @@ class GeneralCommands(SimpleCommandPlugin):
                 "Roles: ^yellow;{}^green;\n"
                 "UUID: ^yellow;{}^green;\n"
                 "IP address: ^cyan;{}^green;\n"
+                "Team ID: ^cyan;{}^green;\n"
                 "Current location: ^yellow;{}^green;".format(
                     target.name, l,
                     ", ".join(target.roles),
                     target.uuid,
                     target.ip,
+                    target.team_id,
                     target.location))
 
     # Commands - In-game actions that can be performed

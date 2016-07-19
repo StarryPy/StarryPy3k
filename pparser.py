@@ -22,7 +22,7 @@ parse_map = {
     14: None,
     15: ChatSent,
     16: None,
-    17: None,
+    17: ClientContextUpdate,
     18: WorldStart,
     19: WorldStop,
     20: None,

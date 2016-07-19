@@ -11,14 +11,14 @@ Original authors: teihoo, FZFalzar
 Updated for release: kharidiron
 """
 
-from utilities import DotDict, ChatReceiveMode
 from datetime import datetime
-from base_plugin import BasePlugin
+from base_plugin import SimpleCommandPlugin
+from utilities import Command, DotDict, ChatReceiveMode
 
 
 ###
 
-class ChatEnhancements(BasePlugin):
+class ChatEnhancements(SimpleCommandPlugin):
     name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
     default_config = {"chat_style": "universal",
@@ -70,69 +70,40 @@ class ChatEnhancements(BasePlugin):
         if not message.startswith(
                 self.command_dispatcher.command_prefix):
 
-            if self.cts:
-                now = datetime.now()
-                timestamp = "{}{}{}> <".format(self.cts_color,
-                                               now.strftime("%H:%M"),
-                                               "^reset;")
-            else:
-                timestamp = ""
+            sender = self._decorate_line(connection)
 
-            # Determine message sender for later; we do it this way so we
-            # can get the role information conveniently at the same time.
-            sender = self.plugins['player_manager'].get_player_by_name(
-                connection.player.name)
-            client_id = connection.player.client_id
-            msg = data['parsed']['message']
-
-            try:
-                sender = timestamp + self.colored_name(sender)
-
-                if self.chat_style == "universal":
-                    send_mode = ChatReceiveMode.BROADCAST
-                    channel = ""
-
-                    for p in self.factory.connections:
-                        yield from p.send_message(msg,
-                                                  client_id=client_id,
-                                                  name=sender,
-                                                  mode=send_mode,
-                                                  channel=channel)
-                elif self.chat_style == "planetary":
-                    send_mode = ChatReceiveMode.CHANNEL
-                    channel = "FIXME"
-                    # TODO: Need to make Starbound-compatible location names
-                    for p in self.factory.connections:
-                        if p.player.location == connection.player.location:
-                            yield from p.send_message(msg,
-                                                      client_id=client_id,
-                                                      name=sender,
-                                                      mode=send_mode,
-                                                      channel=channel)
-
-                # Check if people are on the same planet. If so, and WORLD chat
-                # is enabled, send it only to them. Otherwise, send it to out
-                # to broadcast (to everyone).
-                # if p['send_mode'] == ChatSendMode.WORLD:
-                #     for p in self.factory.connections:
-                #         if p.player.location == connection.player.location:
-                #             yield from p.send_message(msg)
-                # else:
-                #     yield from self.factory.broadcast(msg)
-            except AttributeError as e:
-                self.logger.warning(
-                    "AttributeError in colored_name: {}".format(str(e)))
-                for p in self.factory.connections:
-                    yield from p.send_message(msg,
-                                              client_id=client_id,
-                                              name=connection.player.name,
-                                              mode=ChatReceiveMode.BROADCAST)
-                return True
+            if self.chat_style == "universal":
+                yield from self._send_to_universe(message,
+                                                  sender,
+                                                  connection.player.client_id)
+            elif self.chat_style == "planetary":
+                yield from self._send_to_planet(message,
+                                                sender,
+                                                connection.player.client_id,
+                                                str(connection.player.location))
         return
 
     # Helper functions - Used by commands
 
-    def colored_name(self, data):
+    def _decorate_line(self, connection):
+        if self.cts:
+            now = datetime.now()
+            timestamp = "{}{}{}> <".format(self.cts_color,
+                                           now.strftime("%H:%M"),
+                                           "^reset;")
+        else:
+            timestamp = ""
+        player = self.plugins['player_manager'].get_player_by_name(
+            connection.player.name)
+        try:
+            sender = timestamp + self._colored_name(player)
+        except AttributeError as e:
+            self.logger.warning(
+                "AttributeError in colored_name: {}".format(str(e)))
+            sender = connection.player.name
+        return sender
+
+    def _colored_name(self, data):
         """
         Generate colored name based on target's role.
 
@@ -153,3 +124,96 @@ class ChatEnhancements(BasePlugin):
             color = self.colors.default
 
         return color + data.name + "^reset;"
+
+    def _send_to_planet(self, msg, sender, client_id, location):
+        send_mode = ChatReceiveMode.CHANNEL
+        channel = location
+        for p in self.factory.connections:
+            if str(p.player.location) == location:
+                yield from p.send_message(msg,
+                                          client_id=client_id,
+                                          name=sender,
+                                          mode=send_mode,
+                                          channel=channel)
+
+    def _send_to_universe(self, msg, sender, client_id):
+        send_mode = ChatReceiveMode.BROADCAST
+        channel = ""
+        for p in self.factory.connections:
+            yield from p.send_message(msg,
+                                      client_id=client_id,
+                                      name=sender,
+                                      mode=send_mode,
+                                      channel=channel)
+
+    def _send_to_party(self, msg, sender, client_id, team_id):
+        send_mode = ChatReceiveMode.CHANNEL
+        channel = str(team_id)
+        for p in self.factory.connections:
+            if str(p.player.team_id) == team_id:
+                yield from p.send_message(msg,
+                                          client_id=client_id,
+                                          name=sender,
+                                          mode=send_mode,
+                                          channel=channel)
+
+    # Commands - In-game actions that can be performed
+
+    @Command("local", "l",
+             doc="Send message only to people on same world.")
+    def _local(self, data, connection):
+        """
+        Local chat. Sends a message only to characters who are on the same
+        planet. If the "chat_style" variable is set to "planetary", this
+        command has no special effect.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
+        """
+        if data:
+            message = " ".join(data)
+            sender = self._decorate_line(connection)
+            yield from self._send_to_planet(message,
+                                            sender,
+                                            connection.player.client_id,
+                                            str(connection.player.location))
+
+    @Command("universe", "u",
+             doc="Send message to the entire universe.")
+    def _universe(self, data, connection):
+        """
+        Universal chat. Sends a message that everyone can see. If the
+        "chat_style" variable is set to "universal", this command has no
+        special effect.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
+        """
+        if data:
+            message = " ".join(data)
+            sender = self._decorate_line(connection)
+            yield from self._send_to_universe(message,
+                                              sender,
+                                              connection.player.client_id)
+
+    @Command("party", "p",
+             doc="Send message to only party members.")
+    def _party(self, data, connection):
+        """
+        Party chat. Sends a message to only members of your party. This
+        works the same regardless of the global-chat style used.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
+        """
+        if data:
+            message = " ".join(data)
+            sender = self._decorate_line(connection)
+            party_id = None
+            yield from self._send_to_party(message,
+                                           sender,
+                                           connection.player.client_id,
+                                           connection.player.team_id)

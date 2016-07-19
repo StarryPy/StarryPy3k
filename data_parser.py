@@ -495,6 +495,21 @@ class ChatHeader(Struct):
         return res
 
 
+class ClientContextSet(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        d = {}
+        total_length = VLQ.parse(stream, ctx)
+        d["total_length"] = total_length
+        if total_length < 100:
+            sub_length = VLQ.parse(stream, ctx)
+        l = VLQ.parse(stream, ctx)
+        d["number_of_sets"] = l
+        for i in range(l):
+            d[i] = Variant.parse(stream, ctx)
+        return d
+
+
 class WorldChunks(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
@@ -643,6 +658,11 @@ class GiveItem(Struct):
     count = VLQ
     variant_type = Byte
     description = StarString
+
+
+class ClientContextUpdate(Struct):
+    """packet type: 17"""
+    contexts = ClientContextSet
 
 
 class BasePacket(Struct):

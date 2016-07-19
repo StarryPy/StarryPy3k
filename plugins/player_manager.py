@@ -79,7 +79,7 @@ class Player:
     """
     def __init__(self, uuid, name="", last_seen=None, roles=None,
                  logged_in=True, connection=None, client_id=-1, ip="",
-                 planet="", muted=False, state=None):
+                 planet="", muted=False, state=None, team_id=None):
         """
         Initialize a player object. Populate all the necessary details.
 
@@ -94,6 +94,7 @@ class Player:
         :param planet:
         :param muted:
         :param state:
+        :param team_id:
         :return:
         """
         self.uuid = uuid
@@ -112,6 +113,7 @@ class Player:
         self.ip = ip
         self.location = planet
         self.muted = muted
+        self.team_id = team_id
 
     def __str__(self):
         """
@@ -349,19 +351,16 @@ class PlayerManager(SimpleCommandPlugin):
         warp_data = data["parsed"]["warp_action"]
         if warp_data["warp_type"] == WarpType.TO_ALIAS:
             if warp_data["alias_id"] == WarpAliasType.ORBITED:
-                pass
                 # down to planet, need coordinates from world_start
+                pass
             elif warp_data["alias_id"] == WarpAliasType.SHIP:
                 # back on own ship
                 connection.player.location = yield from self._add_or_get_ship(
                     connection.player.uuid)
         elif warp_data["warp_type"] == WarpType.TO_PLAYER:
-            # TODO: Currently broke, should fix eventually
-            # target = yield from self.get_player_by_uuid(warp_data["player_id"])
-            # connection.player.location = "With {} on an instance world: {}." \
-            #                              "".format(target.name,
-            #                                        target.location)
-            pass
+            target = self.get_player_by_uuid(warp_data["player_id"].decode(
+                "utf-8"))
+            connection.player.location = "{}".format(target.location)
         elif warp_data["warp_type"] == WarpType.TO_WORLD:
             if warp_data["world_id"] == WarpWorldType.CELESTIAL_WORLD:
                 pass
@@ -373,6 +372,60 @@ class PlayerManager(SimpleCommandPlugin):
                     self._add_or_get_instance(warp_data)
             elif warp_data["world_id"] == WarpWorldType.MISSION_WORLD:
                 pass
+        return True
+
+    def on_client_context_update(self, data, connection):
+        """
+
+        :param data:
+        :param connection:
+        :return: Boolean: True. Must be true, so that packet get passed on.
+        """
+        try:
+            data_sets = data["parsed"]["contexts"].values()
+        except KeyError:
+            return True
+
+        for data_set in data_sets:
+            if isinstance(data_set, dict):
+                try:
+                    if "request" in data_set["command"]:
+                        if "team.invite" in data_set["handler"]:
+                            inviter_name = data_set["arguments"]["inviterName"]
+                            invitee_name = data_set["arguments"]["inviteeName"]
+                            inviter_uuid = data_set["arguments"]["inviterUuid"]
+                            self.logger.debug("{} invited to team up with {}."
+                                              "".format(invitee_name,
+                                                        inviter_name))
+                        if "team.acceptInvitation" in data_set["handler"]:
+                            inviter_uuid = data_set["arguments"]["inviterUuid"]
+                            invitee_uuid = data_set["arguments"]["inviteeUuid"]
+                            invitee = self.get_player_by_uuid(invitee_uuid)
+                            self.logger.debug("{} joined team.".format(
+                                invitee.name))
+                        if "team.makeLeader" in data_set["handler"]:
+                            player_uuid = data_set["arguments"]["playerUuid"]
+                            team_uuid = data_set["arguments"]["teamUuid"]
+                        if "team.removeFromTeam" in data_set["handler"]:
+                            player_uuid = data_set["arguments"]["playerUuid"]
+                            team_uuid = data_set["arguments"]["teamUuid"]
+                            target = self.get_player_by_uuid(player_uuid)
+                            target.team_id = None
+                            self.logger.debug("{} left team.".format(
+                                target.name))
+                    elif "response" in data_set["command"]:
+                        try:
+                            if "teamUuid" in data_set["result"]:
+                                team_uuid = str(data_set["result"]["teamUuid"])
+                                leader_uuid = data_set["result"]["leader"]
+                                if team_uuid not in connection.player.team_id:
+                                    connection.player.team_id = team_uuid
+                                    self.logger.debug("Team id set: {}".format(
+                                        team_uuid))
+                        except TypeError:
+                            continue
+                except KeyError as e:
+                    continue
         return True
 
     def on_step_update(self, data, connection):
@@ -666,7 +719,8 @@ class PlayerManager(SimpleCommandPlugin):
         instance_string = "InstanceWorld:"
         instance_string += "{}".format(data["world_name"])
         if data["instance_flag"]:
-            instance_string += ":{}".format(data["instance_id"])
+            instance_string += ":{}".format(data["instance_id"].decode(
+                "utf-8"))
         else:
             instance_string += ":-"
         # Works... but is actually unnecessary, and kinda uglifies the output
