@@ -450,7 +450,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param reason: String. Reason for rejection.
         :return: Rejection packet.
         """
-        return build_packet(packets.packets["connect_failure"],
+        return build_packet(packets["connect_failure"],
                             ConnectFailure.build(
                                 dict(reason=reason)))
 

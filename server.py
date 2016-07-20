@@ -59,9 +59,9 @@ class StarryPyServer:
         except asyncio.IncompleteReadError:
             # Pass on these errors. These occur when a player disconnects badly
             pass
-        except Exception as err:
+        except Exception as e:
             logger.error('Server loop exception occurred:'
-                         '{}: {}'.format(e.__class__.__name__, err))
+                         '{}: {}'.format(e.__class__.__name__, e))
         finally:
             self.die()
 
@@ -274,9 +274,9 @@ def start_server():
     try:
         yield from asyncio.start_server(_server_factory,
                                         port=config['listen_port'])
-    except OSError as err:
-        logger.exception("Error while trying to start server.")
-        logger.exception(err)
+    except OSError as e:
+        logger.error("Error while trying to start server.")
+        logger.error("{}".format(str(e)))
         sys.exit(1)
     return _server_factory
 
