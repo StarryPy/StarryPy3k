@@ -56,43 +56,43 @@ class BasePlugin(metaclass=BaseMeta):
     def deactivate(self):
         pass
 
-    def on_protocol_response(self, data, connection):
+    def on_protocol_request(self, data, connection):
         """Packet type: 0 """
         return True
 
-    def on_server_disconnect(self, data, connection):
+    def on_protocol_response(self, data, connection):
         """Packet type: 1 """
         return True
 
-    def on_connect_success(self, data, connection):
+    def on_server_disconnect(self, data, connection):
         """Packet type: 2 """
         return True
 
-    def on_connect_failure(self, data, connection):
+    def on_connect_success(self, data, connection):
         """Packet type: 3 """
         return True
 
-    def on_handshake_challenge(self, data, connection):
+    def on_connect_failure(self, data, connection):
         """Packet type: 4 """
         return True
 
-    def on_chat_received(self, data, connection):
+    def on_handshake_challenge(self, data, connection):
         """Packet type: 5 """
         return True
 
-    def on_universe_time_update(self, data, connection):
+    def on_chat_received(self, data, connection):
         """Packet type: 6 """
         return True
 
-    def on_celestial_response(self, data, connection):
+    def on_universe_time_update(self, data, connection):
         """Packet type: 7 """
         return True
 
-    def on_player_warp_result(self, data, connection):
+    def on_celestial_response(self, data, connection):
         """Packet type: 8 """
         return True
 
-    def on_protocol_request(self, data, connection):
+    def on_player_warp_result(self, data, connection):
         """Packet type: 9 """
         return True
 

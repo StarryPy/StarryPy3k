@@ -556,18 +556,19 @@ class SpawnCoordinates(Struct):
 #
 
 class ProtocolRequest(Struct):
-    """packet type: 9"""
+    """packet type: 0"""
     client_build = UBInt32
 
 
 class ProtocolResponse(Struct):
-    """packet type 0"""
+    """packet type 1"""
     server_response = Byte
 
 
 class ClientConnect(Struct):
     """packet type: 10"""
     asset_digest = StarByteArray
+    junk1 = Flag
     uuid = UUID
     name = StarString
     species = StarString
@@ -575,14 +576,14 @@ class ClientConnect(Struct):
     ship_level = UBInt32
     max_fuel = UBInt32
     # Junk means, I don't know what this value represents... <_<
-    junk1 = UBInt32
+    junk2 = UBInt32
     ship_upgrades = StringSet
     intro_complete = Byte
     account = StarString
 
 
 class ConnectSuccess(Struct):
-    """packet type: 2"""
+    """packet type: 3"""
     client_id = VLQ
     server_uuid = UUID
     planet_orbital_levels = SBInt32
@@ -595,7 +596,7 @@ class ConnectSuccess(Struct):
 
 
 class ConnectFailure(Struct):
-    """packet type: 3"""
+    """packet type: 4"""
     reason = StarString
 
 
@@ -605,12 +606,12 @@ class ClientDisconnectRequest(Struct):
 
 
 class ServerDisconnect(Struct):
-    """packet type: 11"""
+    """packet type: 2"""
     reason = StarString
 
 
 class ChatReceived(Struct):
-    """packet type: 5"""
+    """packet type: 6"""
     header = ChatHeader
     name = StarString
     junk = Byte
@@ -618,7 +619,7 @@ class ChatReceived(Struct):
 
 
 class PlayerWarpResult(Struct):
-    """packet type: 8"""
+    """packet type: 9"""
     warp_success = Flag
     warp_action = WarpAction
 
