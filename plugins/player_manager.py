@@ -22,7 +22,7 @@ import utilities
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
-from utilities import Command, send_message, broadcast, DotDict, State, \
+from utilities import Command, send_message, DotDict, State, \
     WarpType, WarpWorldType, WarpAliasType
 from packets import packets
 
@@ -759,21 +759,23 @@ class PlayerManager(SimpleCommandPlugin):
         except IndexError:
             reason = "No reason given."
 
-        p = self.get_player_by_name(" ".join(data))
+        p = self.get_player_by_name(name)
         if not p.logged_in:
             send_message(connection,
                          "Player {} is not currently logged in.".format(name))
             return False
         if p is not None:
-            kick_packet = ServerDisconnect.build({
-                "reason": "You were kicked.\n Reason: {}".format(reason)})
-            to_send = build_packet(packets['server_disconnect'], kick_packet)
-            yield from p.connection.raw_write(to_send)
-            broadcast(self.factory,
-                      "{} has kicked {}. Reason: {}".format(
-                          connection.player.name,
-                          p.name,
-                          reason))
+            kick_string = "You were kicked.\n Reason: {}".format(reason)
+            kick_packet = build_packet(packets["server_disconnect"],
+                                       ServerDisconnect.build(
+                                           dict(reason=kick_string)))
+            yield from p.connection.raw_write(kick_packet)
+
+            # broadcast(self.factory,
+            #           "{} has kicked {}. Reason: {}".format(
+            #               connection.player.name,
+            #               p.name,
+            #               reason))
         else:
             send_message(connection,
                          "Couldn't find a player with name {}".format(name))
