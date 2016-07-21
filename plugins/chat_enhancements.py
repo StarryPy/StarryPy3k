@@ -12,8 +12,9 @@ Updated for release: kharidiron
 """
 
 from datetime import datetime
+
 from base_plugin import SimpleCommandPlugin
-from utilities import Command, DotDict, ChatReceiveMode
+from utilities import Command, DotDict, ChatReceiveMode, send_message
 
 
 ###
@@ -146,16 +147,16 @@ class ChatEnhancements(SimpleCommandPlugin):
                                       mode=send_mode,
                                       channel=channel)
 
-    def _send_to_party(self, msg, sender, client_id, team_id):
-        send_mode = ChatReceiveMode.CHANNEL
-        channel = str(team_id)
-        for p in self.factory.connections:
-            if str(p.player.team_id) == team_id:
-                yield from p.send_message(msg,
-                                          client_id=client_id,
-                                          name=sender,
-                                          mode=send_mode,
-                                          channel=channel)
+    # def _send_to_party(self, msg, sender, client_id, team_id):
+    #     send_mode = ChatReceiveMode.CHANNEL
+    #     channel = str(team_id)
+    #     for p in self.factory.connections:
+    #         if str(p.player.team_id) == team_id:
+    #             yield from p.send_message(msg,
+    #                                       client_id=client_id,
+    #                                       name=sender,
+    #                                       mode=send_mode,
+    #                                       channel=channel)
 
     # Commands - In-game actions that can be performed
 
@@ -199,23 +200,65 @@ class ChatEnhancements(SimpleCommandPlugin):
                                               sender,
                                               connection.player.client_id)
 
-    @Command("party", "p",
-             doc="Send message to only party members.")
-    def _party(self, data, connection):
+    # @Command("party", "p",
+    #          doc="Send message to only party members.")
+    # def _party(self, data, connection):
+    #     """
+    #     Party chat. Sends a message to only members of your party. This
+    #     works the same regardless of the global-chat style used.
+    #
+    #     :param data: The packet containing the command.
+    #     :param connection: The connection from which the packet came.
+    #     :return: Null
+    #     """
+    #     if data:
+    #         message = " ".join(data)
+    #         sender = self._decorate_line(connection)
+    #         yield from self._send_to_party(message,
+    #                                        sender,
+    #                                        connection.player.client_id,
+    #                                        connection.player.team_id)
+
+    @Command("whisper", "w",
+             doc="Send message privately to a person.")
+    def _whisper(self, data, connection):
         """
-        Party chat. Sends a message to only members of your party. This
+        Whisper. Sends a message to only one person. This
         works the same regardless of the global-chat style used.
+
+        This command shadows the built-in whisper.
 
         :param data: The packet containing the command.
         :param connection: The connection from which the packet came.
         :return: Null
         """
-        # TODO - Needs colored names
-        if data:
-            message = " ".join(data)
+        try:
+            name = data[0]
+        except IndexError:
+            raise SyntaxWarning("No target provided.")
+
+        recipient = self.plugins.player_manager.get_player_by_name(name)
+        if recipient is not None:
+            if not recipient.logged_in:
+                send_message(connection,
+                             "Player {} is not currently logged in.".format(
+                                 name))
+                return False
+            message = " ".join(data[1:])
+            client_id = connection.player.client_id
             sender = self._decorate_line(connection)
-            party_id = None
-            yield from self._send_to_party(message,
-                                           sender,
-                                           connection.player.client_id,
-                                           connection.player.team_id)
+            send_mode = ChatReceiveMode.WHISPER
+            channel = "Private"
+            yield from recipient.connection.send_message(message,
+                                                         client_id=client_id,
+                                                         name=sender,
+                                                         mode=send_mode,
+                                                         channel=channel)
+            yield from connection.send_message(message,
+                                               client_id=client_id,
+                                               name=sender,
+                                               mode=send_mode,
+                                               channel=channel)
+        else:
+            send_message(connection,
+                         "Couldn't find a player with name {}".format(name))

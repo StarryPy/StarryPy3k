@@ -3,6 +3,7 @@ import traceback
 
 from configuration_manager import ConfigurationManager
 from data_parser import *
+import packets
 
 parse_map = {
     0: ProtocolRequest,
@@ -63,7 +64,7 @@ parse_map = {
 class PacketParser:
     def __init__(self, config: ConfigurationManager):
         self._cache = {}
-        self._reaper = asyncio.Task(self._reap())
+        self._reaper = asyncio.ensure_future(self._reap())
         # self._debug = asyncio.Task(self._debug_counter())
         self.config = config
         self.loop = asyncio.get_event_loop()
@@ -72,7 +73,7 @@ class PacketParser:
     def parse(self, packet):
         try:
             # # Don't cache the client connect packet. It causes issues.
-            # if packet['type'] == packets['client_connect']:
+            # if packet['type'] == packets.packets['client_connect']:
             #     packet = yield from self._parse_packet(packet)
             # elif packet['size'] >= self.config.config['min_cache_size']:
             if packet['size'] >= self.config.config['min_cache_size']:

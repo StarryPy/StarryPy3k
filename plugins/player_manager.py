@@ -144,10 +144,6 @@ class Ship:
         self.uuid = uuid
         self.player = player
 
-    def _gen_ship_string(self):
-        s = "ClientShipWorld:"
-        s += "{}".format(self.player.uuid)
-
     def __str__(self):
         return "{}'s ship".format(self.player)
 
@@ -164,11 +160,11 @@ class Planet:
         self.name = name
 
     def _gen_planet_string(self):
-        s = "CelestialWorld:"
-        s += "{}:{}:{}:{}".format(self.a, self.x, self.y, self.planet)
+        s = list("CelestialWorld:")
+        s.append("{}:{}:{}:{}".format(self.a, self.x, self.y, self.planet))
         if self.satellite > int(0):
-            s += ":{}".format(self.satellite)
-        return s
+            s.append(":{}".format(self.satellite))
+        return "".join(s)
 
     def __str__(self):
         return "{}:{}:{}:{}:{}".format(self.a, self.x, self.y,
@@ -297,8 +293,6 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        # TODO: This likely needs more attention as clients disconnecting
-        # cause an error in the client_loop in the server factory.
         connection.player.connection = None
         connection.player.logged_in = False
         connection.player.location = None
@@ -375,59 +369,41 @@ class PlayerManager(SimpleCommandPlugin):
                 pass
         return True
 
-    def on_client_context_update(self, data, connection):
-        """
-
-        :param data:
-        :param connection:
-        :return: Boolean: True. Must be true, so that packet get passed on.
-        """
-        try:
-            data_sets = data["parsed"]["contexts"].values()
-        except KeyError:
-            return True
-
-        for data_set in data_sets:
-            if isinstance(data_set, dict):
-                try:
-                    if "request" in data_set["command"]:
-                        if "team.invite" in data_set["handler"]:
-                            inviter_name = data_set["arguments"]["inviterName"]
-                            invitee_name = data_set["arguments"]["inviteeName"]
-                            inviter_uuid = data_set["arguments"]["inviterUuid"]
-                            self.logger.debug("{} invited to team up with {}."
-                                              "".format(invitee_name,
-                                                        inviter_name))
-                        if "team.acceptInvitation" in data_set["handler"]:
-                            inviter_uuid = data_set["arguments"]["inviterUuid"]
-                            invitee_uuid = data_set["arguments"]["inviteeUuid"]
-                            invitee = self.get_player_by_uuid(invitee_uuid)
-                            self.logger.debug("{} joined team.".format(
-                                invitee.name))
-                        if "team.makeLeader" in data_set["handler"]:
-                            player_uuid = data_set["arguments"]["playerUuid"]
-                            team_uuid = data_set["arguments"]["teamUuid"]
-                        if "team.removeFromTeam" in data_set["handler"]:
-                            player_uuid = data_set["arguments"]["playerUuid"]
-                            team_uuid = data_set["arguments"]["teamUuid"]
-                            target = self.get_player_by_uuid(player_uuid)
-                            target.team_id = None
-                            self.logger.debug("{} left team.".format(
-                                target.name))
-                    elif "response" in data_set["command"]:
-                        try:
-                            if "teamUuid" in data_set["result"]:
-                                team_uuid = str(data_set["result"]["teamUuid"])
-                                leader_uuid = data_set["result"]["leader"]
-                                if team_uuid not in connection.player.team_id:
-                                    connection.player.team_id = team_uuid
-                                    self.logger.debug("Team id set: {}".format(
-                                        team_uuid))
-                        except TypeError:
-                            continue
-                except KeyError as e:
-                    continue
-        return True
+    # def on_client_context_update(self, data, connection):
+    #     """
+    #
+    #     :param data:
+    #     :param connection:
+    #     :return: Boolean: True. Must be true, so that packet get passed on.
+    #     """
+    #     for data_key, data_set in data["parsed"]["contexts"].items():
+    #         if isinstance(data_set, dict):
+    #             try:
+    #                 if "request" in data_set["command"]:
+    #                     if "team.acceptInvitation" in data_set["handler"]:
+    #                         invitee_uuid = data_set["arguments"]["inviteeUuid"]
+    #                         invitee = self.get_player_by_uuid(invitee_uuid)
+    #                         self.logger.debug(
+    #                             "{} joined team.".format(invitee.name))
+    #                     elif "team.removeFromTeam" in data_set["handler"]:
+    #                         player_uuid = data_set["arguments"]["playerUuid"]
+    #                         target = self.get_player_by_uuid(player_uuid)
+    #                         target.team_id = None
+    #                         self.logger.debug(
+    #                             "{} left team.".format(target.name))
+    #                     else:
+    #                         continue
+    #                 elif "response" in data_set["command"]:
+    #                     if data_set["result"]:
+    #                         if "teamUuid" in data_set["result"]:
+    #                             team_uuid = str(data_set["result"]["teamUuid"])
+    #                             if team_uuid != connection.player.team_id:
+    #                                 connection.player.team_id = team_uuid
+    #             except KeyError:
+    #                 continue
+    #         else:
+    #             continue
+    #     return True
 
     def on_step_update(self, data, connection):
         """
@@ -518,22 +494,6 @@ class PlayerManager(SimpleCommandPlugin):
         return [x for x in Owner.roles
                 if x.__name__.lower() == name.lower()][0]
 
-    def get_player_by_name(self, name, check_logged_in=False) -> Player:
-        """
-        Grab a hook to a player by their name. Return Boolean value if only
-        checking login status. Returns player object otherwise.
-
-        :param name: String: Name of player to check.
-        :param check_logged_in: Boolean: Whether we just want login status
-                                (true), or the player's server object (false).
-        :return: Mixed: Boolean on logged_in check, player object otherwise.
-        """
-        lname = name.lower()
-        for player in self.shelf["players"].values():
-            if player.name.lower() == lname:
-                if not check_logged_in or player.logged_in:
-                    return player
-
     def get_player_by_uuid(self, uuid):
         """
         Grab a hook to a player by their uuid. Returns player object.
@@ -541,9 +501,8 @@ class PlayerManager(SimpleCommandPlugin):
         :param uuid: String: UUID of player to check.
         :return: Mixed: Player object.
         """
-        for player in self.shelf["players"].values():
-            if player.uuid == uuid:
-                return player
+        if uuid in self.shelf["players"]:
+            return self.shelf["players"][uuid]
 
     def ban_by_ip(self, ip, reason, connection):
         """
@@ -605,6 +564,22 @@ class PlayerManager(SimpleCommandPlugin):
         if name not in self.plugin_shelf:
             self.plugin_shelf[name] = DotDict({})
         return self.plugin_shelf[name]
+
+    def get_player_by_name(self, name, check_logged_in=False) -> Player:
+        """
+        Grab a hook to a player by their name. Return Boolean value if only
+        checking login status. Returns player object otherwise.
+
+        :param name: String: Name of player to check.
+        :param check_logged_in: Boolean: Whether we just want login status
+                                (true), or the player's server object (false).
+        :return: Mixed: Boolean on logged_in check, player object otherwise.
+        """
+        lname = name.lower()
+        for player in self.shelf["players"].values():
+            if player.name.lower() == lname:
+                if not check_logged_in or player.logged_in:
+                    return player
 
     @asyncio.coroutine
     def _add_or_get_player(self, uuid, name="", last_seen=None, roles=None,
@@ -717,20 +692,15 @@ class PlayerManager(SimpleCommandPlugin):
         :param data:
         :return: Instance object.
         """
-        instance_string = "InstanceWorld:"
-        instance_string += "{}".format(data["world_name"])
+        instance_string = list("InstanceWorld:")
+        instance_string.append("{}".format(data["world_name"]))
         if data["instance_flag"]:
-            instance_string += ":{}".format(data["instance_id"].decode(
-                "utf-8"))
+            instance_string.append(":{}".format(data["instance_id"].decode(
+                "utf-8")))
         else:
-            instance_string += ":-"
-        # Works... but is actually unnecessary, and kinda uglifies the output
-        # if data["teleporter_flag"]:
-        #     instance_string += ":{}".format(data["teleporter"])
-        # else:
-        #     instance_string += ":-"
+            instance_string.append(":-")
 
-        return instance_string
+        return "".join(instance_string)
 
     # Commands - In-game actions that can be performed
 
