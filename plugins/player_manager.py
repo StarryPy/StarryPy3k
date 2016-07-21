@@ -316,6 +316,7 @@ class PlayerManager(SimpleCommandPlugin):
         """
         connection.player.connection = None
         connection.player.logged_in = False
+        connection.player.location = None
         return True
 
     def on_world_start(self, data, connection):
@@ -771,11 +772,9 @@ class PlayerManager(SimpleCommandPlugin):
                                            dict(reason=kick_string)))
             yield from p.connection.raw_write(kick_packet)
 
-            # broadcast(self.factory,
-            #           "{} has kicked {}. Reason: {}".format(
-            #               connection.player.name,
-            #               p.name,
-            #               reason))
+            connection.player.connection = None
+            connection.player.logged_in = False
+            connection.player.location = None
         else:
             send_message(connection,
                          "Couldn't find a player with name {}".format(name))
