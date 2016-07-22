@@ -174,7 +174,6 @@ class ChatEnhancements(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null
         """
-        # TODO - Not logging to chat window, need to debug this issue
         if data:
             message = " ".join(data)
             sender = self._decorate_line(connection)
