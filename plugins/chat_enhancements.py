@@ -131,21 +131,23 @@ class ChatEnhancements(SimpleCommandPlugin):
         channel = location
         for p in self.factory.connections:
             if str(p.player.location) == location:
-                yield from p.send_message(msg,
-                                          client_id=client_id,
-                                          name=sender,
-                                          mode=send_mode,
-                                          channel=channel)
+                yield from send_message(p,
+                                        msg,
+                                        client_id=client_id,
+                                        name=sender,
+                                        mode=send_mode,
+                                        channel=channel)
 
     def _send_to_universe(self, msg, sender, client_id):
         send_mode = ChatReceiveMode.BROADCAST
         channel = ""
         for p in self.factory.connections:
-            yield from p.send_message(msg,
-                                      client_id=client_id,
-                                      name=sender,
-                                      mode=send_mode,
-                                      channel=channel)
+            yield from send_message(p,
+                                    msg,
+                                    client_id=client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
 
     # def _send_to_party(self, msg, sender, client_id, team_id):
     #     send_mode = ChatReceiveMode.CHANNEL
@@ -241,24 +243,27 @@ class ChatEnhancements(SimpleCommandPlugin):
         if recipient is not None:
             if not recipient.logged_in:
                 send_message(connection,
-                             "Player {} is not currently logged in.".format(
-                                 name))
+                             "Player {} is not currently logged in."
+                             "".format(name))
                 return False
             message = " ".join(data[1:])
             client_id = connection.player.client_id
             sender = self._decorate_line(connection)
             send_mode = ChatReceiveMode.WHISPER
             channel = "Private"
-            yield from recipient.connection.send_message(message,
-                                                         client_id=client_id,
-                                                         name=sender,
-                                                         mode=send_mode,
-                                                         channel=channel)
-            yield from connection.send_message(message,
-                                               client_id=client_id,
-                                               name=sender,
-                                               mode=send_mode,
-                                               channel=channel)
+            yield from send_message(recipient.connection,
+                                    message,
+                                    client_id=client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
+            yield from send_message(connection,
+                                    message,
+                                    client_id=client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
         else:
-            send_message(connection,
-                         "Couldn't find a player with name {}".format(name))
+            yield from send_message(connection,
+                                    "Couldn't find a player with name {}"
+                                    "".format(name))
