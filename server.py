@@ -22,7 +22,7 @@ class StarryPyServer:
         self._client_writer = None
         self.factory = factory
         self._client_loop_future = None
-        self._server_loop_future = asyncio.Task(self.server_loop())
+        self._server_loop_future = asyncio.ensure_future(self.server_loop())
         self.state = None
         self._alive = True
         self.config = config.config
@@ -45,14 +45,14 @@ class StarryPyServer:
         (self._client_reader, self._client_writer) = \
             yield from asyncio.open_connection(self.config['upstream_host'],
                                                self.config['upstream_port'])
-        self._client_loop_future = asyncio.Task(self.client_loop())
+        self._client_loop_future = asyncio.ensure_future(self.client_loop())
         try:
             while True:
                 packet = yield from read_packet(self._reader,
                                                 Direction.TO_SERVER)
                 # Break in case of emergencies:
                 # if packet['type'] not in [17, 40, 43, 48, 51]:
-                #     logger.debug('c->s  {}'.format(packet['type']))
+                #    logger.debug('c->s  {}'.format(packet['type']))
 
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
@@ -78,7 +78,7 @@ class StarryPyServer:
                 packet = yield from read_packet(self._client_reader,
                                                 Direction.TO_CLIENT)
                 # Break in case of emergencies:
-                # if packet['type'] not in [6, 17, 23, 27, 43, 49, 51]:
+                # if packet['type'] not in [7, 17, 23, 27, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
 
                 send_flag = yield from self.check_plugins(packet)
@@ -200,7 +200,7 @@ class ServerFactory:
                 path / self.configuration_manager.config.plugin_path)
             self.plugin_manager.resolve_dependencies()
             self.plugin_manager.activate_all()
-            asyncio.Task(self.plugin_manager.get_overrides())
+            asyncio.ensure_future(self.plugin_manager.get_overrides())
         except Exception as err:
             logger.exception("Error during server startup.", exc_info=True)
 
@@ -303,13 +303,13 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     loop = asyncio.get_event_loop()
-    # loop.set_debug(False)  # Removed in commit to avoid errors.
+    loop.set_debug(False)  # Removed in commit to avoid errors.
     # loop.executor = ThreadPoolExecutor(max_workers=100)
     # loop.set_default_executor(loop.executor)
 
     logger.info("Starting server")
 
-    server_factory = asyncio.Task(start_server())
+    server_factory = asyncio.ensure_future(start_server())
 
     try:
         loop.run_forever()

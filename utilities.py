@@ -283,7 +283,7 @@ def send_message(connection, *messages, **kwargs):
     :param messages: The message(s) to send.
     :return: A Future for the message(s) being sent.
     """
-    return asyncio.Task(connection.send_message(*messages, **kwargs))
+    return asyncio.ensure_future(connection.send_message(*messages, **kwargs))
 
 
 def broadcast(factory, *messages, **kwargs):

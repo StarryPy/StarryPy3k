@@ -69,7 +69,7 @@ class PlanetProtect(StorageCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        asyncio.Task(self._protect_ship(connection))
+        asyncio.ensure_future(self._protect_ship(connection))
         return True
 
     def on_entity_interact(self, data, connection):

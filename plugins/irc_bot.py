@@ -158,7 +158,7 @@ class IRCPlugin(BasePlugin):
         self.bot.create_connection()
 
         self.ops = set()
-        asyncio.Task(self.update_ops())
+        asyncio.ensure_future(self.update_ops())
 
     # Packet hooks - look for these packets and act on them
 
@@ -170,7 +170,7 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.Task(self.announce_join(connection))
+        asyncio.ensure_future(self.announce_join(connection))
         return True
 
     def on_client_disconnect_request(self, data, connection):
@@ -181,7 +181,7 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.Task(self.announce_leave(connection.player))
+        asyncio.ensure_future(self.announce_leave(connection.player))
         return True
 
     def on_chat_sent(self, data, connection):
@@ -200,7 +200,7 @@ class IRCPlugin(BasePlugin):
             msg = data["parsed"]["message"]
             if self.sc:
                 msg = self.color_strip.sub("", msg)
-            asyncio.Task(
+            asyncio.ensure_future(
                 self.bot_write("<{}> {}".format(connection.player.name, msg)))
         return True
 
@@ -219,10 +219,10 @@ class IRCPlugin(BasePlugin):
         :return: None
         """
         if data[0] == ".":
-            asyncio.Task(self.handle_command(target, data[1:], mask))
+            asyncio.ensure_future(self.handle_command(target, data[1:], mask))
         elif target == self.channel:
             nick = mask.split("!")[0]
-            asyncio.Task(self.send_message(data, nick))
+            asyncio.ensure_future(self.send_message(data, nick))
         return None
 
     def name_check(self, channel=None, nicknames=None):

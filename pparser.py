@@ -65,7 +65,7 @@ class PacketParser:
     def __init__(self, config: ConfigurationManager):
         self._cache = {}
         self._reaper = asyncio.ensure_future(self._reap())
-        # self._debug = asyncio.Task(self._debug_counter())
+        # self._debug = asyncio.ensure_future(self._debug_counter())
         self.config = config
         self.loop = asyncio.get_event_loop()
 
