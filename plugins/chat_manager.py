@@ -33,8 +33,6 @@ class UnmutePlayer(Mute):
 
 ###
 
-# TODO: Add whisper command in here, since the built-in whisper is shadowed.
-
 class ChatManager(SimpleCommandPlugin):
     name = "chat_manager"
     depends = ["player_manager", "command_dispatcher"]

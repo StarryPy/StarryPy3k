@@ -59,9 +59,9 @@ class StarryPyServer:
         except asyncio.IncompleteReadError:
             # Pass on these errors. These occur when a player disconnects badly
             pass
-        except Exception as e:
+        except Exception as err:
             logger.error('Server loop exception occurred:'
-                         '{}: {}'.format(e.__class__.__name__, e))
+                         '{}: {}'.format(err.__class__.__name__, err))
         finally:
             self.die()
 
@@ -208,21 +208,16 @@ class ServerFactory:
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, messages, *, name="", client_id=0):
+    def broadcast(self, messages):
         """
         Send a message to all connected clients.
 
         :param messages: Message(s) to be sent.
-        :param name: Name of player sending message(s).
-        :param client_id: Client ID of player.
         :return: Null.
         """
         for connection in self.connections:
             try:
-                yield from connection.send_message(messages,
-                                                 name=name,
-                                                 mode=ChatReceiveMode.CHANNEL,
-                                                 client_id=client_id)
+                yield from connection.send_message(messages)
             except Exception as err:
                 logger.exception("Error while trying to broadcast.")
                 logger.exception(err)
@@ -274,9 +269,9 @@ def start_server():
     try:
         yield from asyncio.start_server(_server_factory,
                                         port=config['listen_port'])
-    except OSError as e:
+    except OSError as err:
         logger.error("Error while trying to start server.")
-        logger.error("{}".format(str(e)))
+        logger.error("{}".format(str(err)))
         sys.exit(1)
     return _server_factory
 

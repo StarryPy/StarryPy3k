@@ -286,15 +286,16 @@ def send_message(connection, *messages, **kwargs):
     return asyncio.ensure_future(connection.send_message(*messages, **kwargs))
 
 
-def broadcast(factory, *messages, **kwargs):
+def broadcast(connection, *messages, **kwargs):
     """
     Sends a message to all connected players.
 
-    :param factory: The factory containing all player connections.
+    :param connection: The connection from which the message came.
     :param messages: The message(s) to send.
     :return: A Future for the message(s) being sent.
     """
-    return asyncio.ensure_future(factory.broadcast(*messages, **kwargs))
+    return asyncio.ensure_future(
+        connection.factory.broadcast(*messages, **kwargs))
 
 
 class Command:
