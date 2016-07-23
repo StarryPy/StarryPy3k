@@ -15,7 +15,7 @@ class StarryPyServer:
     Primary server class. Handles all the things.
     """
     def __init__(self, reader, writer, config, factory):
-        logger.warning("Initializing connection.")
+        logger.debug("Initializing connection.")
         self._reader = reader
         self._writer = writer
         self._client_reader = None
@@ -84,8 +84,6 @@ class StarryPyServer:
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
-        except Exception as err:
-            logger.error('Client loop exception occurred: {}'.format(err))
         finally:
             self.die()
 
@@ -277,22 +275,27 @@ def start_server():
 
 
 if __name__ == "__main__":
-    DEBUG = True
+    DEBUG = False
+
+    if DEBUG:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
 
     formatter = logging.Formatter(
         '%(asctime)s - %(levelname)s - %(name)s # %(message)s')
     aiologger = logging.getLogger("asyncio")
-    aiologger.setLevel(logging.DEBUG)
+    aiologger.setLevel(loglevel)
     logger = logging.getLogger('starrypy')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(loglevel)
     if DEBUG:
         fh_d = logging.FileHandler("debug.log")
-        fh_d.setLevel(logging.DEBUG)
+        fh_d.setLevel(loglevel)
         fh_d.setFormatter(formatter)
         aiologger.addHandler(fh_d)
         logger.addHandler(fh_d)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(loglevel)
     ch.setFormatter(formatter)
     aiologger.addHandler(ch)
     logger.addHandler(ch)
