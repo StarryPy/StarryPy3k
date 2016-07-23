@@ -666,6 +666,11 @@ class ClientContextUpdate(Struct):
     contexts = ClientContextSet
 
 
+class StepUpdate(Struct):
+    """packet type: 51"""
+    heartbeat = VLQ
+
+
 class BasePacket(Struct):
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
