@@ -201,6 +201,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.players = self.shelf["players"]
         self.planets = self.shelf["planets"]
         self.plugin_shelf = self.shelf["plugins"]
+        asyncio.ensure_future(self._reap())
 
     # Packet hooks - look for these packets and act on them
 
@@ -416,6 +417,20 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     # Helper functions - Used by hooks and commands
+
+    def _reap(self):
+        """
+        Helper function to remove players that are not marked as logged in,
+        but really aren't.
+
+        :return: Null.
+        """
+        while True:
+            yield from asyncio.sleep(10)
+            for player in self.players:
+                target = self.get_player_by_uuid(player)
+                if target.logged_in and target.client_id == -1:
+                    self._set_offline(target.connection)
 
     def _set_offline(self, connection):
         """
@@ -745,6 +760,11 @@ class PlayerManager(SimpleCommandPlugin):
                          "Player {} is not currently logged in.".format(name))
             return False
         if p is not None:
+            if p.client_id == -1:
+                p.connection = None
+                p.logged_in = False
+                p.location = None
+                return
             kick_string = "You were kicked.\n Reason: {}".format(reason)
             kick_packet = build_packet(packets["server_disconnect"],
                                        ServerDisconnect.build(
