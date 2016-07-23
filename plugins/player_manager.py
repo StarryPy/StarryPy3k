@@ -741,10 +741,9 @@ class PlayerManager(SimpleCommandPlugin):
                                        ServerDisconnect.build(
                                            dict(reason=kick_string)))
             yield from p.connection.raw_write(kick_packet)
-
-            connection.player.connection = None
-            connection.player.logged_in = False
-            connection.player.location = None
+            p.connection = None
+            p.logged_in = False
+            p.location = None
         else:
             send_message(connection,
                          "Couldn't find a player with name {}".format(name))
