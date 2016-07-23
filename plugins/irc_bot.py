@@ -245,7 +245,8 @@ class IRCPlugin(BasePlugin):
         :return: Null
         """
         message = data
-        yield from self.factory.broadcast("IRC: <{}> {}".format(nick, message))
+        yield from self.factory.broadcast("< ^grey;IRC^reset; > <{}> "
+                                          "{}".format(nick, message))
 
     @asyncio.coroutine
     def announce_join(self, connection):
