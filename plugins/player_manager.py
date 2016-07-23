@@ -78,7 +78,7 @@ class Player:
     Prototype class for a player.
     """
     def __init__(self, uuid, name="", last_seen=None, roles=None,
-                 logged_in=True, connection=None, client_id=-1, ip="",
+                 logged_in=False, connection=None, client_id=-1, ip="",
                  planet="", muted=False, state=None, team_id=None):
         """
         Initialize a player object. Populate all the necessary details.
@@ -259,6 +259,7 @@ class PlayerManager(SimpleCommandPlugin):
             self.check_bans(connection)
         except (NameError, ValueError) as e:
             yield from connection.raw_write(self.build_rejection(str(e)))
+            self._set_offline(connection)
             connection.die()
             return False
         player.ip = connection.client_ip
@@ -293,9 +294,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        connection.player.connection = None
-        connection.player.logged_in = False
-        connection.player.location = None
+        self._set_offline(connection)
         return True
 
     def on_server_disconnect(self, data, connection):
@@ -308,9 +307,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        connection.player.connection = None
-        connection.player.logged_in = False
-        connection.player.location = None
+        self._set_offline(connection)
         return True
 
     def on_world_start(self, data, connection):
@@ -419,6 +416,18 @@ class PlayerManager(SimpleCommandPlugin):
         return True
 
     # Helper functions - Used by hooks and commands
+
+    def _set_offline(self, connection):
+        """
+        Convenince function to set all the players variables to off.
+
+        :param connection: The connection to turn off.
+        :return: Boolean, True. Always True, since called from the on_ packets.
+        """
+        connection.player.connection = None
+        connection.player.logged_in = False
+        connection.player.location = None
+        return True
 
     def build_rejection(self, reason):
         """
