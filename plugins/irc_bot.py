@@ -15,7 +15,6 @@ import irc3
 
 from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
-from utilities import broadcast
 
 
 # Roles
@@ -246,7 +245,7 @@ class IRCPlugin(BasePlugin):
         :return: Null
         """
         message = data
-        broadcast(self.factory, "IRC: <{}> {}".format(nick, message))
+        yield from self.factory.broadcast("IRC: <{}> {}".format(nick, message))
 
     @asyncio.coroutine
     def announce_join(self, connection):
