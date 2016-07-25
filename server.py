@@ -275,7 +275,7 @@ def start_server():
 
 
 if __name__ == "__main__":
-    DEBUG = False
+    DEBUG = True
 
     if DEBUG:
         loglevel = logging.DEBUG
