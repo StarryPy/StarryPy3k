@@ -64,7 +64,7 @@ parse_map = {
 class PacketParser:
     def __init__(self, config: ConfigurationManager):
         self._cache = {}
-        self._reaper = asyncio.ensure_future(self._reap())
+        # self._reaper = asyncio.ensure_future(self._reap())
         # self._debug = asyncio.ensure_future(self._debug_counter())
         self.config = config
         self.loop = asyncio.get_event_loop()
@@ -78,10 +78,10 @@ class PacketParser:
             # elif packet['size'] >= self.config.config['min_cache_size']:
             if packet['size'] >= self.config.config['min_cache_size']:
                 packet['hash'] = hash(packet['original_data'])
-                if packet['hash'] in self._cache:
-                    packet['parsed'] = self._cache[packet['hash']]['parsed']
-                else:
-                    packet = yield from self._parse_and_cache_packet(packet)
+                # if packet['hash'] in self._cache:
+                #     packet['parsed'] = self._cache[packet['hash']]['parsed']
+                # else:
+                packet = yield from self._parse_and_cache_packet(packet)
             else:
                 packet = yield from self._parse_packet(packet)
         except Exception as e:
@@ -90,24 +90,24 @@ class PacketParser:
         finally:
             return packet
 
-    @asyncio.coroutine
-    def _reap(self):
-        while True:
-            yield from asyncio.sleep(self.config.config['packet_reap_time'])
-            for h, cached_packet in self._cache.items():
-                cached_packet.count -= 1
-                if cached_packet.count <= 0:
-                    del (self._cache[h])
+    # @asyncio.coroutine
+    # def _reap(self):
+    #     while True:
+    #         yield from asyncio.sleep(self.config.config['packet_reap_time'])
+    #         for h, cached_packet in self._cache.items():
+    #             cached_packet.count -= 1
+    #             if cached_packet.count <= 0:
+    #                 del (self._cache[h])
 
-    @asyncio.coroutine
-    def _debug_counter(self):
-        while True:
-            yield from asyncio.sleep(60)
+    # @asyncio.coroutine
+    # def _debug_counter(self):
+    #     while True:
+    #         yield from asyncio.sleep(60)
 
     @asyncio.coroutine
     def _parse_and_cache_packet(self, packet):
         packet = yield from self._parse_packet(packet)
-        self._cache[packet['hash']] = packet
+        # self._cache[packet['hash']] = CachedPacket(packet=packet)
         return packet
 
     @asyncio.coroutine
@@ -123,14 +123,14 @@ class PacketParser:
             packet['parsed'] = res.parse(packet['data'])
         return packet
 
-    def __del__(self):
-        self._reaper.cancel()
+    # def __del__(self):
+    #     self._reaper.cancel()
 
 
-class CachedPacket:
-    def __init__(self, packet):
-        self.count = 1
-        self.packet = packet
+# class CachedPacket:
+#     def __init__(self, packet):
+#         self.count = 1
+#         self.packet = packet
 
 
 def build_packet(packet_id, data, compressed=False):
