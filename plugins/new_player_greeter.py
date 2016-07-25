@@ -8,6 +8,7 @@ Plugin for greeting players who are new to the server. Greets can include:
 
 Original authors: kharidiron
 """
+
 import asyncio
 
 import packets
@@ -17,22 +18,20 @@ from data_parser import GiveItem
 from utilities import send_message, ChatReceiveMode, DotDict
 
 
+###
+
 class NewPlayerGreeter(SimpleCommandPlugin):
     name = "new_player_greeters"
     depends = ["player_manager"]
     default_config = {"greeting": "Why hello there. You look like you're "
                                   "new here. Here, take this. It should "
                                   "help you on your way.",
-                      "gifts": DotDict({
-                          "coalore": 5,
-                          "liquidfuel": 1000,
-                          "money": 10000
-                      })}
+                      "gifts": DotDict({})}
 
     def __init__(self):
         super().__init__()
         self.greeting = None
-        self.gifts = None
+        self.gifts = DotDict({})
 
     def activate(self):
         super().activate()
