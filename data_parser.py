@@ -629,6 +629,15 @@ class PlayerWarp(Struct):
     warp_type = Byte
 
 
+class FlyShip(Struct):
+    """packet type: 14"""
+    world_x = SBInt32
+    world_y = SBInt32
+    world_z = SBInt32
+    world_planet = SBInt32
+    world_satellite = SBInt32
+
+
 class ChatSent(Struct):
     """packet type: 15"""
     message = StarString

@@ -17,7 +17,6 @@ import re
 import shelve
 from operator import attrgetter
 
-import packets
 import utilities
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
@@ -154,21 +153,22 @@ class Planet:
     """
     def __init__(self, location=(0, 0, 0), planet=0,
                  satellite=0, name=""):
-        self.a, self.x, self.y = location
+        self.x, self.y, self.z = location
         self.planet = planet
         self.satellite = satellite
         self.name = name
 
     def _gen_planet_string(self):
         s = list("CelestialWorld:")
-        s.append("{}:{}:{}:{}".format(self.a, self.x, self.y, self.planet))
+        s.append("{}:{}:{}:{}".format(self.x, self.y, self.z, self.planet))
         if self.satellite > int(0):
             s.append(":{}".format(self.satellite))
         return "".join(s)
 
     def __str__(self):
-        return "{}:{}:{}:{}:{}".format(self.a, self.x, self.y,
-                                       self.planet, self.satellite)
+        return "CelestialWorld:{}:{}:{}:{}:{}".format(self.x, self.y, self.z,
+                                                      self.planet,
+                                                      self.satellite)
 
 
 class IPBan:

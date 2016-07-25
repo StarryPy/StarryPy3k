@@ -10,7 +10,7 @@ used on general purpose servers. It should mostly work, but you have been
 forewarned.***
 
 ## Requirements
-Python 3.4 or greater is required. Test are only conducted on Python
+Python **3.4.4** or greater is required. Test are only conducted on Python
 versions 3.4 and 3.5.
 
 While StarryPy3k **may** work with earlier version of Python, it is not
