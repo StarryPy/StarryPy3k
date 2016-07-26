@@ -30,7 +30,7 @@ class ProtectedLocation:
     def __init__(self, location, allowed_builder):
         self.protected = True
         self.location = location
-        self.allowed_builders = {allowed_builder.name}
+        self.allowed_builders = {allowed_builder.alias}
 
     def unprotect(self):
         self.protected = False
@@ -39,13 +39,13 @@ class ProtectedLocation:
         self.protected = True
 
     def add_builder(self, builder):
-        self.allowed_builders.add(builder.name)
+        self.allowed_builders.add(builder.alias)
 
     def del_builder(self, builder):
-        self.allowed_builders.remove(builder.name)
+        self.allowed_builders.remove(builder.alias)
 
     def check_builder(self, builder):
-        return builder.name in self.allowed_builders
+        return builder.alias in self.allowed_builders
 
     def get_builders(self):
         return self.allowed_builders
@@ -93,7 +93,7 @@ class PlanetProtect(StorageCommandPlugin):
             return True
         if connection.player.check_role(Admin):
             return True
-        elif connection.player.name in protection.get_builders():
+        elif connection.player.alias in protection.get_builders():
             return True
         else:
             return False
@@ -183,7 +183,7 @@ class PlanetProtect(StorageCommandPlugin):
         if isinstance(connection.player.location, Ship):
             ship = connection.player.location
             if not self._check_protection(ship):
-                if ship.player == connection.player.name:
+                if ship.player == connection.player.alias:
                     self._add_protection(ship, connection.player)
                     send_message(connection,
                                  "Your ship has been auto-protected.")
@@ -237,21 +237,21 @@ class PlanetProtect(StorageCommandPlugin):
         :return: Null.
         """
         location = connection.player.location
-        p = self.plugins.player_manager.get_player_by_name(" ".join(data))
+        p = self.plugins.player_manager.get_player_by_alias(" ".join(data))
         if p is not None:
             protection = self._get_protection(location)
             protection.add_builder(p)
             send_message(connection,
                          "Added {} to allowed list for {}".format(
-                             p.name, connection.player.location))
+                             p.alias, connection.player.location))
             try:
                 yield from p.connection.send_message(
                     "You've been granted build access on {} by {}".format(
-                        connection.player.location, connection.player.name))
+                        connection.player.location, connection.player.alias))
             except AttributeError:
                 send_message(connection,
                              "{} isn't online, granted anyways.".format(
-                                 p.name))
+                                 p.alias))
         else:
             send_message(connection,
                          "Couldn't find a player with name {}".format(
@@ -269,7 +269,7 @@ class PlanetProtect(StorageCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        p = self.plugins.player_manager.get_player_by_name(" ".join(data))
+        p = self.plugins.player_manager.get_player_by_alias(" ".join(data))
         if p is not None:
             protection = self._get_protection(connection.player.location)
             protection.del_builder(p)

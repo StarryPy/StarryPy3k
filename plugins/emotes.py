@@ -45,23 +45,6 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
     def activate(self):
         super().activate()
 
-    # Helper functions - Used by commands
-
-    def _mute_check(self, player):
-        """
-        Utility function to verifying if target player is muted.
-
-        :param player: Target player to check.
-        :return: Boolean. True if player is muted, False if they are not.
-        """
-        is_muted = False
-        try:
-            is_muted = player in self.storage.mutes
-        except AttributeError:
-            pass
-        finally:
-            return is_muted
-
     # Commands - In-game actions that can be performed
 
     @Command("me", "em",
@@ -82,7 +65,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                          "...or, just type your own: `/me can do anything`")
             return False
         else:
-            if self._mute_check(connection.player):
+            if self.plugins['chat_manager'].mute_check(connection.player):
                 send_message(connection, "You are muted and cannot emote.")
                 return False
 
@@ -93,4 +76,4 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                 pass
             finally:
                 broadcast(connection, "^orange;{} {}".format(
-                    connection.player.name, emote))
+                    connection.player.alias, emote))

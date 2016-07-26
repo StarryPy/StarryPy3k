@@ -200,7 +200,7 @@ class IRCPlugin(BasePlugin):
             if self.sc:
                 msg = self.color_strip.sub("", msg)
             asyncio.ensure_future(
-                self.bot_write("<{}> {}".format(connection.player.name, msg)))
+                self.bot_write("<{}> {}".format(connection.player.alias, msg)))
         return True
 
     # Helper functions - Used by commands
@@ -259,7 +259,7 @@ class IRCPlugin(BasePlugin):
         yield from asyncio.sleep(1)
         yield from self.bot_write(
             "{} joined the server.".format(_color(_bold(
-                connection.player.name), "10")))
+                connection.player.alias), "10")))
 
     @asyncio.coroutine
     def announce_leave(self, player):
@@ -270,7 +270,7 @@ class IRCPlugin(BasePlugin):
         :return: Null.
         """
         yield from self.bot_write(
-            "{} has left the server.".format(player.name))
+            "{} has left the server.".format(player.alias))
 
     @asyncio.coroutine
     def bot_write(self, msg, target=None):

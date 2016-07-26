@@ -64,7 +64,7 @@ class ChatManager(SimpleCommandPlugin):
                 self.plugins.command_dispatcher.plugin_config.command_prefix):
             return True
 
-        if self._mute_check(connection.player):
+        if self.mute_check(connection.player):
             send_message(connection, "You are muted and cannot chat.")
             return False
 
@@ -72,7 +72,7 @@ class ChatManager(SimpleCommandPlugin):
 
     # Helper functions - Used by commands
 
-    def _mute_check(self, player):
+    def mute_check(self, player):
         """
         Utility function to verifying if target player is muted.
 
@@ -97,24 +97,24 @@ class ChatManager(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null
         """
-        name = " ".join(data)
-        player = self.plugins.player_manager.get_player_by_name(name)
+        alias = " ".join(data)
+        player = self.plugins.player_manager.get_player_by_alias(alias)
         if player is None:
             raise NameError
-        elif self._mute_check(player):
+        elif self.mute_check(player):
             send_message(connection,
-                         "{} is already muted.".format(player.name))
+                         "{} is already muted.".format(player.alias))
             return
         elif player.check_role(Unmuteable):
             send_message(connection,
-                         "{} is unmuteable.".format(player.name))
+                         "{} is unmuteable.".format(player.alias))
             return
         else:
             self.storage.mutes.add(player)
             send_message(connection,
-                         "{} has been muted.".format(player.name))
+                         "{} has been muted.".format(player.alias))
             send_message(player.connection,
-                         "{} has muted you.".format(connection.player.name))
+                         "{} has muted you.".format(connection.player.alias))
 
     @Command("unmute",
              role=UnmutePlayer,
@@ -130,17 +130,17 @@ class ChatManager(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null
         """
-        name = " ".join(data)
-        player = self.plugins.player_manager.get_player_by_name(name)
+        alias = " ".join(data)
+        player = self.plugins.player_manager.get_player_by_alias(alias)
         if player is None:
             raise NameError
-        elif not self._mute_check(player):
+        elif not self.mute_check(player):
             send_message(connection,
-                         "{} isn't muted.".format(player.name))
+                         "{} isn't muted.".format(player.alias))
             return
         else:
             self.storage.mutes.remove(player)
             send_message(connection,
-                         "{} has been unmuted.".format(player.name))
+                         "{} has been unmuted.".format(player.alias))
             send_message(player.connection,
-                         "{} has unmuted you.".format(connection.player.name))
+                         "{} has unmuted you.".format(connection.player.alias))

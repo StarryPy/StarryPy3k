@@ -75,7 +75,7 @@ class Spawn(StorageCommandPlugin):
         # TODO - Or maybe not - when player already above spawn planet,
         # nothing happens. It would be nice to generate an alert on this case.
         planet = connection.player.location
-        if str(planet) != "{}'s ship".format(connection.player.name):
+        if str(planet) != "{}'s ship".format(connection.player.alias):
             send_message(connection,
                          "You must be on your ship for this to work.")
         try:

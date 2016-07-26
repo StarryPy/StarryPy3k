@@ -76,7 +76,7 @@ class Player:
     """
     Prototype class for a player.
     """
-    def __init__(self, uuid, name="", last_seen=None, roles=None,
+    def __init__(self, uuid, name="", alias="", last_seen=None, roles=None,
                  logged_in=False, connection=None, client_id=-1, ip="",
                  planet="", muted=False, state=None, team_id=None):
         """
@@ -98,6 +98,7 @@ class Player:
         """
         self.uuid = uuid
         self.name = name
+        self.alias = alias
         if last_seen is None:
             self.last_seen = datetime.datetime.now()
         else:
@@ -279,10 +280,10 @@ class PlayerManager(SimpleCommandPlugin):
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
         response = data["parsed"]
-        connection.player.logged_in = True
-        connection.player.client_id = response["client_id"]
         connection.player.connection = connection
+        connection.player.client_id = response["client_id"]
         connection.state = State.CONNECTED
+        connection.player.logged_in = True
         return True
 
     def on_client_disconnect_request(self, data, connection):
@@ -327,7 +328,7 @@ class PlayerManager(SimpleCommandPlugin):
                 **planet["celestialParameters"]["coordinate"])
             connection.player.location = location
         self.logger.info("Player {} is now at location: {}".format(
-            connection.player.name,
+            connection.player.alias,
             connection.player.location))
         return True
 
@@ -444,6 +445,11 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.location = None
         return True
 
+    def _clean_name(self, name):
+        color_strip = re.compile("\^(.*?);")
+        alias = color_strip.sub("", name)
+        return alias
+
     def build_rejection(self, reason):
         """
         Function to build packet to reject connection for client.
@@ -499,7 +505,7 @@ class PlayerManager(SimpleCommandPlugin):
             raise TypeError("add_role requires a Role subclass to be passed"
                             " as the second argument.")
         player.roles.add(r)
-        self.logger.info("Granted role {} to {}".format(r, player.name))
+        self.logger.info("Granted role {} to {}".format(r, player.alias))
         for subrole in role.roles:
             s = self.get_role(subrole)
             if issubclass(s, role):
@@ -538,7 +544,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection: Connection of target player to be banned.
         :return: Null
         """
-        ban = IPBan(ip, reason, connection.player.name)
+        ban = IPBan(ip, reason, connection.player.alias)
         self.shelf["bans"][ip] = ban
         send_message(connection,
                      "Banned IP: {} with reason: {}".format(ip, reason))
@@ -605,6 +611,22 @@ class PlayerManager(SimpleCommandPlugin):
                 if not check_logged_in or player.logged_in:
                     return player
 
+    def get_player_by_alias(self, alias, check_logged_in=False) -> Player:
+        """
+        Grab a hook to a player by their name. Return Boolean value if only
+        checking login status. Returns player object otherwise.
+
+        :param alias: String: Cleaned name of player to check.
+        :param check_logged_in: Boolean: Whether we just want login status
+                                (true), or the player's server object (false).
+        :return: Mixed: Boolean on logged_in check, player object otherwise.
+        """
+        lname = alias.lower()
+        for player in self.shelf["players"].values():
+            if player.alias.lower() == lname:
+                if not check_logged_in or player.logged_in:
+                    return player
+
     @asyncio.coroutine
     def _add_or_get_player(self, uuid, name="", last_seen=None, roles=None,
                            logged_in=True, connection=None, client_id=-1,
@@ -632,10 +654,11 @@ class PlayerManager(SimpleCommandPlugin):
             uuid = uuid.decode("ascii")
         if isinstance(name, bytes):
             name = name.decode("utf-8")
+        alias = self._clean_name(name)
 
         if uuid in self.shelf["players"]:
             self.logger.info("Known player is attempting to log in: "
-                             "{}".format(name))
+                             "{}".format(alias))
             p = self.shelf["players"][uuid]
             if p.logged_in:
                 raise ValueError("Player is already logged in.")
@@ -643,15 +666,15 @@ class PlayerManager(SimpleCommandPlugin):
                 p.roles = {x.__name__ for x in Owner.roles}
             return p
         else:
-            if self.get_player_by_name(name) is not None:
+            if self.get_player_by_name(alias) is not None:
                 raise NameError("A user with that name already exists.")
             self.logger.info("Adding new player to database: {} (UUID:{})"
-                             "".format(name, uuid))
+                             "".format(alias, uuid))
             if uuid == self.plugin_config.owner_uuid:
                 roles = {x.__name__ for x in Owner.roles}
             else:
                 roles = {x.__name__ for x in Guest.roles}
-            new_player = Player(uuid, name, last_seen, roles, logged_in,
+            new_player = Player(uuid, name, alias, last_seen, roles, logged_in,
                                 connection, client_id, ip, planet, muted)
             self.shelf["players"][uuid] = new_player
             return new_player
@@ -671,7 +694,7 @@ class PlayerManager(SimpleCommandPlugin):
                 uuid = uuid.decode("utf-8")
             for p in self.factory.connections:
                 if p.player.uuid == uuid:
-                    player = p.player.name
+                    player = p.player.alias
                     return player
 
         if uuid in self.shelf["ships"]:
@@ -745,7 +768,7 @@ class PlayerManager(SimpleCommandPlugin):
         # FIXME: Kick is currently broken. Kicking someone will cause their
         # starbound client to crash (overkill).
         try:
-            name = data[0]
+            alias = data[0]
         except IndexError:
             raise SyntaxWarning("No target provided.")
 
@@ -754,10 +777,10 @@ class PlayerManager(SimpleCommandPlugin):
         except IndexError:
             reason = "No reason given."
 
-        p = self.get_player_by_name(name)
+        p = self.get_player_by_alias(alias)
         if not p.logged_in:
             send_message(connection,
-                         "Player {} is not currently logged in.".format(name))
+                         "Player {} is not currently logged in.".format(alias))
             return False
         if p is not None:
             if p.client_id == -1:
@@ -775,7 +798,7 @@ class PlayerManager(SimpleCommandPlugin):
             p.location = None
         else:
             send_message(connection,
-                         "Couldn't find a player with name {}".format(name))
+                         "Couldn't find a player with name {}".format(alias))
 
     @Command("ban",
              role=Ban,
@@ -845,22 +868,22 @@ class PlayerManager(SimpleCommandPlugin):
             raise SyntaxWarning("Please provide a Role and a target player.")
         if not data[1:]:
             raise SyntaxWarning("Please provide a target player.")
-        name = " ".join(data[1:])
-        p = self.get_player_by_name(name)
+        alias = " ".join(data[1:])
+        p = self.get_player_by_alias(alias)
         try:
             if role.lower() not in (x.__name__.lower() for x in Owner.roles):
                 raise LookupError("Unknown role {}".format(role))
             if p is None:
-                raise LookupError("Unknown player {}".format(name))
+                raise LookupError("Unknown player {}".format(alias))
             ro = [x for x in Owner.roles if
                   x.__name__.lower() == role.lower()][0]
             self.add_role(p, ro)
             send_message(connection,
-                         "Granted role {} to {}.".format(ro.__name__, p.name))
+                         "Granted role {} to {}.".format(ro.__name__, p.alias))
             if p.connection is not None:
                 send_message(p.connection,
                              "You've been granted the role {} by {}".format(
-                                 ro.__name__, connection.player.name))
+                                 ro.__name__, connection.player.alias))
         except LookupError as e:
             send_message(connection, str(e))
 
@@ -888,7 +911,8 @@ class PlayerManager(SimpleCommandPlugin):
                 l = " (logged-in, ID: {})".format(player.client_id)
             else:
                 l = ""
-            send_message(connection, player_info.format(x + 1, player.name, l))
+            send_message(connection, player_info.format(x + 1, player.alias,
+                                                        l))
 
     @Command("del_player",
              role=DeletePlayer,
@@ -913,8 +937,8 @@ class PlayerManager(SimpleCommandPlugin):
             data.pop()
         else:
             force = False
-        name = " ".join(data)
-        player = self.get_player_by_name(name)
+        alias = " ".join(data)
+        player = self.get_player_by_alias(alias)
         if player is None:
             raise NameError
         if (not force) and player.logged_in:
@@ -923,16 +947,4 @@ class PlayerManager(SimpleCommandPlugin):
                 "absolutely necessary, append *force to the command.")
         self.players.pop(player.uuid)
         del player
-        send_message(connection, "Player {} has been deleted.".format(name))
-
-    # @Command("test_broadcast")
-    # def test_broadcast(self, data, connection):
-    #     self.planetary_broadcast(connection.player, " ".join(data))
-    #
-    # def planetary_broadcast(self, player, message):
-    #     for p in self.players.values():
-    #         if p.logged_in and p.location is player.location:
-    #             send_message(p.connection,
-    #                          message,
-    #                          name=p.name)
-    #     return None
+        send_message(connection, "Player {} has been deleted.".format(alias))

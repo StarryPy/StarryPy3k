@@ -51,7 +51,7 @@ class StarryPyServer:
                 packet = yield from read_packet(self._reader,
                                                 Direction.TO_SERVER)
                 # Break in case of emergencies:
-                # if packet['type'] not in [17, 40, 43, 48, 51]:
+                # if packet['type'] not in [17, 40, 41, 43, 48, 51]:
                 #    logger.debug('c->s  {}'.format(packet['type']))
 
                 if (yield from self.check_plugins(packet)):
@@ -78,7 +78,7 @@ class StarryPyServer:
                 packet = yield from read_packet(self._client_reader,
                                                 Direction.TO_CLIENT)
                 # Break in case of emergencies:
-                # if packet['type'] not in [7, 17, 23, 27, 43, 49, 51]:
+                # if packet['type'] not in [7, 17, 23, 27, 31, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
 
                 send_flag = yield from self.check_plugins(packet)
@@ -206,7 +206,7 @@ class ServerFactory:
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, messages):
+    def broadcast(self, messages, **kwargs):
         """
         Send a message to all connected clients.
 

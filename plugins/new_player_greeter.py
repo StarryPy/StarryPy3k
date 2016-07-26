@@ -26,7 +26,8 @@ class NewPlayerGreeter(SimpleCommandPlugin):
     default_config = {"greeting": "Why hello there. You look like you're "
                                   "new here. Here, take this. It should "
                                   "help you on your way.",
-                      "gifts": DotDict({})}
+                      "gifts": DotDict({
+                      })}
 
     def __init__(self):
         super().__init__()

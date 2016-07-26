@@ -57,12 +57,14 @@ class GeneralCommands(SimpleCommandPlugin):
         if not target.logged_in:
             l = "(^red;Offline^reset;)"
         return ("Name: {} {}\n"
+                "Raw Name: {}\n"
                 "Roles: ^yellow;{}^green;\n"
                 "UUID: ^yellow;{}^green;\n"
                 "IP address: ^cyan;{}^green;\n"
                 "Team ID: ^cyan;{}^green;\n"
                 "Current location: ^yellow;{}^green;".format(
-                    target.name, l,
+                    target.alias, l,
+                    target.name,
                     ", ".join(target.roles),
                     target.uuid,
                     target.ip,
@@ -86,9 +88,9 @@ class GeneralCommands(SimpleCommandPlugin):
             if player.logged_in:
                 if connection.player.check_role(Moderator):
                     ret_list.append(
-                        "[{}]{}".format(player.client_id, player.name))
+                        "[{}]{}".format(player.client_id, player.alias))
                 else:
-                    ret_list.append("{}".format(player.name))
+                    ret_list.append("{}".format(player.alias))
         send_message(connection,
                      "{} players online:\n{}".format(len(ret_list),
                                                      ", ".join(ret_list)))
@@ -109,7 +111,7 @@ class GeneralCommands(SimpleCommandPlugin):
         if len(data) == 0:
             raise SyntaxWarning("No target provided.")
         name = " ".join(data)
-        info = self.plugins['player_manager'].get_player_by_name(name)
+        info = self.plugins['player_manager'].get_player_by_alias(name)
         if info is not None:
             send_message(connection, self.generate_whois(info))
         else:
@@ -132,7 +134,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 cannot be resolved.
         """
         arg_count = len(data)
-        target = self.plugins.player_manager.get_player_by_name(data[0])
+        target = self.plugins.player_manager.get_player_by_alias(data[0])
         if arg_count == 1:
             target = connection.player
             item = data[0]
@@ -158,7 +160,6 @@ class GeneralCommands(SimpleCommandPlugin):
         target = target.connection
         if count > 10000 and item != "money":
             count = 10000
-        count += 1
         item_base = data_parser.GiveItem.build(dict(name=item,
                                                     count=count,
                                                     variant_type=7,
@@ -169,10 +170,10 @@ class GeneralCommands(SimpleCommandPlugin):
         send_message(connection,
                      "Gave {} (count: {}) to {}".format(
                          item,
-                         count - 1,
-                         target.player.name))
+                         count,
+                         target.player.alias))
         send_message(target, "{} gave you {} (count: {})".format(
-            connection.player.name, item, count - 1))
+            connection.player.alias, item, count))
 
     @Command("nick",
              role=Nick,
@@ -186,15 +187,15 @@ class GeneralCommands(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        name = " ".join(data)
-        if self.plugins.player_manager.get_player_by_name(name):
+        alias = " ".join(data)
+        if self.plugins.player_manager.get_player_by_alias(alias):
             raise ValueError("There's already a user by that name.")
         else:
-            old_name = connection.player.name
-            connection.player.name = name
+            old_alias = connection.player.alias
+            connection.player.alias = alias
             broadcast(self.factory,
-                      "{}'s name has been changed to {}".format(old_name,
-                                                                name))
+                      "{}'s name has been changed to {}".format(old_alias,
+                                                                alias))
 
     @Command("whoami",
              role=Whoami,
@@ -226,6 +227,5 @@ class GeneralCommands(SimpleCommandPlugin):
         :return: Null.
         """
         message = " ".join(data)
-        broadcast(self.factory,
-                  message,
-                  name=connection.player.name)
+        broadcast(self,
+                  "^red;{}^reset;".format(message))

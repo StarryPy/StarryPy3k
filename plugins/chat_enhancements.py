@@ -10,7 +10,6 @@ player's name tag.
 Original authors: teihoo, FZFalzar
 Updated for release: kharidiron
 """
-
 from datetime import datetime
 
 from base_plugin import SimpleCommandPlugin
@@ -68,21 +67,22 @@ class ChatEnhancements(SimpleCommandPlugin):
                  colors) or if the message is a command.
         """
         message = data['parsed']['message']
-        if not message.startswith(
-                self.command_dispatcher.command_prefix):
+        if message.startswith(self.command_dispatcher.command_prefix):
+            return True
+        if self.plugins['chat_manager'].mute_check(connection.player):
+            return False
 
-            sender = self._decorate_line(connection)
+        sender = self._decorate_line(connection)
 
-            if self.chat_style == "universal":
-                yield from self._send_to_universe(message,
-                                                  sender,
-                                                  connection.player.client_id)
-            elif self.chat_style == "planetary":
-                yield from self._send_to_planet(message,
-                                                sender,
-                                                connection.player.client_id,
-                                                str(connection.player.location))
-        return
+        if self.chat_style == "universal":
+            yield from self._send_to_universe(message,
+                                              sender,
+                                              connection.player.client_id)
+        elif self.chat_style == "planetary":
+            yield from self._send_to_planet(message,
+                                            sender,
+                                            connection.player.client_id,
+                                            str(connection.player.location))
 
     # Helper functions - Used by commands
 
@@ -94,14 +94,14 @@ class ChatEnhancements(SimpleCommandPlugin):
                                            "^reset;")
         else:
             timestamp = ""
-        player = self.plugins['player_manager'].get_player_by_name(
-            connection.player.name)
+        player = self.plugins['player_manager'].get_player_by_alias(
+            connection.player.alias)
         try:
             sender = timestamp + self._colored_name(player)
         except AttributeError as e:
             self.logger.warning(
                 "AttributeError in colored_name: {}".format(str(e)))
-            sender = connection.player.name
+            sender = connection.player.alias
         return sender
 
     def _colored_name(self, data):
@@ -124,7 +124,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         else:
             color = self.colors.default
 
-        return color + data.name + "^reset;"
+        return color + data.alias + "^reset;"
 
     def _send_to_planet(self, msg, sender, client_id, location):
         send_mode = ChatReceiveMode.CHANNEL
@@ -174,6 +174,9 @@ class ChatEnhancements(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null
         """
+        if self.plugins['chat_manager'].mute_check(connection.player):
+            send_message(connection, "You are muted and cannot chat.")
+            return False
         if data:
             message = " ".join(data)
             sender = self._decorate_line(connection)
@@ -194,6 +197,9 @@ class ChatEnhancements(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null
         """
+        if self.plugins['chat_manager'].mute_check(connection.player):
+            send_message(connection, "You are muted and cannot chat.")
+            return False
         if data:
             message = " ".join(data)
             sender = self._decorate_line(connection)
@@ -238,7 +244,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         except IndexError:
             raise SyntaxWarning("No target provided.")
 
-        recipient = self.plugins.player_manager.get_player_by_name(name)
+        recipient = self.plugins.player_manager.get_player_by_alias(name)
         if recipient is not None:
             if not recipient.logged_in:
                 send_message(connection,
