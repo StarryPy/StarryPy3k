@@ -788,6 +788,11 @@ class PlayerManager(SimpleCommandPlugin):
                 p.logged_in = False
                 p.location = None
                 return
+            if p.connection is None:
+                p.connection = None
+                p.logged_in = False
+                p.location = None
+                return
             kick_string = "You were kicked.\n Reason: {}".format(reason)
             kick_packet = build_packet(packets["server_disconnect"],
                                        ServerDisconnect.build(
