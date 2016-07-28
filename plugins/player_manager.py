@@ -17,11 +17,10 @@ import re
 import shelve
 from operator import attrgetter
 
-import utilities
 from base_plugin import Role, SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
-from utilities import Command, send_message, DotDict, State, \
+from utilities import Command, DotDict, State, broadcast, send_message, \
     WarpType, WarpWorldType, WarpAliasType
 from packets import packets
 
@@ -735,7 +734,7 @@ class PlayerManager(SimpleCommandPlugin):
             planet = Planet(location=location, planet=planet,
                             satellite=satellite)
             self.shelf["planets"][str(planet)] = planet
-            self.junk = utilities.State
+            self.junk = State
         return planet
 
     @asyncio.coroutine
@@ -791,12 +790,7 @@ class PlayerManager(SimpleCommandPlugin):
                          "Player {} is not currently logged in.".format(alias))
             return False
         if p is not None:
-            if p.client_id == -1:
-                p.connection = None
-                p.logged_in = False
-                p.location = None
-                return
-            if p.connection is None:
+            if p.client_id == -1 or p.connection is None:
                 p.connection = None
                 p.logged_in = False
                 p.location = None
@@ -809,6 +803,8 @@ class PlayerManager(SimpleCommandPlugin):
             p.connection = None
             p.logged_in = False
             p.location = None
+            broadcast(self, "^red;{} has been kicked for reason: "
+                            "{}^reset;".format(alias, reason))
         else:
             send_message(connection,
                          "Couldn't find a player with name {}".format(alias))
