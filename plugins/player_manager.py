@@ -202,6 +202,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.players = self.shelf["players"]
         self.planets = self.shelf["planets"]
         self.plugin_shelf = self.shelf["plugins"]
+        self.players_online = []
         asyncio.ensure_future(self._reap())
 
     # Packet hooks - look for these packets and act on them
@@ -284,6 +285,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.client_id = response["client_id"]
         connection.state = State.CONNECTED
         connection.player.logged_in = True
+        self.players_online.append(connection.player.uuid)
         return True
 
     def on_client_disconnect_request(self, data, connection):
@@ -296,7 +298,6 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        self._set_offline(connection)
         return True
 
     def on_server_disconnect(self, data, connection):
@@ -428,10 +429,16 @@ class PlayerManager(SimpleCommandPlugin):
         """
         while True:
             yield from asyncio.sleep(10)
-            for player in self.players:
+            # self.logger.debug("Player reaper running:")
+            for player in self.players_online:
                 target = self.get_player_by_uuid(player)
-                if target.logged_in and target.client_id == -1:
-                    self._set_offline(target.connection)
+                if target.connection.state is State.DISCONNECTED:
+                    self.logger.warning("Removing stale player connection: {}"
+                                        "".format(target.name))
+                    target.connection = None
+                    target.logged_in = False
+                    target.location = None
+                    self.players_online.remove(target.uuid)
 
     def _set_offline(self, connection):
         """
@@ -443,6 +450,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.connection = None
         connection.player.logged_in = False
         connection.player.location = None
+        self.players_online.remove(connection.player.uuid)
         return True
 
     def _clean_name(self, name):

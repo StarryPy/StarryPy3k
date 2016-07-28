@@ -84,13 +84,14 @@ class GeneralCommands(SimpleCommandPlugin):
         :return: Null.
         """
         ret_list = []
-        for player in self.plugins['player_manager'].players.values():
-            if player.logged_in:
-                if connection.player.check_role(Moderator):
-                    ret_list.append(
-                        "[{}]{}".format(player.client_id, player.alias))
-                else:
-                    ret_list.append("{}".format(player.alias))
+        for player in self.plugins['player_manager'].players_online:
+            target = self.plugins['player_manager'].get_player_by_uuid(player)
+            if connection.player.check_role(Moderator):
+                ret_list.append(
+                    "[^red;{}^reset;] {}".format(target.client_id,
+                                                 target.alias))
+            else:
+                ret_list.append("{}".format(target.alias))
         send_message(connection,
                      "{} players online:\n{}".format(len(ret_list),
                                                      ", ".join(ret_list)))

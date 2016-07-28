@@ -59,9 +59,11 @@ class StarryPyServer:
         except asyncio.IncompleteReadError:
             # Pass on these errors. These occur when a player disconnects badly
             pass
+        except asyncio.CancelledError:
+            logger.warning("Connection ended abruptly.")
         except Exception as err:
-            logger.error('Server loop exception occurred:'
-                         '{}: {}'.format(err.__class__.__name__, err))
+            logger.error("Server loop exception occurred:"
+                         "{}: {}".format(err.__class__.__name__, err))
         finally:
             self.die()
 
@@ -84,6 +86,8 @@ class StarryPyServer:
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
+        except asyncio.IncompleteReadError:
+            logger.error("IncompleteReadError: Connection ended abruptly.")
         finally:
             self.die()
 
@@ -168,6 +172,7 @@ class StarryPyServer:
             self._server_loop_future.cancel()
             self._client_loop_future.cancel()
             self.factory.remove(self)
+            self.state = State.DISCONNECTED
             self._alive = False
 
     @asyncio.coroutine
