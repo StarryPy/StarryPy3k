@@ -283,7 +283,8 @@ if __name__ == "__main__":
         loglevel = logging.INFO
 
     formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(name)s # %(message)s')
+        '%(asctime)s - %(levelname)s - %(name)s # %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
     aiologger = logging.getLogger("asyncio")
     aiologger.setLevel(loglevel)
     logger = logging.getLogger('starrypy')
