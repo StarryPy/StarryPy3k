@@ -24,6 +24,34 @@ If you are installing during the development phase, please clone the repository
  using a virtual environment helps to keep a clean namespace and reduce the
  chance of bugs.
 
+### Starbound Server Configuration
+StarryPy works as a benevolent "man in the middle" between the Starbound game
+client and the Starbound dedicated server, in effect acting as a proxy server.
+As such, for easiest transition from a "Vanilla" server to one enhanced by
+StarryPy, you need to set your Starbound server to accept incoming connections
+on a new TCP port.  By default, this will be the port one lower than standard,
+to wit: 21024.  To accomplish this, edit your `starbound_server.config`.  Look
+for the lines below, and change them to specify port 21024:
+
+```
+  "gameServerPort" : 21025,
+  [...]
+  "queryServerPort" : 21025,
+```
+
+### StarryPy Proxy Configuration
+Unfortunately, the example `config.json` file included in the repository is
+not comprehensive.  Fortunately, StarryPy will write its runtime configuration
+to disk periodically.  Go ahead and start the Starbound server and StarryPy,
+and make sure you can connect to your server.  Then disconnect, and open up
+`config/config.json`.  Also, open up your Starbound server log, and make a
+note of the UUID you were assigned when you connected to your server.  Edit
+the obvious things in the configuration file (the Message of the Day, for
+example).  Look in particular for the `player_manager` section, and replace
+the text telling you to replace it with your UUID.  This will accord you the
+privileges of the server owner within StarryPy.  Restart it, and you should be
+up and running.
+
 ## Contributing
 Contributions are highly encouraged and always welcome. Please feel free to
 open an issue on GitHub if you are having an error, or wish to make a
