@@ -675,6 +675,17 @@ class ClientContextUpdate(Struct):
     contexts = ClientContextSet
 
 
+class EntityInteract(Struct):
+    """packet type: 37"""
+    source_id = UBInt32
+    source_x = BFloat32
+    source_y = BFloat32
+    target_id = UBInt32
+    target_x = BFloat32
+    target_y = BFloat32
+    request_id = UUID
+
+
 class StepUpdate(Struct):
     """packet type: 51"""
     heartbeat = VLQ
