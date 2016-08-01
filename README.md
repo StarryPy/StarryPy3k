@@ -43,14 +43,14 @@ for the lines below, and change them to specify port 21024:
 Unfortunately, the example `config.json` file included in the repository is
 not comprehensive.  Fortunately, StarryPy will write its runtime configuration
 to disk periodically.  Go ahead and start the Starbound server and StarryPy,
-and make sure you can connect to your server.  Then disconnect, and open up
-`config/config.json`.  Also, open up your Starbound server log, and make a
-note of the UUID you were assigned when you connected to your server.  Edit
-the obvious things in the configuration file (the Message of the Day, for
-example).  Look in particular for the `player_manager` section, and replace
-the text telling you to replace it with your UUID.  This will accord you the
-privileges of the server owner within StarryPy.  Restart it, and you should be
-up and running.
+and make sure you can connect to your server.  Then disconnect, and terminate
+StarryPy (by pressing `^C` in its terminal), and open up `config/config.json`.
+Also, open up your Starbound server log, and make a note of the UUID you were
+assigned when you connected to your server.  Edit the obvious things in the
+configuration file (the Message of the Day, for example).  Look in particular
+for the `player_manager` section, and replace the text telling you to replace
+it with your UUID.  This will accord you the privileges of the server owner
+within StarryPy.  Restart it, and you should be up and running.
 
 ## Contributing
 Contributions are highly encouraged and always welcome. Please feel free to
