@@ -636,7 +636,7 @@ class PlayerManager(SimpleCommandPlugin):
 
     @asyncio.coroutine
     def _add_or_get_player(self, uuid, name="", last_seen=None, roles=None,
-                           logged_in=True, connection=None, client_id=-1,
+                           logged_in=False, connection=None, client_id=-1,
                            ip="", planet="", muted=False, **kwargs) -> Player:
         """
         Given a UUID, try to find the player's info in storage. In the event
