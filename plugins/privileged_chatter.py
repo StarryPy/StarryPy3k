@@ -22,7 +22,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
     name = "privileged_chatter"
     depends = ["command_dispatcher", "chat_enhancements", "player_manager"]
     default_config = {"modchat_color": "^violet;",
-                      "report_prefix": "^red;(REPORT): "}
+                      "report_prefix": "^magenta;(REPORT): "}
 
     def __init__(self):
         super().__init__()
