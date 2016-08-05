@@ -192,11 +192,12 @@ class GeneralCommands(SimpleCommandPlugin):
         if self.plugins.player_manager.get_player_by_alias(alias):
             raise ValueError("There's already a user by that name.")
         else:
+            clean_alias = self.plugins['player_manager']._clean_name(alias)
             old_alias = connection.player.alias
-            connection.player.alias = alias
+            connection.player.alias = clean_alias
             broadcast(self.factory,
                       "{}'s name has been changed to {}".format(old_alias,
-                                                                alias))
+                                                                clean_alias))
 
     @Command("whoami",
              role=Whoami,
