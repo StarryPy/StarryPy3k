@@ -25,10 +25,6 @@ class GiveItem(Admin):
     pass
 
 
-class Broadcast(Admin):
-    pass
-
-
 class Nick(Registered):
     pass
 
@@ -214,20 +210,3 @@ class GeneralCommands(SimpleCommandPlugin):
         # instead, the Starbound version of /whoami will take over.
         send_message(connection,
                      self.generate_whois(connection.player))
-
-    @Command("broadcast",
-             role=Broadcast,
-             doc="Sends a message to everyone on the server.")
-    def _universe_broadcast(self, data, connection):
-        """
-        Broadcast a message to everyone on the server. Currently, this is
-        actually redundant, as sending a message regularly is already a
-        broadcast.
-
-        :param data: The packet containing the command.
-        :param connection: The connection from which the packet came.
-        :return: Null.
-        """
-        message = " ".join(data)
-        broadcast(self,
-                  "^red;{}^reset;".format(message))
