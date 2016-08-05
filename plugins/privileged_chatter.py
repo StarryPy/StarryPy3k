@@ -21,7 +21,7 @@ class ModeratorChat(Moderator):
 class PrivilegedChatter(SimpleCommandPlugin):
     name = "privileged_chatter"
     depends = ["command_dispatcher", "chat_enhancements", "player_manager"]
-    default_config = {"modchat_color": "^red;",
+    default_config = {"modchat_color": "^violet;",
                       "report_prefix": "^red;(REPORT): "}
 
     def __init__(self):
