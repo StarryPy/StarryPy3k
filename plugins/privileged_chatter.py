@@ -47,8 +47,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("modchat", "m",
-              role=ModeratorChat,
-              doc="Send a message that can only be seen by other moderators.")
+             role=ModeratorChat,
+             doc="Send a message that can only be seen by other moderators.")
     def _moderatorchat(self, data, connection):
          """
          Command to send private messages between moderators.
@@ -72,7 +72,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
                                              channel=channel)
 
     @Command("report",
-          doc="Privately make a report to all online moderators.")
+             doc="Privately make a report to all online moderators.")
     def _report(self, data, connection):
          """
          Command to send reports to moderators.
@@ -97,8 +97,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
 
 
     @Command("broadcast",
-         role=Broadcast,
-         doc="Sends a message to everyone on the server.")
+             role=Broadcast,
+             doc="Sends a message to everyone on the server.")
     def _broadcast(self, data, connection):
         """
         Broadcast a message to everyone on the server. Currently, this is
