@@ -21,6 +21,7 @@ from plugins.player_manager import Owner, Guest
 
 class IRCBot(Guest):
     is_meta = True
+    log_irc = False # Set this to True to see IRC chat in the StarryPy log
 
 
 # Mock Objects
@@ -250,11 +251,13 @@ class IRCPlugin(BasePlugin):
                 message=" ".join( message.split()[1:])[:-1]                                # Strip the CTCP metadata from the beginning and end
                 yield from self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- {} "  # Format it like a /me is in IRC
                                                   "{}".format(nick, message) )
-                self.logger.info( " -*- " + nick + " " + message )
+                if self.log_irc == True:
+                    self.logger.info( " -*- " + nick + " " + message )
         else:
             yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
                                               "{}".format(nick, message))
-            self.logger.info( "<" + nick + "> " + message )
+            if self.log_irc == True:
+                self.logger.info( "<" + nick + "> " + message )
 
     @asyncio.coroutine
     def announce_join(self, connection):
