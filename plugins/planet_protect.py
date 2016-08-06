@@ -11,8 +11,8 @@ Updated for release: kharidiron
 import asyncio
 
 from base_plugin import StorageCommandPlugin
-from plugins.player_manager import Admin, Ship
-from utilities import Direction, Command, send_message
+from plugins.player_manager import Admin
+from utilities import Direction, Command, send_message, EntityInteractionType
 
 
 # Roles
@@ -72,9 +72,45 @@ class PlanetProtect(StorageCommandPlugin):
         asyncio.ensure_future(self._protect_ship(connection))
         return True
 
-    def on_entity_interact(self, data, connection):
+    def on_entity_interact_result(self, data, connection):
         """
         Catch when a player interacts with an object in the world.
+
+        :param data: The packet containing the action.
+        :param connection: The connection from which the packet came.
+        :return: Boolean, Varied. If the server generates the packet,
+                 let it pass. If planet is not protected, let it pass.
+                 If player is an Admin, let it pass. If player is list of
+                 builders, let it pass. Otherwise, block the packet from
+                 reaching the server.
+        """
+        if not self._check_protection(connection.player.location):
+            return True
+        protection = self._get_protection(connection.player.location)
+        if not protection.protected:
+            return True
+        if connection.player.check_role(Admin):
+            return True
+        elif connection.player.alias in protection.get_builders():
+            return True
+        else:
+            action = data["parsed"]["interaction_type"]
+            if action in [EntityInteractionType.OPEN_CREW_UI,
+                          EntityInteractionType.OPEN_SPECIAL_UI,
+                          EntityInteractionType.OPEN_COCKPIT_UI,
+                          EntityInteractionType.OPEN_CRAFTING_UI,
+                          EntityInteractionType.OPEN_NPC_UI,
+                          EntityInteractionType.OPEN_SAIL_UI,
+                          EntityInteractionType.OPEN_TELEPORTER_UI,
+                          EntityInteractionType.GO_PRONE,
+                          EntityInteractionType.NOMINAL]:
+                return True
+        return False
+
+    def on_tile_update(self, data, connection):
+        """
+        Hook for tile update packet. Use to verify if changes to tiles are
+        allowed for player.
 
         :param data: The packet containing the action.
         :param connection: The connection from which the packet came.
@@ -98,30 +134,18 @@ class PlanetProtect(StorageCommandPlugin):
         else:
             return False
 
-    def on_entity_create(self, data, connection):
-        """
-        Catch when a player performs an action that causes a new entity to
-        be created.
-
-        :param data: The packet containing the action.
-        :param connection: The connection from which the packet came.
-        :return: Boolean: True if player is being created, or an allowed
-                 entity creation. False otherwise.
-        """
-        if data["direction"] == Direction.TO_SERVER:
-            if data["data"][0] == 0x00:
-                return True  # A player is being sent, let's let it through.
-        return (yield from self.on_entity_interact(data, connection))
-
     # Rather than recreating the same check for every different type of
     # packet we want to protect against, just map the process of
-    # on_entity_interact to all of them, since the check process is that same.
-    on_damage_tile = on_entity_interact
-    on_damage_tile_group = on_entity_interact
-    on_spawn_entity = on_entity_interact
-    on_modify_tile_list = on_entity_interact
-    on_tile_update = on_entity_interact
-    on_tile_array_update = on_entity_interact
+    # on_tile_update to all of them, since the check process is that same.
+    on_damage_tile = on_tile_update
+    on_damage_tile_group = on_tile_update
+    on_modify_tile_list = on_tile_update
+    on_tile_array_update = on_tile_update
+    on_collect_liquid = on_tile_update
+    on_tile_liquid_update = on_tile_update
+    on_connect_wire = on_tile_update
+    on_disconnect_all_wires = on_tile_update
+    on_spawn_entity = on_tile_update
 
     # Helper functions - Used by hooks and commands
 
@@ -180,7 +204,7 @@ class PlanetProtect(StorageCommandPlugin):
         :return: Null.
         """
         yield from asyncio.sleep(.5)
-        if isinstance(connection.player.location, Ship):
+        if connection.player.location.locationtype() is "ShipWorld":
             ship = connection.player.location
             if not self._check_protection(ship):
                 if ship.player == connection.player.alias:

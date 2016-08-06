@@ -686,6 +686,14 @@ class EntityInteract(Struct):
     request_id = UUID
 
 
+class EntityInteractResult(Struct):
+    """packet type: 28"""
+    interaction_type = UBInt32
+    target_id = UBInt32
+    entity_data = Variant
+    request_id = UUID
+
+
 class StepUpdate(Struct):
     """packet type: 51"""
     heartbeat = VLQ

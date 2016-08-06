@@ -33,7 +33,7 @@ parse_map = {
     25: None,
     26: None,
     27: None,
-    28: None,
+    28: EntityInteractResult,
     29: None,
     30: None,
     31: None,

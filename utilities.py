@@ -70,6 +70,19 @@ class ChatReceiveMode(IntEnum):
     COMMAND_RESULT = 3
 
 
+class EntityInteractionType(IntEnum):
+    NOMINAL = 0
+    OPEN_COCKPIT_UI = 1
+    OPEN_CONTAINER_UI = 2
+    GO_PRONE = 3
+    OPEN_CRAFTING_UI = 4
+    OPEN_NPC_UI = 7
+    OPEN_SAIL_UI = 8
+    OPEN_TELEPORTER_UI = 9
+    OPEN_SPECIAL_UI = 12
+    OPEN_CREW_UI = 13
+
+
 # Useful things
 
 def recursive_dictionary_update(d, u):

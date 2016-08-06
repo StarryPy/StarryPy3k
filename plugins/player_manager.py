@@ -146,6 +146,9 @@ class Ship:
     def __str__(self):
         return "{}'s ship".format(self.player)
 
+    def locationtype(self):
+        return "ShipWorld"
+
 
 class Planet:
     """
@@ -169,6 +172,9 @@ class Planet:
         return "CelestialWorld:{}:{}:{}:{}:{}".format(self.x, self.y, self.z,
                                                       self.planet,
                                                       self.satellite)
+
+    def locationtype(self):
+        return "CelestialWorld"
 
 
 class IPBan:
