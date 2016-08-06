@@ -72,7 +72,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         if self.plugins['chat_manager'].mute_check(connection.player):
             return False
 
-        sender = self._decorate_line(connection)
+        sender = self.decorate_line(connection)
 
         if self.chat_style == "universal":
             yield from self._send_to_universe(message,
@@ -86,7 +86,7 @@ class ChatEnhancements(SimpleCommandPlugin):
 
     # Helper functions - Used by commands
 
-    def _decorate_line(self, connection):
+    def decorate_line(self, connection):
         if self.cts:
             now = datetime.now()
             timestamp = "{}{}{}> <".format(self.cts_color,
@@ -179,7 +179,7 @@ class ChatEnhancements(SimpleCommandPlugin):
             return False
         if data:
             message = " ".join(data)
-            sender = self._decorate_line(connection)
+            sender = self.decorate_line(connection)
             yield from self._send_to_planet(message,
                                             sender,
                                             connection.player.client_id,
@@ -202,7 +202,7 @@ class ChatEnhancements(SimpleCommandPlugin):
             return False
         if data:
             message = " ".join(data)
-            sender = self._decorate_line(connection)
+            sender = self.decorate_line(connection)
             yield from self._send_to_universe(message,
                                               sender,
                                               connection.player.client_id)
@@ -253,7 +253,7 @@ class ChatEnhancements(SimpleCommandPlugin):
                 return False
             message = " ".join(data[1:])
             client_id = connection.player.client_id
-            sender = self._decorate_line(connection)
+            sender = self.decorate_line(connection)
             send_mode = ChatReceiveMode.WHISPER
             channel = "Private"
             yield from send_message(recipient.connection,
