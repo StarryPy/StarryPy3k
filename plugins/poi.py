@@ -68,8 +68,8 @@ class POI(StorageCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("poi",
-             doc="Moves a player's ship to the specified Point of Interest, or "
-                 "prints the POIs if no argument given.",
+             doc="Moves a player's ship to the specified Point of Interest, "
+                 "or prints the POIs if no argument given.",
              syntax="[\"][POI name][\"]")
     def _poi(self, data, connection):
         """
@@ -107,8 +107,8 @@ class POI(StorageCommandPlugin):
              syntax="[\"](POI name)[\"]")
     def _set_poi(self, data, connection):
         """
-        Set the current planet as a Point of Interest. Note, you must be standing
-        on a planet for this to work.
+        Set the current planet as a Point of Interest. Note, you must be
+        standing on a planet for this to work.
 
         :param data: The packet containing the command.
         :param connection: The connection from which the packet came.
