@@ -271,7 +271,7 @@ class IRCPlugin(BasePlugin):
         """
         yield from self.bot_write(
             "{} has left the server.".format(_color(_bold(
-                connection.player.alias), "10")))
+                player.alias), "10")))
 
     @asyncio.coroutine
     def bot_write(self, msg, target=None):
