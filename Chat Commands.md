@@ -20,6 +20,9 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /whisper , /w
 - /who
 - /whoami
+- /here , /planet
+- /poi
+- /report
 
 ***Registered User Commands***
 
@@ -34,6 +37,7 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /set_motd
 - /show_spawn
 - /unmute
+- /modchat , /m
 
 ***Admin Commands***
 
@@ -46,6 +50,8 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /whois
 - /broadcast
 - /give , /item , /give_item
+- /set_poi
+- /del_poi
 
 ***SuperAdmin Commands***
 
@@ -184,7 +190,10 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - /who
      - **Role:** Guest
      - **Description:** Lists all players currently logged in.
-
+  - /here
+     - **Role:** Guest
+     - **Description:** Lists all players on the same planet as the user.
+     - **Alias:** /planet
   - /whois (username)
      - **Role:** Admin
      - **Description:** Displays detailed information about a player.
