@@ -3,7 +3,8 @@ StarryPy POI Plugin
 
 Plugin to move players' ships to points of interest designated by admins.
 
-Original authors: kharidiron
+Original code by: kharidiron
+Reimplemented by: medeor413
 """
 
 import asyncio
@@ -87,7 +88,7 @@ class POI(StorageCommandPlugin):
                          "Points of Interest: {}".format(pois))
             return
         planet = connection.player.location
-        poi = " ".join(data)
+        poi = " ".join(data).lower()
         if str(planet) != "{}'s ship".format(connection.player.alias):
             send_message(connection,
                          "You must be on your ship for this to work.")
@@ -117,7 +118,7 @@ class POI(StorageCommandPlugin):
             send_message(connection,
                          "No name for POI specified.")
             return
-        poi_name = " ".join(data)
+        poi_name = " ".join(data).lower()
         if poi_name in self.storage["pois"]:
             send_message(connection,
                          "A POI with this name already exists!")
@@ -146,7 +147,7 @@ class POI(StorageCommandPlugin):
             send_message(connection,
                          "No POI specified.")
             return
-        poi_name = " ".join(data)
+        poi_name = " ".join(data).lower()
         if poi_name in self.storage["pois"]:
             self.storage["pois"].pop(poi_name)
             send_message(connection,
