@@ -455,7 +455,14 @@ class PlayerManager(SimpleCommandPlugin):
     def _clean_name(self, name):
         color_strip = re.compile("\^(.*?);")
         alias = color_strip.sub("", name)
-        return alias
+        non_ascii_strip = re.compile("[^\x00-\x7F]")
+        alias = non_ascii_strip.sub("", alias)
+        multi_whitespace_strip = re.compile("[ ]{2,}")
+        alias = multi_whitespace_strip.sub(" ", alias)
+        if non_ascii_strip.search(alias) is None:
+            return None
+        else:
+            return alias
 
     def build_rejection(self, reason):
         """
@@ -662,6 +669,8 @@ class PlayerManager(SimpleCommandPlugin):
         if isinstance(name, bytes):
             name = name.decode("utf-8")
         alias = self._clean_name(name)
+        if alias is None:
+            alias = uuid[0:4]
 
         if uuid in self.shelf["players"]:
             self.logger.info("Known player is attempting to log in: "
