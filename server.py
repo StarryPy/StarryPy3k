@@ -326,6 +326,8 @@ if __name__ == "__main__":
         _factory.kill_all()
         _factory.plugin_manager.deactivate_all()
         _factory.configuration_manager.save_config()
+        aiologger.removeHandler(fh_d)
+        aiologger.removeHandler(ch)
         loop.stop()
         loop.close()
         logger.info("Finished.")

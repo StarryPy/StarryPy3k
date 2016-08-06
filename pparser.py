@@ -66,9 +66,9 @@ class PacketParser:
     """
     def __init__(self, config: ConfigurationManager):
         self._cache = {}
-        self._reaper = asyncio.ensure_future(self._reap())
         self.config = config
         self.loop = asyncio.get_event_loop()
+        self._reaper = self.loop.create_task(self._reap())
 
     @asyncio.coroutine
     def parse(self, packet):
@@ -145,8 +145,8 @@ class PacketParser:
             packet["parsed"] = res.parse(packet["data"])
         return packet
 
-    def __del__(self):
-        self._reaper.cancel()
+    # def __del__(self):
+    #     self._reaper.cancel()
 
 
 class CachedPacket:
