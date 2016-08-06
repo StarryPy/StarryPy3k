@@ -245,8 +245,14 @@ class IRCPlugin(BasePlugin):
         :return: Null
         """
         message = data
-        yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
-                                          "{}".format(nick, message))
+        if message[0] == "\x01":                                                           # CTCP Event
+            if message.split()[0] == "\x01ACTION":                                         # CTCP Action - e. g. '/me does a little dance'
+                message=" ".join( message.split()[1:])[:-1]                                # Strip the ^As from the beginning and end
+                yield from self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- {} "  # Format it like a /me is in IRC
+                                                  "{}".format(nick, message) )
+        else:
+            yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
+                                              "{}".format(nick, message))
 
     @asyncio.coroutine
     def announce_join(self, connection):
