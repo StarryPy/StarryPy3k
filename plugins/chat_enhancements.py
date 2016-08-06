@@ -53,6 +53,18 @@ class ChatEnhancements(SimpleCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
+    def on_connect_success(self, data, connection):
+        """
+        Catch when a successful connection is established. Set the player's
+        chat style to be the server default.
+
+        :param data:
+        :param connection:
+        :return: Boolean: True. Must be true, so that packet get passed on.
+        """
+        connection.player.chat_style = self.chat_style
+        return True
+
     def on_chat_sent(self, data, connection):
         """
         Catch when someone sends a message. Add a timestamp to the message (if
@@ -74,11 +86,11 @@ class ChatEnhancements(SimpleCommandPlugin):
 
         sender = self.decorate_line(connection)
 
-        if self.chat_style == "universal":
+        if connection.player.chat_style == "universal":
             yield from self._send_to_universe(message,
                                               sender,
                                               connection.player.client_id)
-        elif self.chat_style == "planetary":
+        elif connection.player.chat_style == "planetary":
             yield from self._send_to_planet(message,
                                             sender,
                                             connection.player.client_id,
@@ -162,8 +174,9 @@ class ChatEnhancements(SimpleCommandPlugin):
 
     # Commands - In-game actions that can be performed
 
-    @Command("local", "l",
-             doc="Send message only to people on same world.")
+    @Command("l",
+             doc="Send message only to people on same world.",
+             syntax="(message)")
     def _local(self, data, connection):
         """
         Local chat. Sends a message only to characters who are on the same
@@ -185,8 +198,9 @@ class ChatEnhancements(SimpleCommandPlugin):
                                             connection.player.client_id,
                                             str(connection.player.location))
 
-    @Command("universe", "u",
-             doc="Send message to the entire universe.")
+    @Command("u",
+             doc="Send message to the entire universe.",
+             syntax="(message)")
     def _universe(self, data, connection):
         """
         Universal chat. Sends a message that everyone can see. If the
@@ -206,6 +220,27 @@ class ChatEnhancements(SimpleCommandPlugin):
             yield from self._send_to_universe(message,
                                               sender,
                                               connection.player.client_id)
+
+    @Command("local", "universal",
+             doc="Toggles the default chat style for a user.")
+    def _chat_toggle(self, data, connection):
+        current_chat_style = connection.player.chat_style
+        if "universal" in current_chat_style:
+            connection.player.chat_style = "planetary"
+        elif "planetary" in current_chat_style:
+            connection.player.chat_style = "universal"
+        else:
+            self.logger.error("Something went wrong with the chat toggle.")
+
+        self.logger.debug(
+            "{} has changed their chat style to {}".format(
+                connection.player.alias,
+                connection.player.chat_style
+            ))
+        yield from send_message(connection,
+                                " - Chat style is now set to {}.".format(
+                                    connection.player.chat_style),
+                                mode=ChatReceiveMode.COMMAND_RESULT)
 
     # @Command("party", "p",
     #          doc="Send message to only party members.")
