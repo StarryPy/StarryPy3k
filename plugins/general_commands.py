@@ -188,7 +188,11 @@ class GeneralCommands(SimpleCommandPlugin):
         if self.plugins.player_manager.get_player_by_alias(alias):
             raise ValueError("There's already a user by that name.")
         else:
-            clean_alias = self.plugins['player_manager']._clean_name(alias)
+            clean_alias = self.plugins['player_manager'].clean_name(alias)
+            if clean_alias is None:
+                send_message(connection,
+                             "Nickname contains no valid characters.")
+                return
             old_alias = connection.player.alias
             connection.player.alias = clean_alias
             broadcast(self.factory,

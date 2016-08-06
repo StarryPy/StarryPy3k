@@ -11,11 +11,12 @@ Note: This document is likely to change often, as well as become outdated quickl
 ***Guest Commands***
 
 - /help
-- /local , /l
+- /l
+- /local , /universal
 - /me , /em
 - /motd
 - /spawn
-- /universe , /u
+- /u
 - /whisper , /w
 - /who
 - /whoami
@@ -203,11 +204,11 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - Command Dispatcher, Player Manger
 
 - ***Commands Provided***
-  - /mute
+  - /mute (username)
      - **Role:** Moderator
      - **Description:** Mutes a player.
 
-  - /unmute
+  - /unmute (username)
      - **Role:** Moderator
      - **Description:** Unmutes a player.
 
@@ -217,20 +218,23 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - Command Dispatcher, Player Manger
 
 - ***Commands Provided***
-  - /local (message)
+  - /l (message)
      - **Role:** Guest
      - **Description:** Send a local message.
-     - **Alias:** /l
 
-  - /universe (message)
+  - /u (message)
      - **Role:** Guest
      - **Description:** Sends a universal message.
-     - **Alias:** /u
 
   - /whisper (recipient) (message)
      - **Role:** Guest
      - **Description:** Sends a private message to another user.
      - **Alias:** /w
+
+  - /local
+     - **Role:** Guest
+     - **Description:** Toggles a player's chat style between local (aka - planetary) and universal.
+     - **Alias:** /universal
 
 #### Emotes
 
@@ -264,23 +268,23 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
 - ***Commands Provided***
   - /protect
      - **Role:** Admin
-     - **Description:** 
+     - **Description:** Makes a planet protected.
 
   - /unprotect
      - **Role:** Admin
-     - **Description:** 
+     - **Description:** Removes a planet's protection.
 
-  - /add_builder
+  - /add_builder (username)
      - **Role:** Admin
-     - **Description:** 
+     - **Description:** Allow a player build-rights on a protected planet.
 
-  - /del_builder
+  - /del_builder (username)
      - **Role:** Admin
-     - **Description:** 
+     - **Description:** Disallow a player's build-rights on a protected planet.
 
   - /list_builders
      - **Role:** Admin
-     - **Description:** 
+     - **Description:** Show all players allowed to build on a protected planet.
 
 #### Planet Backups
 
