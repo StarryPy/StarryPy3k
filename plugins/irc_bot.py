@@ -21,7 +21,6 @@ from plugins.player_manager import Owner, Guest
 
 class IRCBot(Guest):
     is_meta = True
-    log_irc = False # Set this to True to see IRC chat in the StarryPy log
 
 
 # Mock Objects
@@ -115,6 +114,7 @@ class IRCPlugin(BasePlugin):
         "username": "starrypy3k_bot",
         "strip_colors": True
     }
+    log_irc = False # Set this to True to see IRC chat in the StarryPy log
 
     def __init__(self):
         super().__init__()
