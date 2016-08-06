@@ -452,7 +452,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.players_online.remove(connection.player.uuid)
         return True
 
-    def _clean_name(self, name):
+    def clean_name(self, name):
         color_strip = re.compile("\^(.*?);")
         alias = color_strip.sub("", name)
         non_ascii_strip = re.compile("[^ -~]")
@@ -670,7 +670,7 @@ class PlayerManager(SimpleCommandPlugin):
             uuid = uuid.decode("ascii")
         if isinstance(name, bytes):
             name = name.decode("utf-8")
-        alias = self._clean_name(name)
+        alias = self.clean_name(name)
         if alias is None:
             alias = uuid[0:4]
 
