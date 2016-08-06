@@ -68,7 +68,8 @@ class POI(StorageCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("poi",
-             doc="Moves a player's ship to the specified Point of Interest, or prints the POIs if no argument given.",
+             doc="Moves a player's ship to the specified Point of Interest, or "
+                 "prints the POIs if no argument given.",
              syntax="[\"][POI name][\"]")
     def _poi(self, data, connection):
         """

@@ -458,10 +458,19 @@ class PlayerManager(SimpleCommandPlugin):
         self.players_online.remove(connection.player.uuid)
         return True
 
-    def _clean_name(self, name):
+    def clean_name(self, name):
         color_strip = re.compile("\^(.*?);")
         alias = color_strip.sub("", name)
-        return alias
+        non_ascii_strip = re.compile("[^ -~]")
+        alias = non_ascii_strip.sub("", alias)
+        multi_whitespace_strip = re.compile("[\s]{2,}")
+        alias = multi_whitespace_strip.sub(" ", alias)
+        match_non_whitespace = re.compile("[\S]")
+        if match_non_whitespace.search(alias) is None:
+            return None
+        else:
+            if len(alias) > 20: alias = alias[0:20]
+            return alias
 
     def build_rejection(self, reason):
         """
@@ -667,7 +676,9 @@ class PlayerManager(SimpleCommandPlugin):
             uuid = uuid.decode("ascii")
         if isinstance(name, bytes):
             name = name.decode("utf-8")
-        alias = self._clean_name(name)
+        alias = self.clean_name(name)
+        if alias is None:
+            alias = uuid[0:4]
 
         if uuid in self.shelf["players"]:
             self.logger.info("Known player is attempting to log in: "
