@@ -455,13 +455,15 @@ class PlayerManager(SimpleCommandPlugin):
     def _clean_name(self, name):
         color_strip = re.compile("\^(.*?);")
         alias = color_strip.sub("", name)
-        non_ascii_strip = re.compile("[^\x00-\x7F]")
+        non_ascii_strip = re.compile("[^ -~]")
         alias = non_ascii_strip.sub("", alias)
-        multi_whitespace_strip = re.compile("[ ]{2,}")
+        multi_whitespace_strip = re.compile("[\s]{2,}")
         alias = multi_whitespace_strip.sub(" ", alias)
-        if non_ascii_strip.search(alias) is None:
+        match_non_whitespace = re.compile("[\S]")
+        if match_non_whitespace.search(alias) is None:
             return None
         else:
+            if len(alias) > 20: alias = alias[0:20]
             return alias
 
     def build_rejection(self, reason):
