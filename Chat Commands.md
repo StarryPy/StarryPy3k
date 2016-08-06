@@ -20,6 +20,9 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /whisper , /w
 - /who
 - /whoami
+- /here , /planet
+- /poi
+- /report
 
 ***Registered User Commands***
 
@@ -34,6 +37,7 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /set_motd
 - /show_spawn
 - /unmute
+- /modchat , /m
 
 ***Admin Commands***
 
@@ -46,6 +50,8 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /whois
 - /broadcast
 - /give , /item , /give_item
+- /set_poi
+- /del_poi
 
 ***SuperAdmin Commands***
 
@@ -123,6 +129,25 @@ In-game, the IRC bot does not provide any commands. Instead, it provides a means
 
 Note: This is old syntax, in that each player has their own spawn planet. It would be better to describe "spawn" as being a world designated as a hub-planet where users can move their ships for meeting up with other players.
 
+#### Points of Interest
+
+- ***Depend on:***
+  - Command Dispatcher
+
+- ***Commands Provided***
+  - /poi [name]
+    - **Role:** Guest
+    - **Description:** Move a player's ship to the specified POI, or list all POIs if no argument provided.
+    - This command does not cost fuel to use, or even require FTL to be enabled.
+
+  - /set_poi (name)
+    - **Role:** Admin
+    - **Description:** Sets the planet the user is on as a POI with the specified name.
+
+  - /del_poi (name)
+    - **Role:** Admin
+    - **Description:** Removes the specified POI from the POI list.
+
 #### Player Manager
 
 - ***Depend on:***
@@ -165,7 +190,10 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - /who
      - **Role:** Guest
      - **Description:** Lists all players currently logged in.
-
+  - /here
+     - **Role:** Guest
+     - **Description:** Lists all players on the same planet as the user.
+     - **Alias:** /planet
   - /whois (username)
      - **Role:** Admin
      - **Description:** Displays detailed information about a player.
@@ -182,10 +210,6 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
      - **Role:** Admin
      - **Description:** Give a player (an) item(s) based on asset name. If no quantity is provided, default to 1.
      - **Aliases:** /item , /give_item
-
-  - broadcast (message)
-     - **Role:** Admin
-     - **Description:** Send a message to everyone on the server. Text is dispalyed in red, to act as an alert.
 
 #### Help
 
@@ -250,7 +274,22 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
 
 #### Privileged Chatter
 
-- *NOT YET IMPLEMENTED*
+- ***Depend on:***
+  - Command Dispatcher, Player Manager, Chat Enhancements
+
+- ***Commands Provided***
+  - /modchat (message)
+    - **Role:** Moderator
+    - **Description:** Sends a message visible only to other moderators.
+    - **Alias:** /m
+  
+  - /report (message)
+    - **Role:** Guest
+    - **Description:** Sends a report message to all online moderators.
+
+  - /broadcast (message)
+    - **Role:** Admin
+    - **Description:** Broadcasts an admin message to the entire server.
 
 #### New Player Greeter
 
