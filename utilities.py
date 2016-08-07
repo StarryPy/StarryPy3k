@@ -79,6 +79,7 @@ class EntityInteractionType(IntEnum):
     OPEN_NPC_UI = 7
     OPEN_SAIL_UI = 8
     OPEN_TELEPORTER_UI = 9
+    OPEN_SCRIPTED_UI = 11
     OPEN_SPECIAL_UI = 12
     OPEN_CREW_UI = 13
 
