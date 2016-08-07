@@ -313,6 +313,13 @@ def broadcast(connection, *messages, **kwargs):
         connection.factory.broadcast(*messages, **kwargs))
 
 
+def link_plugin_if_available(self, plugin):
+    if plugin in self.factory.plugin_manager.list_plugins().keys():
+        self.logger.debug("{} available.".format(plugin))
+        self.plugins[plugin] = \
+            self.factory.plugin_manager.list_plugins()[plugin]
+
+
 class Command:
     """
     Defines a decorator that encapsulates a chat command. Provides a common
