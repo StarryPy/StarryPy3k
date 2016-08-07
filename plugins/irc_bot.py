@@ -112,9 +112,9 @@ class IRCPlugin(BasePlugin):
         "server": "irc.freenode.net",
         "channel": "#starrypy",
         "username": "starrypy3k_bot",
-        "strip_colors": True
+        "strip_colors": True,
+        "log_irc": False
     }
-    log_irc = False # Set this to True to see IRC chat in the StarryPy log
 
     def __init__(self):
         super().__init__()
@@ -251,12 +251,12 @@ class IRCPlugin(BasePlugin):
                 message=" ".join( message.split()[1:])[:-1]                                # Strip the CTCP metadata from the beginning and end
                 yield from self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- {} "  # Format it like a /me is in IRC
                                                   "{}".format(nick, message) )
-                if self.log_irc == True:
+                if self.config.get_plugin_config(self.name)["log_irc"] == True:
                     self.logger.info( " -*- " + nick + " " + message )
         else:
             yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
                                               "{}".format(nick, message))
-            if self.log_irc == True:
+            if self.config.get_plugin_config(self.name)["log_irc"] == True:
                 self.logger.info( "<" + nick + "> " + message )
 
     @asyncio.coroutine
