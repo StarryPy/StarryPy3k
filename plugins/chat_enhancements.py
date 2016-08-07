@@ -87,14 +87,14 @@ class ChatEnhancements(SimpleCommandPlugin):
         sender = self.decorate_line(connection)
 
         if connection.player.chat_style == "universal":
-            yield from self._send_to_universe(message,
-                                              sender,
-                                              connection.player.client_id)
+            yield from self.send_to_universe(message,
+                                             sender,
+                                             connection.player.client_id)
         elif connection.player.chat_style == "planetary":
-            yield from self._send_to_planet(message,
-                                            sender,
-                                            connection.player.client_id,
-                                            str(connection.player.location))
+            yield from self.send_to_planet(message,
+                                           str(connection.player.location),
+                                           sender,
+                                           connection.player.client_id)
 
     # Helper functions - Used by commands
 
@@ -138,7 +138,7 @@ class ChatEnhancements(SimpleCommandPlugin):
 
         return color + data.alias + "^reset;"
 
-    def _send_to_planet(self, msg, sender, client_id, location):
+    def send_to_planet(self, msg, location, sender="", client_id=0):
         send_mode = ChatReceiveMode.CHANNEL
         channel = location
         for p in self.factory.connections:
@@ -150,7 +150,7 @@ class ChatEnhancements(SimpleCommandPlugin):
                                         mode=send_mode,
                                         channel=channel)
 
-    def _send_to_universe(self, msg, sender, client_id):
+    def send_to_universe(self, msg, sender="", client_id=0):
         send_mode = ChatReceiveMode.BROADCAST
         channel = ""
         for p in self.factory.connections:
@@ -193,10 +193,10 @@ class ChatEnhancements(SimpleCommandPlugin):
         if data:
             message = " ".join(data)
             sender = self.decorate_line(connection)
-            yield from self._send_to_planet(message,
-                                            sender,
-                                            connection.player.client_id,
-                                            str(connection.player.location))
+            yield from self.send_to_planet(message,
+                                           str(connection.player.location),
+                                           sender,
+                                           connection.player.client_id)
 
     @Command("u",
              doc="Send message to the entire universe.",
@@ -217,9 +217,9 @@ class ChatEnhancements(SimpleCommandPlugin):
         if data:
             message = " ".join(data)
             sender = self.decorate_line(connection)
-            yield from self._send_to_universe(message,
-                                              sender,
-                                              connection.player.client_id)
+            yield from self.send_to_universe(message,
+                                             sender,
+                                             connection.player.client_id)
 
     @Command("local", "universal",
              doc="Toggles the default chat style for a user.")
