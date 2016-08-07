@@ -134,7 +134,8 @@ class PluginManager:
                 for plugin in to_load:
                     classes[name].plugins[plugin] = self._plugins[plugin]
             if len(ready) == 0:
-                raise ImportError("Unresolved dependencies found.")
+                raise ImportError("Unresolved dependencies found in: "
+                                  "{}".format(deps))
         self._resolved = True
 
     @asyncio.coroutine
