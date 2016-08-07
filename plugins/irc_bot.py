@@ -246,24 +246,24 @@ class IRCPlugin(BasePlugin):
         :return: Null
         """
         message = data
-        if message[0] == "\x01":                                                           # CTCP Event
-            if message.split()[0] == "\x01ACTION":                                         # CTCP Action - e. g. '/me does a little dance'
-                message=" ".join( message.split()[1:])[:-1]                                # Strip the CTCP metadata from the beginning and end
-                yield from self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- {} "  # Format it like a /me is in IRC
-                                                  "{}".format(nick, message) )
-                if self.config.get_plugin_config(self.name)["log_irc"] == True:
-                    self.logger.info( " -*- " + nick + " " + message )
+        if message[0] == "\x01":
+            # CTCP Event
+            if message.split()[0] == "\x01ACTION":
+                # CTCP Action - e. g. '/me does a little dance'
                 message = " ".join(message.split()[1:])[:-1]
+                # Strip the CTCP metadata from the beginning and end
                 # Format it like a /me is in IRC
                 yield from (
                     self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- "
                                            "{} {}".format(nick, message))
                 )
+                if self.config.get_plugin_config(self.name)["log_irc"]:
+                    self.logger.info(" -*- " + nick + " " + message)
         else:
             yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
                                               "{}".format(nick, message))
-            if self.config.get_plugin_config(self.name)["log_irc"] == True:
-                self.logger.info( "<" + nick + "> " + message )
+            if self.config.get_plugin_config(self.name)["log_irc"]:
+                self.logger.info("<" + nick + "> " + message)
 
     @asyncio.coroutine
     def announce_join(self, connection):
