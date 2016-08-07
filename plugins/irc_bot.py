@@ -335,9 +335,11 @@ class IRCPlugin(BasePlugin):
         if mask.split("!")[0] in self.ops:
             self.connection.player.roles = self.connection.player.owner
         if command in self.dispatcher.commands:
-            yield from self.dispatcher.run_command(command,
-                                                   self.connection,
-                                                   to_parse)
+            # Only handle commands that work from IRC
+            if command in ('who', 'help'):
+                yield from self.dispatcher.run_command(command,
+                                                       self.connection,
+                                                       to_parse)
         else:
             yield from self.bot_write(target, "Command not found.")
 
