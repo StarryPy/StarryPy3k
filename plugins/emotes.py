@@ -100,6 +100,6 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                                 message,
                                 str(connection.player.location)))
                         self.logger.debug("using planetary broadcast")
-                except KeyError:
+                except (KeyError, AttributeError):
                     self.logger.debug("using fallback broadcast")
                     broadcast(connection, message)

@@ -15,6 +15,7 @@ import irc3
 
 from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
+from utilities import link_plugin_if_available
 
 
 # Roles
@@ -200,8 +201,22 @@ class IRCPlugin(BasePlugin):
             msg = data["parsed"]["message"]
             if self.sc:
                 msg = self.color_strip.sub("", msg)
-            asyncio.ensure_future(
-                self.bot_write("<{}> {}".format(connection.player.alias, msg)))
+            try:
+                current_chat_style = connection.player.chat_style
+            except AttributeError:
+                # When chat_enhancements aren't available, just do it.
+                asyncio.ensure_future(
+                    self.bot_write("<{}> {}".format(
+                        connection.player.alias,
+                        msg)))
+                return True
+
+            # When chat_enhancements ARE available, check first.
+            if current_chat_style == "universal":
+                asyncio.ensure_future(
+                    self.bot_write("<{}> {}".format(
+                        connection.player.alias,
+                        msg)))
         return True
 
     # Helper functions - Used by commands

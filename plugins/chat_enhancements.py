@@ -13,7 +13,8 @@ Updated for release: kharidiron
 from datetime import datetime
 
 from base_plugin import SimpleCommandPlugin
-from utilities import Command, DotDict, ChatReceiveMode, send_message
+from utilities import Command, DotDict, ChatReceiveMode, send_message, \
+    link_plugin_if_available
 
 
 ###
@@ -50,6 +51,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
         self.cts_color = self.config.get_plugin_config(self.name)[
             "timestamp_color"]
+        link_plugin_if_available(self, "irc_bot")
 
     # Packet hooks - look for these packets and act on them
 
@@ -220,6 +222,15 @@ class ChatEnhancements(SimpleCommandPlugin):
             yield from self.send_to_universe(message,
                                              sender,
                                              connection.player.client_id)
+            try:
+                # Try sending it to IRC if we have that available.
+                import asyncio
+                asyncio.ensure_future(
+                    self.plugins["irc_bot"].bot_write(
+                        "<{}> {}".format(connection.player.alias,
+                                         message)))
+            except KeyError:
+                pass
 
     @Command("local", "universal",
              doc="Toggles the default chat style for a user.")
