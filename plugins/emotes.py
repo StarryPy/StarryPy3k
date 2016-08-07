@@ -10,7 +10,8 @@ Original authors: kharidiron
 import asyncio
 
 from base_plugin import SimpleCommandPlugin
-from utilities import Command, send_message, StorageMixin, broadcast
+from utilities import Command, send_message, StorageMixin, broadcast, \
+    link_plugin_if_available
 
 
 class Emotes(StorageMixin, SimpleCommandPlugin):
@@ -46,10 +47,8 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
 
     def activate(self):
         super().activate()
-        if "irc_bot" in self.factory.plugin_manager.list_plugins().keys():
-            self.logger.debug("IRC bot available.")
-            self.plugins["irc_bot"] = \
-                self.factory.plugin_manager.list_plugins()["irc_bot"]
+        link_plugin_if_available(self, "irc_bot")
+        link_plugin_if_available(self, "chat_enhancements")
 
     # Commands - In-game actions that can be performed
 
@@ -87,5 +86,20 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                             connection.player.alias, emote)))
                 except KeyError:
                     pass
-                broadcast(connection, "^orange;{} {}".format(
-                    connection.player.alias, emote))
+                message = "^orange;{} {}".format(connection.player.alias,
+                                                 emote)
+                try:
+                    if connection.player.chat_style == "universal":
+                        yield from (
+                            self.plugins["chat_enhancements"].send_to_universe(
+                                message))
+                        self.logger.debug("using universal broadcast")
+                    elif connection.player.chat_style == "planetary":
+                        yield from (
+                            self.plugins["chat_enhancements"].send_to_planet(
+                                message,
+                                str(connection.player.location)))
+                        self.logger.debug("using planetary broadcast")
+                except KeyError:
+                    self.logger.debug("using fallback broadcast")
+                    broadcast(connection, message)
