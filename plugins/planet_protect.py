@@ -205,13 +205,16 @@ class PlanetProtect(StorageCommandPlugin):
         :return: Null.
         """
         yield from asyncio.sleep(.5)
-        if connection.player.location.locationtype() is "ShipWorld":
-            ship = connection.player.location
-            if not self._check_protection(ship):
-                if ship.player == connection.player.alias:
-                    self._add_protection(ship, connection.player)
-                    send_message(connection,
-                                 "Your ship has been auto-protected.")
+        try:
+            if connection.player.location.locationtype() is "ShipWorld":
+                ship = connection.player.location
+                if not self._check_protection(ship):
+                    if ship.player == connection.player.alias:
+                        self._add_protection(ship, connection.player)
+                        send_message(connection,
+                                     "Your ship has been auto-protected.")
+        except AttributeError:
+            pass
 
     # Commands - In-game actions that can be performed
 

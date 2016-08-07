@@ -360,7 +360,7 @@ class PlayerManager(SimpleCommandPlugin):
         elif warp_data["warp_type"] == WarpType.TO_PLAYER:
             target = self.get_player_by_uuid(warp_data["player_id"].decode(
                 "utf-8"))
-            connection.player.location = "{}".format(target.location)
+            connection.player.location = target.location
         elif warp_data["warp_type"] == WarpType.TO_WORLD:
             if warp_data["world_id"] == WarpWorldType.CELESTIAL_WORLD:
                 pass
