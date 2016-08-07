@@ -259,7 +259,6 @@ class IRCPlugin(BasePlugin):
                     self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- "
                                            "{} {}".format(nick, message))
                 )
->>>>>>> upstream/master
         else:
             yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
                                               "{}".format(nick, message))
