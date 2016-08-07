@@ -214,3 +214,28 @@ class GeneralCommands(SimpleCommandPlugin):
         # instead, the Starbound version of /whoami will take over.
         send_message(connection,
                      self.generate_whois(connection.player))
+
+    @Command("here", "planet",
+             role=Whoami,
+             doc="Displays all players on the same planet as you.")
+    def _here(self, data, connection):
+        """
+        Displays all players on the same planet as the user.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
+        """
+        ret_list = []
+        location = str(connection.player.location)
+        for p in self.factory.connections:
+            if str(p.player.location) == location:
+                if connection.player.check_role(Moderator):
+                    ret_list.append(
+                        "[^red;{}^reset;] {}".format(p.player.client_id,
+                                                     p.player.alias))
+                else:
+                    ret_list.append("{}".format(p.player.alias))
+        send_message(connection,
+                     "{} players on planet:\n{}".format(len(ret_list),
+                                                        ", ".join(ret_list)))

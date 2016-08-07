@@ -253,6 +253,13 @@ class IRCPlugin(BasePlugin):
                                                   "{}".format(nick, message) )
                 if self.config.get_plugin_config(self.name)["log_irc"] == True:
                     self.logger.info( " -*- " + nick + " " + message )
+                message = " ".join(message.split()[1:])[:-1]
+                # Format it like a /me is in IRC
+                yield from (
+                    self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- "
+                                           "{} {}".format(nick, message))
+                )
+>>>>>>> upstream/master
         else:
             yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
                                               "{}".format(nick, message))

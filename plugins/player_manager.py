@@ -469,7 +469,8 @@ class PlayerManager(SimpleCommandPlugin):
         if match_non_whitespace.search(alias) is None:
             return None
         else:
-            if len(alias) > 20: alias = alias[0:20]
+            if len(alias) > 20:
+                alias = alias[0:20]
             return alias
 
     def build_rejection(self, reason):
