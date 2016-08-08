@@ -67,10 +67,6 @@ class Grant(Owner):
     pass
 
 
-class Revoke(Owner):
-    pass
-
-
 class Player:
     """
     Prototype class for a player.
@@ -876,9 +872,9 @@ class PlayerManager(SimpleCommandPlugin):
                            "Banned by: {banned_by}".format(**ban.__dict__))
             send_message(connection, "\n".join(res))
 
-    @Command("grant", "promote",
+    @Command("grant", "promote", "revoke", "demote",
              role=Grant,
-             doc="Grants a role to a player.",
+             doc="Grants/Revokes role a player has.",
              syntax=("(role)", "(player)"))
     def _grant(self, data, connection):
         """
@@ -902,14 +898,16 @@ class PlayerManager(SimpleCommandPlugin):
                 raise LookupError("Unknown role {}".format(role))
             if p is None:
                 raise LookupError("Unknown player {}".format(alias))
+            p.roles = set()
             ro = [x for x in Owner.roles if
                   x.__name__.lower() == role.lower()][0]
             self.add_role(p, ro)
             send_message(connection,
-                         "Granted role {} to {}.".format(ro.__name__, p.alias))
+                         "{} has been given the role {}.".format(
+                             p.alias, ro.__name__))
             if p.connection is not None:
                 send_message(p.connection,
-                             "You've been granted the role {} by {}".format(
+                             "You've been given the role {} by {}".format(
                                  ro.__name__, connection.player.alias))
         except LookupError as e:
             send_message(connection, str(e))
