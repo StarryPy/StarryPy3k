@@ -85,9 +85,10 @@ class EntityInteractionType(IntEnum):
 
 
 class EntitySpawnType(IntEnum):
-    PLACE = 1
+    OBJECT = 1
     THROW_ITEM = 3
     THROW_POD = 7
+    NPC = 8
 
 
 # Useful things
