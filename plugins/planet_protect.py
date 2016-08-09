@@ -10,6 +10,8 @@ Updated for release: kharidiron
 
 import asyncio
 
+import time
+
 import packets
 import pparser
 from base_plugin import StorageCommandPlugin
@@ -102,9 +104,7 @@ class PlanetProtect(StorageCommandPlugin):
             if action in [EntitySpawnType.THROW_ITEM,
                           EntitySpawnType.THROW_POD]:
                 return True
-        send_message(connection,
-                     "^red;This is a protected planet and you're not allowed "
-                     "to do that.^reset;")
+        yield from self._protection_warn(data, connection)
 
         item_base = GiveItem.build(dict(name=data["parsed"]["payload"],
                                         count=1,
@@ -150,9 +150,7 @@ class PlanetProtect(StorageCommandPlugin):
                           EntityInteractionType.GO_PRONE,
                           EntityInteractionType.NOMINAL]:
                 return True
-        send_message(connection,
-                     "^red;This is a protected planet and you're not allowed "
-                     "to do that.^reset;")
+        yield from self._protection_warn(data, connection)
         return False
 
     def on_tile_update(self, data, connection):
@@ -180,9 +178,7 @@ class PlanetProtect(StorageCommandPlugin):
         elif connection.player.alias in protection.get_builders():
             return True
         else:
-            send_message(connection,
-                         "^red;This is a protected planet and you're not "
-                         "allowed to do that.^reset;")
+            yield from self._protection_warn(data, connection)
             return False
 
     # Rather than recreating the same check for every different type of
@@ -244,6 +240,27 @@ class PlanetProtect(StorageCommandPlugin):
         :return: Null.
         """
         self.storage["locations"][str(location)].unprotect()
+
+    @asyncio.coroutine
+    def _protection_warn(self, data, connection):
+        """
+        Warn a player about planet being protected (if they do a restricted
+        activity). One minute cool-down between warnings.
+        """
+        try:
+            if time.time() - connection.player.warned < 60:
+                return
+        except AttributeError:
+            connection.player.warned = time.time()
+            self.logger.debug(connection.player.warned)
+
+        send_message(connection,
+                     "^red;This is a protected planet and you're not "
+                     "allowed to do that.^reset;")
+        self.logger.debug("Warning {}; on a protected planet.".format(
+            connection.player.alias
+        ))
+        connection.player.warned = time.time()
 
     @asyncio.coroutine
     def _protect_ship(self, connection):
