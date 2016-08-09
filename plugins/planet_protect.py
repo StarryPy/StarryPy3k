@@ -10,9 +10,13 @@ Updated for release: kharidiron
 
 import asyncio
 
+import packets
+import pparser
 from base_plugin import StorageCommandPlugin
+from data_parser import GiveItem
 from plugins.player_manager import Admin
-from utilities import Direction, Command, send_message, EntityInteractionType
+from utilities import Direction, Command, send_message, \
+    EntityInteractionType, EntitySpawnType
 
 
 # Roles
@@ -72,6 +76,46 @@ class PlanetProtect(StorageCommandPlugin):
         asyncio.ensure_future(self._protect_ship(connection))
         return True
 
+    def on_spawn_entity(self, data, connection):
+        """
+        Catch when a player tries spawning an object in the world.
+
+        :param data: The packet containing the action.
+        :param connection: The connection from which the packet came.
+        :return: Boolean, Varied. If the server generates the packet,
+                 let it pass. If planet is not protected, let it pass.
+                 If player is an Admin, let it pass. If player is list of
+                 builders, let it pass. Otherwise, block the packet from
+                 reaching the server.
+        """
+        if not self._check_protection(connection.player.location):
+            return True
+        protection = self._get_protection(connection.player.location)
+        if not protection.protected:
+            return True
+        if connection.player.check_role(Admin):
+            return True
+        elif connection.player.alias in protection.get_builders():
+            return True
+        else:
+            action = data["parsed"]["spawn_type"]
+            if action in [EntitySpawnType.THROW_ITEM,
+                          EntitySpawnType.THROW_POD]:
+                return True
+        send_message(connection,
+                     "^red;This is a protected planet and you're not allowed "
+                     "to do that.^reset;")
+
+        item_base = GiveItem.build(dict(name=data["parsed"]["payload"],
+                                        count=1,
+                                        variant_type=7,
+                                        description=""))
+        item_packet = pparser.build_packet(packets.packets['give_item'],
+                                           item_base)
+        yield from asyncio.sleep(.1)
+        yield from connection.raw_write(item_packet)
+        return False
+
     def on_entity_interact_result(self, data, connection):
         """
         Catch when a player interacts with an object in the world.
@@ -106,6 +150,9 @@ class PlanetProtect(StorageCommandPlugin):
                           EntityInteractionType.GO_PRONE,
                           EntityInteractionType.NOMINAL]:
                 return True
+        send_message(connection,
+                     "^red;This is a protected planet and you're not allowed "
+                     "to do that.^reset;")
         return False
 
     def on_tile_update(self, data, connection):
@@ -133,6 +180,9 @@ class PlanetProtect(StorageCommandPlugin):
         elif connection.player.alias in protection.get_builders():
             return True
         else:
+            send_message(connection,
+                         "^red;This is a protected planet and you're not "
+                         "allowed to do that.^reset;")
             return False
 
     # Rather than recreating the same check for every different type of
@@ -146,7 +196,6 @@ class PlanetProtect(StorageCommandPlugin):
     on_tile_liquid_update = on_tile_update
     on_connect_wire = on_tile_update
     on_disconnect_all_wires = on_tile_update
-    on_spawn_entity = on_tile_update
 
     # Helper functions - Used by hooks and commands
 

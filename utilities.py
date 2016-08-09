@@ -84,6 +84,12 @@ class EntityInteractionType(IntEnum):
     OPEN_CREW_UI = 13
 
 
+class EntitySpawnType(IntEnum):
+    PLACE = 1
+    THROW_ITEM = 3
+    THROW_POD = 7
+
+
 # Useful things
 
 def recursive_dictionary_update(d, u):

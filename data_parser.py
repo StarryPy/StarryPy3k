@@ -686,12 +686,25 @@ class EntityInteract(Struct):
     request_id = UUID
 
 
+class SpawnEntity(Struct):
+    """packet type: 36"""
+    spawn_type = Byte
+    payload_size = VLQ
+    payload = StarString
+    payload_value = VLQ
+
+
 class EntityInteractResult(Struct):
     """packet type: 28"""
     interaction_type = UBInt32
     target_id = UBInt32
     entity_data = Variant
     request_id = UUID
+
+
+class ModifyTileList(Struct):
+    """packet type: 32"""
+    brush_size = VLQ
 
 
 class StepUpdate(Struct):
