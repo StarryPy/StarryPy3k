@@ -808,6 +808,7 @@ class PlayerManager(SimpleCommandPlugin):
                 p.connection = None
                 p.logged_in = False
                 p.location = None
+                self.players_online.remove(p.uuid)
                 return
             kick_string = "You were kicked.\n Reason: {}".format(reason)
             kick_packet = build_packet(packets["server_disconnect"],
@@ -817,6 +818,7 @@ class PlayerManager(SimpleCommandPlugin):
             p.connection = None
             p.logged_in = False
             p.location = None
+            self.players_online.remove(p.uuid)
             broadcast(self, "^red;{} has been kicked for reason: "
                             "{}^reset;".format(alias, reason))
         else:
