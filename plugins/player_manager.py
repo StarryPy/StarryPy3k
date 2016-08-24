@@ -898,9 +898,9 @@ class PlayerManager(SimpleCommandPlugin):
         try:
             target = data[0]
             if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target):
-                self.unban_by_ip(target, reason, connection)
+                self.unban_by_ip(target, connection)
             else:
-                self.unban_by_name(target, reason, connection)
+                self.unban_by_name(target, connection)
         except:
             raise SyntaxWarning
 
