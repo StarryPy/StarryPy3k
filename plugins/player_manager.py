@@ -580,7 +580,7 @@ class PlayerManager(SimpleCommandPlugin):
         # ban = IPBan(ip, reason, connection.player.alias)
         del self.shelf["bans"][ip]
         send_message(connection,
-                     "Banned IP: {}".format(ip))
+                     "Ban removed: {}".format(ip))
 
     def ban_by_name(self, name, reason, connection):
         """
