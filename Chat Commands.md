@@ -163,7 +163,7 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
      - **Role:** Moderator
      - **Description:** Bans a player from connecting to the server.
 
-  - /ban (username)
+  - /unban (username)
      - **Role:** Moderator
      - **Description:** Unbans a player from connecting to the server.
 
