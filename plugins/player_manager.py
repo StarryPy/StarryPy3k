@@ -568,6 +568,20 @@ class PlayerManager(SimpleCommandPlugin):
         send_message(connection,
                      "Banned IP: {} with reason: {}".format(ip, reason))
 
+    def unban_by_ip(self, ip, connection):
+        """
+        Unban a player based on their IP address. Should be compatible with both
+        IPv4 and IPv6.
+
+        :param ip: String: IP of player to be unbanned.
+        :param connection: Connection of target player to be unbanned.
+        :return: Null
+        """
+        # ban = IPBan(ip, reason, connection.player.alias)
+        self.shelf["bans"][ip] = None
+        send_message(connection,
+                     "Banned IP: {}".format(ip))
+
     def ban_by_name(self, name, reason, connection):
         """
         Ban a player based on their name. This is the easier route, as it is a
@@ -582,6 +596,23 @@ class PlayerManager(SimpleCommandPlugin):
         p = self.get_player_by_name(name)
         if p is not None:
             self.ban_by_ip(p.ip, reason, connection)
+        else:
+            send_message(connection,
+                         "Couldn't find a player by the name {}".format(name))
+
+    def unban_by_name(self, name,  connection):
+        """
+        Ban a player based on their name. This is the easier route, as it is a
+        more user friendly to target the player to be banned. Hooks to the
+        ban_by_ip mechanism backstage.
+
+        :param name: String: Name of the player to be banned.
+        :param connection: Connection of target player to be banned.
+        :return: Null
+        """
+        p = self.get_player_by_name(name)
+        if p is not None:
+            self.unban_by_ip(p.ip, connection)
         else:
             send_message(connection,
                          "Couldn't find a player by the name {}".format(name))
@@ -848,6 +879,28 @@ class PlayerManager(SimpleCommandPlugin):
                 self.ban_by_ip(target, reason, connection)
             else:
                 self.ban_by_name(target, reason, connection)
+        except:
+            raise SyntaxWarning
+
+    @Command("unban",
+             role=Ban,
+             doc="Unbans a user or an IP address.",
+             syntax=("(ip | name)"))
+    def _ban(self, data, connection):
+        """
+        Unban a player. You must specify either a name or an IP.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
+        :raise: SyntaxWarning on incorrect input.
+        """
+        try:
+            target = data[0]
+            if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target):
+                self.unban_by_ip(target, reason, connection)
+            else:
+                self.unban_by_name(target, reason, connection)
         except:
             raise SyntaxWarning
 

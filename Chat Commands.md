@@ -31,6 +31,7 @@ Note: This document is likely to change often, as well as become outdated quickl
 ***Moderator Commands***
 
 - /ban
+- /unban
 - /kick
 - /list_bans
 - /mute
@@ -161,6 +162,10 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - /ban (username) (reason)
      - **Role:** Moderator
      - **Description:** Bans a player from connecting to the server.
+
+  - /ban (username)
+     - **Role:** Moderator
+     - **Description:** Unbans a player from connecting to the server.
 
   - /list_bans
      - **Role:** Moderator
