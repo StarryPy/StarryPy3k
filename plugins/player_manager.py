@@ -578,7 +578,7 @@ class PlayerManager(SimpleCommandPlugin):
         :return: Null
         """
         # ban = IPBan(ip, reason, connection.player.alias)
-        self.shelf["bans"][ip] = None
+        del self.shelf["bans"][ip]
         send_message(connection,
                      "Banned IP: {}".format(ip))
 
