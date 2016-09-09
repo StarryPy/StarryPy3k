@@ -195,11 +195,10 @@ class ChatEnhancements(SimpleCommandPlugin):
                                             connection)
             try:
                 # Try sending it to IRC if we have that available.
-                import asyncio
                 asyncio.ensure_future(
                     self.plugins["irc_bot"].bot_write(
                         "<{}> {}".format(connection.player.alias,
-                                         message)))
+                                         " ".join(data))))
             except KeyError:
                 pass
             return True
