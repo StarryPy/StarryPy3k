@@ -10,11 +10,15 @@ player's name tag.
 Original authors: teihoo, FZFalzar
 Updated for release: kharidiron
 """
+import asyncio
 from datetime import datetime
 
+import data_parser
+import pparser
+import packets
 from base_plugin import SimpleCommandPlugin
-from utilities import Command, DotDict, ChatReceiveMode, send_message, \
-    link_plugin_if_available
+from utilities import Command, DotDict, ChatSendMode, ChatReceiveMode, \
+    send_message, link_plugin_if_available
 
 
 ###
@@ -22,8 +26,7 @@ from utilities import Command, DotDict, ChatReceiveMode, send_message, \
 class ChatEnhancements(SimpleCommandPlugin):
     name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
-    default_config = {"chat_style": "universal",
-                      "chat_timestamps": True,
+    default_config = {"chat_timestamps": True,
                       "timestamp_color": "^gray;",
                       "colors": DotDict({
                           "Owner": "^#F7434C;",
@@ -31,7 +34,7 @@ class ChatEnhancements(SimpleCommandPlugin):
                           "Admin": "^#C443F7;",
                           "Moderator": "^#4385F7;",
                           "Registered": "^#A0F743;",
-                          "default": "^reset;"
+                          "default": "^yellow;"
                       })}
 
     def __init__(self):
@@ -40,13 +43,10 @@ class ChatEnhancements(SimpleCommandPlugin):
         self.colors = None
         self.cts = None
         self.cts_color = None
-        self.chat_style = "universal"
 
     def activate(self):
         super().activate()
         self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
-        self.chat_style = self.config.get_plugin_config(self.name)[
-            "chat_style"]
         self.colors = self.config.get_plugin_config(self.name)["colors"]
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
         self.cts_color = self.config.get_plugin_config(self.name)[
@@ -64,8 +64,22 @@ class ChatEnhancements(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        connection.player.chat_style = self.chat_style
         return True
+
+    def on_chat_received(self, data, connection):
+        sender = ""
+        if data["parsed"]["name"]:
+            if data["parsed"]["name"] != "server":
+                sender = self.plugins['player_manager'].get_player_by_alias(
+                    data["parsed"]["name"])
+                sender = self.decorate_line(sender.connection)
+
+        yield from send_message(connection,
+				data["parsed"]["message"],
+				mode=data["parsed"]["header"]["mode"],
+				client_id=data["parsed"]["header"]["client_id"],
+				name=sender,
+				channel=data["parsed"]["header"]["channel"])
 
     def on_chat_sent(self, data, connection):
         """
@@ -86,17 +100,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         if self.plugins['chat_manager'].mute_check(connection.player):
             return False
 
-        sender = self.decorate_line(connection)
-
-        if connection.player.chat_style == "universal":
-            yield from self.send_to_universe(message,
-                                             sender,
-                                             connection.player.client_id)
-        elif connection.player.chat_style == "planetary":
-            yield from self.send_to_planet(message,
-                                           str(connection.player.location),
-                                           sender,
-                                           connection.player.client_id)
+        return True
 
     # Helper functions - Used by commands
 
@@ -140,39 +144,13 @@ class ChatEnhancements(SimpleCommandPlugin):
 
         return color + data.alias + "^reset;"
 
-    def send_to_planet(self, msg, location, sender="", client_id=0):
-        send_mode = ChatReceiveMode.CHANNEL
-        channel = location
-        for p in self.factory.connections:
-            if str(p.player.location) == location:
-                yield from send_message(p,
-                                        msg,
-                                        client_id=client_id,
-                                        name=sender,
-                                        mode=send_mode,
-                                        channel=channel)
-
-    def send_to_universe(self, msg, sender="", client_id=0):
-        send_mode = ChatReceiveMode.BROADCAST
-        channel = ""
-        for p in self.factory.connections:
-            yield from send_message(p,
-                                    msg,
-                                    client_id=client_id,
-                                    name=sender,
-                                    mode=send_mode,
-                                    channel=channel)
-
-    # def _send_to_party(self, msg, sender, client_id, team_id):
-    #     send_mode = ChatReceiveMode.CHANNEL
-    #     channel = str(team_id)
-    #     for p in self.factory.connections:
-    #         if str(p.player.team_id) == team_id:
-    #             yield from p.send_message(msg,
-    #                                       client_id=client_id,
-    #                                       name=sender,
-    #                                       mode=send_mode,
-    #                                       channel=channel)
+    @asyncio.coroutine
+    def _send_to_server(self, message, mode, connection):
+        msg_base = data_parser.ChatSent.build(dict(message=" ".join(message),
+                                                   send_mode=mode))
+        msg_packet = pparser.build_packet(packets.packets['chat_sent'],
+                                          msg_base)
+        yield from connection.client_raw_write(msg_packet)
 
     # Commands - In-game actions that can be performed
 
@@ -182,8 +160,7 @@ class ChatEnhancements(SimpleCommandPlugin):
     def _local(self, data, connection):
         """
         Local chat. Sends a message only to characters who are on the same
-        planet. If the "chat_style" variable is set to "planetary", this
-        command has no special effect.
+        planet.
 
         :param data: The packet containing the command.
         :param connection: The connection from which the packet came.
@@ -193,21 +170,17 @@ class ChatEnhancements(SimpleCommandPlugin):
             send_message(connection, "You are muted and cannot chat.")
             return False
         if data:
-            message = " ".join(data)
-            sender = self.decorate_line(connection)
-            yield from self.send_to_planet(message,
-                                           str(connection.player.location),
-                                           sender,
-                                           connection.player.client_id)
+            yield from self._send_to_server(data,
+                                            ChatSendMode.LOCAL,
+                                            connection)
+            return True
 
     @Command("u",
              doc="Send message to the entire universe.",
              syntax="(message)")
     def _universe(self, data, connection):
         """
-        Universal chat. Sends a message that everyone can see. If the
-        "chat_style" variable is set to "universal", this command has no
-        special effect.
+        Universal chat. Sends a message that everyone can see.
 
         :param data: The packet containing the command.
         :param connection: The connection from which the packet came.
@@ -217,11 +190,9 @@ class ChatEnhancements(SimpleCommandPlugin):
             send_message(connection, "You are muted and cannot chat.")
             return False
         if data:
-            message = " ".join(data)
-            sender = self.decorate_line(connection)
-            yield from self.send_to_universe(message,
-                                             sender,
-                                             connection.player.client_id)
+            yield from self._send_to_server(data,
+                                            ChatSendMode.UNIVERSE,
+                                            connection)
             try:
                 # Try sending it to IRC if we have that available.
                 import asyncio
@@ -231,53 +202,32 @@ class ChatEnhancements(SimpleCommandPlugin):
                                          message)))
             except KeyError:
                 pass
+            return True
 
-    @Command("local", "universal",
-             doc="Toggles the default chat style for a user.")
-    def _chat_toggle(self, data, connection):
-        current_chat_style = connection.player.chat_style
-        if "universal" in current_chat_style:
-            connection.player.chat_style = "planetary"
-        elif "planetary" in current_chat_style:
-            connection.player.chat_style = "universal"
-        else:
-            self.logger.error("Something went wrong with the chat toggle.")
+    @Command("p",
+             doc="Send message to only party members.")
+    def _party(self, data, connection):
+        """
+        Party chat. Sends a message to only members of your party.
 
-        self.logger.debug(
-            "{} has changed their chat style to {}".format(
-                connection.player.alias,
-                connection.player.chat_style
-            ))
-        yield from send_message(connection,
-                                " - Chat style is now set to {}.".format(
-                                    connection.player.chat_style),
-                                mode=ChatReceiveMode.COMMAND_RESULT)
-
-    # @Command("party", "p",
-    #          doc="Send message to only party members.")
-    # def _party(self, data, connection):
-    #     """
-    #     Party chat. Sends a message to only members of your party. This
-    #     works the same regardless of the global-chat style used.
-    #
-    #     :param data: The packet containing the command.
-    #     :param connection: The connection from which the packet came.
-    #     :return: Null
-    #     """
-    #     if data:
-    #         message = " ".join(data)
-    #         sender = self._decorate_line(connection)
-    #         yield from self._send_to_party(message,
-    #                                        sender,
-    #                                        connection.player.client_id,
-    #                                        connection.player.team_id)
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
+        """
+        if self.plugins['chat_manager'].mute_check(connection.player):
+            send_message(connection, "You are muted and cannot chat.")
+            return False
+        if data:
+            yield from self._send_to_server(data,
+                                            ChatSendMode.PARTY,
+                                            connection)
+            return True
 
     @Command("whisper", "w",
              doc="Send message privately to a person.")
     def _whisper(self, data, connection):
         """
-        Whisper. Sends a message to only one person. This
-        works the same regardless of the global-chat style used.
+        Whisper. Sends a message to only one person.
 
         This command shadows the built-in whisper.
 

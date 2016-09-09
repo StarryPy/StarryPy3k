@@ -59,15 +59,18 @@ class WarpAliasType(IntEnum):
 
 class ChatSendMode(IntEnum):
     UNIVERSE = 0
-    WORLD = 1
-    ADMIN = 2
+    LOCAL = 1
+    PARTY = 2
 
 
 class ChatReceiveMode(IntEnum):
-    CHANNEL = 0
-    BROADCAST = 1
-    WHISPER = 2
-    COMMAND_RESULT = 3
+    LOCAL = 0
+    PARTY = 1
+    BROADCAST = 2
+    WHISPER = 3
+    COMMAND_RESULT = 4
+    RADIO_MESSAGE = 5
+    WORLD = 6
 
 
 class EntityInteractionType(IntEnum):

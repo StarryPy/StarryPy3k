@@ -433,7 +433,7 @@ class PlayerManager(SimpleCommandPlugin):
             # self.logger.debug("Player reaper running:")
             for player in self.players_online:
                 target = self.get_player_by_uuid(player)
-                if target.connection.state is State.DISCONNECTED:
+                if target.connection.state is State.DISCONNECTED or not target.connection:
                     self.logger.warning("Removing stale player connection: {}"
                                         "".format(target.name))
                     target.connection = None
