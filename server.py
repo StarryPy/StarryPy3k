@@ -220,7 +220,10 @@ class ServerFactory:
         """
         for connection in self.connections:
             try:
-                yield from connection.send_message(messages)
+                yield from connection.send_message(
+                    messages,
+                    mode=ChatReceiveMode.RADIO_MESSAGE
+                )
             except Exception as err:
                 logger.exception("Error while trying to broadcast.")
                 logger.exception(err)

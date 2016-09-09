@@ -35,7 +35,6 @@ class PrivilegedChatter(SimpleCommandPlugin):
         super().__init__()
         self.modchat_color = None
         self.report_prefix = None
-        self.broadcast_prefix = None
 
     def activate(self):
         super().activate()
@@ -43,8 +42,6 @@ class PrivilegedChatter(SimpleCommandPlugin):
             "modchat_color"]
         self.report_prefix = self.config.get_plugin_config(self.name)[
             "report_prefix"]
-        self.broadcast_prefix = self.config.get_plugin_config(self.name)[
-            "broadcast_prefix"]
 
     # Commands - In-game actions that can be performed
 
@@ -119,5 +116,4 @@ class PrivilegedChatter(SimpleCommandPlugin):
         """
         if data:
             message = " ".join(data)
-            broadcast(self,
-                      "{}{}^reset;".format(self.broadcast_prefix, message))
+            broadcast(self, message)
