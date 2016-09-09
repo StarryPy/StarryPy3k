@@ -12,7 +12,6 @@ Note: This document is likely to change often, as well as become outdated quickl
 
 - /help
 - /l
-- /local , /universal
 - /me , /em
 - /motd
 - /spawn
@@ -20,6 +19,7 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /whisper , /w
 - /who
 - /whoami
+- /p
 - /here , /planet
 - /poi
 - /report
@@ -255,10 +255,9 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
      - **Description:** Sends a private message to another user.
      - **Alias:** /w
 
-  - /local
+  - /p (message)
      - **Role:** Guest
-     - **Description:** Toggles a player's chat style between local (aka - planetary) and universal.
-     - **Alias:** /universal
+     - **Description:** Sends a message to everyone in your party. If not in a party, defaults to local chat.
 
 #### Emotes
 
