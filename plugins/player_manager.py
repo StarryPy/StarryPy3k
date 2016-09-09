@@ -886,7 +886,7 @@ class PlayerManager(SimpleCommandPlugin):
              role=Ban,
              doc="Unbans a user or an IP address.",
              syntax=("(ip | name)"))
-    def _ban(self, data, connection):
+    def _unban(self, data, connection):
         """
         Unban a player. You must specify either a name or an IP.
 
