@@ -15,7 +15,7 @@ import irc3
 
 from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
-from utilities import link_plugin_if_available
+from utilities import link_plugin_if_available, ChatSendMode
 
 
 # Roles
@@ -211,8 +211,7 @@ class IRCPlugin(BasePlugin):
                         msg)))
                 return True
 
-            # When chat_enhancements ARE available, check first.
-            if current_chat_style == "universal":
+            if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
                 asyncio.ensure_future(
                     self.bot_write("<{}> {}".format(
                         connection.player.alias,
