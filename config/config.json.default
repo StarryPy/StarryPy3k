@@ -5,7 +5,6 @@
     "plugin_path": "./plugins",
     "plugins": {
         "chat_enhancements": {
-            "chat_style": "universal",
             "chat_timestamps": true,
             "colors": {
                 "Admin": "^#C443F7;",
@@ -13,7 +12,7 @@
                 "Owner": "^#F7434C;",
                 "Registered": "^#A0F743;",
                 "SuperAdmin": "^#E23800;",
-                "default": "^reset;"
+                "default": "^yellow;"
             },
             "timestamp_color": "^gray;"
         },
@@ -50,7 +49,6 @@
             "modchat_color": "^violet;",
             "report_prefix": "^magenta;(REPORT): "
         },
-        "rcon_dispatcher": {},
         "simple_command_plugin": {},
         "spawn": {},
         "storage_command_plugin": {}
