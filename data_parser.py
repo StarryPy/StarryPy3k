@@ -471,7 +471,7 @@ class ChatHeader(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
         mode = Byte.parse(stream, ctx)
-        if mode == 0:
+        if mode == 0 or mode == 1:
             channel = StarString.parse(stream, ctx)
             client_id = UBInt16.parse(stream, ctx)
         else:
