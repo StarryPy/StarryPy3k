@@ -72,14 +72,20 @@ class ChatEnhancements(SimpleCommandPlugin):
             if data["parsed"]["name"] != "server":
                 sender = self.plugins['player_manager'].get_player_by_alias(
                     data["parsed"]["name"])
-                sender = self.decorate_line(sender.connection)
+                try:
+                    sender = self.decorate_line(sender.connection)
+                except AttributeError:
+                    self.logger.warning("Sender {} is sending a message that "
+                                        "the wrapper isn't handling correctly"
+                                        "".format(data["parsed"]["name"]))
+                    sender = data["parsed"]["name"]
 
         yield from send_message(connection,
-				data["parsed"]["message"],
-				mode=data["parsed"]["header"]["mode"],
-				client_id=data["parsed"]["header"]["client_id"],
-				name=sender,
-				channel=data["parsed"]["header"]["channel"])
+                                data["parsed"]["message"],
+                                mode=data["parsed"]["header"]["mode"],
+                                client_id=data["parsed"]["header"]["client_id"],
+                                name=sender,
+                                channel=data["parsed"]["header"]["channel"])
 
     def on_chat_sent(self, data, connection):
         """
@@ -195,11 +201,10 @@ class ChatEnhancements(SimpleCommandPlugin):
                                             connection)
             try:
                 # Try sending it to IRC if we have that available.
-                import asyncio
                 asyncio.ensure_future(
                     self.plugins["irc_bot"].bot_write(
                         "<{}> {}".format(connection.player.alias,
-                                         message)))
+                                         " ".join(data))))
             except KeyError:
                 pass
             return True

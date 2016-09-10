@@ -275,8 +275,11 @@ def read_packet(reader, direction):
     if not compressed:
         p['data'] = data
     else:
-        zobj = zlib.decompressobj()
-        p['data'] = zobj.decompress(data)
+        try:
+            zobj = zlib.decompressobj()
+            p['data'] = zobj.decompress(data)
+        except zlib.error as e:
+            raise asyncio.IncompleteReadError
 
     p['original_data'] = packet_type + packet_size_data + data
     p['direction'] = direction

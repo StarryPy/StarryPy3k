@@ -74,7 +74,7 @@ class NewPlayerGreeter(SimpleCommandPlugin):
         yield from asyncio.sleep(1.3)
         yield from send_message(connection,
                                 "{}".format(self.greeting),
-                                mode=ChatReceiveMode.CHANNEL)
+                                mode=ChatReceiveMode.RADIO_MESSAGE)
         return
 
     @asyncio.coroutine
