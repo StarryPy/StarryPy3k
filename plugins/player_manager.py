@@ -71,13 +71,14 @@ class Player:
     """
     Prototype class for a player.
     """
-    def __init__(self, uuid, name="", alias="", last_seen=None, roles=None,
+    def __init__(self, uuid, species="unknown", name="", alias="", last_seen=None, roles=None,
                  logged_in=False, connection=None, client_id=-1, ip="",
                  planet="", muted=False, state=None, team_id=None):
         """
         Initialize a player object. Populate all the necessary details.
 
         :param uuid:
+        :param species:
         :param name:
         :param last_seen:
         :param roles:
@@ -92,6 +93,7 @@ class Player:
         :return:
         """
         self.uuid = uuid
+        self.species = species
         self.name = name
         self.alias = alias
         if last_seen is None:
@@ -196,7 +198,8 @@ class PlayerManager(SimpleCommandPlugin):
 
     def __init__(self):
         self.default_config = {"player_db": "config/player",
-                               "owner_uuid": "!--REPLACE IN CONFIG FILE--!"}
+                               "owner_uuid": "!--REPLACE IN CONFIG FILE--!",
+                               "allowed_species": ["apex", "avian", "glitch", "floran", "human", "hylotl", "penguin", "novakid"]}
         super().__init__()
         self.shelf = shelve.open(self.plugin_config.player_db, writeback=True)
         self.sync()
@@ -254,6 +257,7 @@ class PlayerManager(SimpleCommandPlugin):
         bans.
 
         :param data:
+        :param species:
         :param connection:
         :return: Boolean: True on successful connection, False on a
                  failed connection.
@@ -261,6 +265,7 @@ class PlayerManager(SimpleCommandPlugin):
         try:
             player = yield from self._add_or_get_player(**data["parsed"])
             self.check_bans(connection)
+            self.check_species(player)
         except (NameError, ValueError) as e:
             yield from connection.raw_write(self.build_rejection(str(e)))
             self._set_offline(connection)
@@ -433,7 +438,7 @@ class PlayerManager(SimpleCommandPlugin):
             # self.logger.debug("Player reaper running:")
             for player in self.players_online:
                 target = self.get_player_by_uuid(player)
-                if target.connection.state is State.DISCONNECTED:
+                if target.connection.state is State.DISCONNECTED or not target.connection:
                     self.logger.warning("Removing stale player connection: {}"
                                         "".format(target.name))
                     target.connection = None
@@ -601,6 +606,21 @@ class PlayerManager(SimpleCommandPlugin):
             raise ValueError("You are banned!\nReason: {}".format(
                 self.shelf["bans"][connection.client_ip].reason))
 
+    def check_species(self, player):
+        """
+        Check if a player has an unknown species. Raise ValueError when true.
+        Context: http://community.playstarbound.com/threads/119569/
+
+        :param player: The player to check.
+        :return: Null.
+        :raise: ValueError if the player has an unknown species.
+        """
+        if player.species not in self.plugin_config.allowed_species:
+            self.logger.info("Player with unknown species ({}) tried to log in.".format(
+                player.species))
+            raise ValueError("Connection terminated!\nYour species ({}) is not allowed.".format(
+                player.species))
+
     def get_storage(self, caller):
         """
         Collect the storage for caller.
@@ -647,7 +667,7 @@ class PlayerManager(SimpleCommandPlugin):
                     return player
 
     @asyncio.coroutine
-    def _add_or_get_player(self, uuid, name="", last_seen=None, roles=None,
+    def _add_or_get_player(self, uuid, species, name="", last_seen=None, roles=None,
                            logged_in=False, connection=None, client_id=-1,
                            ip="", planet="", muted=False, **kwargs) -> Player:
         """
@@ -656,6 +676,7 @@ class PlayerManager(SimpleCommandPlugin):
         details into storage for future reference. Return a Player object.
 
         :param uuid: UUID of connecting character
+        :param species: Species of connecting character
         :param name: Name of connecting character
         :param last_seen: Date of last login
         :param roles: Roles granted to character
@@ -685,6 +706,10 @@ class PlayerManager(SimpleCommandPlugin):
                 raise ValueError("Player is already logged in.")
             if uuid == self.plugin_config.owner_uuid:
                 p.roles = {x.__name__ for x in Owner.roles}
+            if not hasattr(p, "species"):
+                p.species = species
+            elif p.species != species:
+                p.species = species
             return p
         else:
             if self.get_player_by_name(alias) is not None:
@@ -695,7 +720,7 @@ class PlayerManager(SimpleCommandPlugin):
                 roles = {x.__name__ for x in Owner.roles}
             else:
                 roles = {x.__name__ for x in Guest.roles}
-            new_player = Player(uuid, name, alias, last_seen, roles, logged_in,
+            new_player = Player(uuid, species, name, alias, last_seen, roles, logged_in,
                                 connection, client_id, ip, planet, muted)
             self.shelf["players"][uuid] = new_player
             return new_player

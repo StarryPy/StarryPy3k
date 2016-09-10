@@ -12,7 +12,6 @@ Note: This document is likely to change often, as well as become outdated quickl
 
 - /help
 - /l
-- /local , /universal
 - /me , /em
 - /motd
 - /spawn
@@ -20,6 +19,7 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /whisper , /w
 - /who
 - /whoami
+- /p
 - /here , /planet
 - /poi
 - /report
@@ -255,10 +255,9 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
      - **Description:** Sends a private message to another user.
      - **Alias:** /w
 
-  - /local
+  - /p (message)
      - **Role:** Guest
-     - **Description:** Toggles a player's chat style between local (aka - planetary) and universal.
-     - **Alias:** /universal
+     - **Description:** Sends a message to everyone in your party. If not in a party, defaults to local chat.
 
 #### Emotes
 
@@ -324,6 +323,38 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - /list_builders
      - **Role:** Admin
      - **Description:** Show all players allowed to build on a protected planet.
+
+#### Claims
+
+- ***Depend on:***
+  - Command Dispatcher, Player Manager, Planet Protect
+
+- ***Commands Provided***
+  - /claim
+    - **Role:** Registered
+    - **Description:** Claim a planet to be protected.
+
+  - /unclaim
+    - **Role:** Registered*
+    - **Description:** Unclaim and unprotect the planet you're standing on.
+
+  - /add_helper
+    - **Role:** Registered*
+    - **Description:** Add someone to the protected list of your planet.
+
+  - /rm_helper
+    - **Role:** Registered*
+    - **Description:** Remove someone from the protected list of your planet.
+
+  - /helper_list
+    - **Role:** Registered*
+    - **Description:** List all of the people allowed to build on this planet.
+
+  - /change_owner
+    - **Role:** Registered*
+    - **Description:** Transfer ownership of the planet to another person.
+
+  - Note: All of the commands except /claim require the user to be the owner of the planet.
 
 #### Planet Backups
 

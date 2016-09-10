@@ -1,8 +1,58 @@
 {
     "listen_port": 21025,
-    "upstream_port": 21024,
-    "upstream_host": "localhost",
-    "plugin_path": "./plugins",
+    "min_cache_size": 16,
     "packet_reap_time": 600,
-    "min_cache_size": 16
+    "plugin_path": "./plugins",
+    "plugins": {
+        "chat_enhancements": {
+            "chat_timestamps": true,
+            "colors": {
+                "Admin": "^#C443F7;",
+                "Moderator": "^#4385F7;",
+                "Owner": "^#F7434C;",
+                "Registered": "^#A0F743;",
+                "SuperAdmin": "^#E23800;",
+                "default": "^yellow;"
+            },
+            "timestamp_color": "^gray;"
+        },
+        "chat_logger": {},
+        "chat_manager": {},
+        "command_dispatcher": {
+            "command_prefix": "/"
+        },
+        "general_commands": {},
+        "help_plugin": {},
+        "irc_bot": {
+            "channel": "#YourChannel",
+            "log_irc": false,
+            "server": "irc.example.com",
+            "strip_colors": true,
+            "username": "Replace With Valid IRC Nick"
+        },
+        "motd": {
+            "message": "Insert your MOTD message here. ^red;Note^reset; color codes work."
+        },
+        "new_player_greeters": {
+            "gifts": {},
+            "greeting": "This message will be displayed to players the first time StarryPy sees them connect."
+        },
+        "planet_backups": {},
+        "planet_protect": {},
+        "player_manager": {
+            "owner_uuid": "!--REPLACE WITH YOUR UUID--!",
+            "player_db": "config/player"
+        },
+        "poi": {},
+        "privileged_chatter": {
+            "broadcast_prefix": "^red;(ADMIN): ",
+            "modchat_color": "^violet;",
+            "report_prefix": "^magenta;(REPORT): "
+        },
+        "simple_command_plugin": {},
+        "spawn": {},
+        "storage_command_plugin": {}
+    },
+    "upstream_host": "localhost",
+    "upstream_port": 21024
 }

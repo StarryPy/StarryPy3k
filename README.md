@@ -40,17 +40,64 @@ for the lines below, and change them to specify port 21024:
 ```
 
 ### StarryPy Proxy Configuration
-Unfortunately, the example `config.json` file included in the repository is
-not comprehensive.  Fortunately, StarryPy will write its runtime configuration
-to disk periodically.  Go ahead and start the Starbound server and StarryPy,
-and make sure you can connect to your server.  Then disconnect, and terminate
-StarryPy (by pressing `^C` in its terminal), and open up `config/config.json`.
-Also, open up your Starbound server log, and make a note of the UUID you were
-assigned when you connected to your server.  Edit the obvious things in the
-configuration file (the Message of the Day, for example).  Look in particular
-for the `player_manager` section, and replace the text telling you to replace
-it with your UUID.  This will accord you the privileges of the server owner
-within StarryPy.  Restart it, and you should be up and running.
+An example configuration file, `config.json.default`, is provided in the
+`config` directory.  Copy that file to a new one named `config.json` in the
+same location.  Open it in your text editor of choice.  The following are the
+most likely changes you will have to make:
+
+```
+        "irc_bot": {
+            "channel": "#YourChannel",
+            "log_irc": false,
+            "server": "irc.example.com",
+            "strip_colors": true,
+            "username": "Replace With Valid IRC Nick"
+        },
+```
+
+This section controls the built-in IRC-to-Starbound bridge.  It will be active
+if you have the `irc3` Python module installed on your system.  Edit the sample
+values here to match your preferred IRC server, bot nick, et cetera.  Chat in
+the Starbound server will be relayed to the specified IRC channel, and vice
+versa.  You can also see who is on the server from IRC by saying `.who` in the
+IRC channel (we cannot use `/` as the command leader in IRC for obvious reasons.
+
+```
+        "motd": {
+            "message": "Insert your MOTD message here. ^red;Note^reset; color codes work."
+        },
+        "new_player_greeters": {
+            "gifts": {},
+            "greeting": "This message will be displayed to players the first time StarryPy sees them connect."
+        },
+```
+
+The MOTD, or Message Of The Day, will be displayed to all players when they
+connect to the Starbound server.  You can update this in-game by using the
+`/set_motd` command.  The next section allows you to specify a message to be
+displayed to any players the first time they connect to the server.  You can
+also have StarryPy give items to new players by enumarating them in the `gifts`
+property.  Use Starbound's names for items as specified in its `.json` files.
+
+```
+        "player_manager": {
+            "owner_uuid": "!--REPLACE WITH YOUR UUID--!",
+            "player_db": "config/player"
+        },
+```
+
+Replace the obvious value here with your UUID.  This is how StarryPy will
+recognize you as the owner of the server and accord you the relevant rights
+and privileges.  You can find your UUID by watching the Starbound server log
+as you connect, by using the `list` RCON command, or by observing the names
+of your save files on the computer you use to play Starbound.
+
+### Starting the proxy
+Starting StarryPy is as simple as issueing the command `python3 ./server.py`
+once you have finised editing `config/config.json`.  To terminate the proxy,
+either press `^C` in an interactive terminal session, or send it a `TERM`
+signal.
+
 
 ## Contributing
 Contributions are highly encouraged and always welcome. Please feel free to

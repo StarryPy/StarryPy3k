@@ -59,6 +59,7 @@ class ProtectedLocation:
 
 class PlanetProtect(StorageCommandPlugin):
     name = "planet_protect"
+    depends = ["player_manager", "command_dispatcher"]
 
     def activate(self):
         super().activate()
@@ -90,9 +91,9 @@ class PlanetProtect(StorageCommandPlugin):
                  builders, let it pass. Otherwise, block the packet from
                  reaching the server.
         """
-        if not self._check_protection(connection.player.location):
+        if not self.check_protection(connection.player.location):
             return True
-        protection = self._get_protection(connection.player.location)
+        protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
         if connection.player.check_role(Admin):
@@ -127,9 +128,9 @@ class PlanetProtect(StorageCommandPlugin):
                  builders, let it pass. Otherwise, block the packet from
                  reaching the server.
         """
-        if not self._check_protection(connection.player.location):
+        if not self.check_protection(connection.player.location):
             return True
-        protection = self._get_protection(connection.player.location)
+        protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
         if connection.player.check_role(Admin):
@@ -167,9 +168,9 @@ class PlanetProtect(StorageCommandPlugin):
         """
         if data["direction"] == Direction.TO_CLIENT:
             return True
-        if not self._check_protection(connection.player.location):
+        if not self.check_protection(connection.player.location):
             return True
-        protection = self._get_protection(connection.player.location)
+        protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
         if connection.player.check_role(Admin):
@@ -194,16 +195,20 @@ class PlanetProtect(StorageCommandPlugin):
 
     # Helper functions - Used by hooks and commands
 
-    def _check_protection(self, location):
+    def check_protection(self, location):
         """
         Check if the current location is protected.
 
         :param location: Location to be checked.
         :return: Boolean: True if location is in protected list, False if not.
         """
-        return str(location) in self.storage["locations"]
+        if str(location) in self.storage["locations"]:
+            protection = self.get_protection(str(location))
+            return protection.protected
+        else:
+            return str(location) in self.storage["locations"]
 
-    def _get_protection(self, location) -> ProtectedLocation:
+    def get_protection(self, location) -> ProtectedLocation:
         """
         Given a protected locations identifier (index), return the
         location's ProtectedLocation object.
@@ -213,7 +218,7 @@ class PlanetProtect(StorageCommandPlugin):
         """
         return self.storage["locations"][str(location)]
 
-    def _add_protection(self, location, player):
+    def add_protection(self, location, player):
         """
         Add an allowed builder to a location. If the location is not already
         protected, make it protected.
@@ -231,7 +236,7 @@ class PlanetProtect(StorageCommandPlugin):
             protection.add_builder(player)
         return protection
 
-    def _disable_protection(self, location):
+    def disable_protection(self, location):
         """
         Remove protection from a location.
 
@@ -273,9 +278,9 @@ class PlanetProtect(StorageCommandPlugin):
         try:
             if connection.player.location.locationtype() is "ShipWorld":
                 ship = connection.player.location
-                if not self._check_protection(ship):
+                if not self.check_protection(ship):
                     if ship.player == connection.player.alias:
-                        self._add_protection(ship, connection.player)
+                        self.add_protection(ship, connection.player)
                         send_message(connection,
                                      "Your ship has been auto-protected.")
         except AttributeError:
@@ -297,7 +302,7 @@ class PlanetProtect(StorageCommandPlugin):
         :return: Null.
         """
         location = connection.player.location
-        self._add_protection(location, connection.player)
+        self.add_protection(location, connection.player)
         send_message(connection, "Protected location: {}".format(location))
 
     @Command("unprotect",
@@ -314,7 +319,7 @@ class PlanetProtect(StorageCommandPlugin):
         :return: Null.
         """
         location = connection.player.location
-        self._disable_protection(location)
+        self.disable_protection(location)
         send_message(connection, "Unprotected location ()".format(location))
 
     @Command("add_builder",
@@ -332,7 +337,7 @@ class PlanetProtect(StorageCommandPlugin):
         location = connection.player.location
         p = self.plugins.player_manager.get_player_by_alias(" ".join(data))
         if p is not None:
-            protection = self._get_protection(location)
+            protection = self.get_protection(location)
             protection.add_builder(p)
             send_message(connection,
                          "Added {} to allowed list for {}".format(
@@ -364,7 +369,7 @@ class PlanetProtect(StorageCommandPlugin):
         """
         p = self.plugins.player_manager.get_player_by_alias(" ".join(data))
         if p is not None:
-            protection = self._get_protection(connection.player.location)
+            protection = self.get_protection(connection.player.location)
             protection.del_builder(p)
             send_message(connection,
                          "Removed player from build list for this location.")
@@ -386,11 +391,11 @@ class PlanetProtect(StorageCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        if not self._check_protection(connection.player.location):
+        if not self.check_protection(connection.player.location):
             send_message(connection,
                          "This location has never been protected.")
         else:
-            protection = self._get_protection(connection.player.location)
+            protection = self.get_protection(connection.player.location)
             players = ", ".join(protection.get_builders())
             send_message(connection,
                          "Players allowed to build at location '{}': {}"
