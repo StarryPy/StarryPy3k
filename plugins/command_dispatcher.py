@@ -135,6 +135,8 @@ class CommandDispatcher(BasePlugin):
             self._send_name_error(e, connection)
         except ValueError as e:
             send_message(connection, str(e))
+        except SystemExit as e:
+            raise SystemExit
         except:
             self.logger.exception("Unknown exception encountered. Ignoring.",
                                   exc_info=True)
