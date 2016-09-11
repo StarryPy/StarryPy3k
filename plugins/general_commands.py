@@ -6,6 +6,9 @@ Plugin for handling most of the most basic (and most useful) commands.
 Original authors: AMorporkian
 Updated for release: kharidiron
 """
+import asyncio
+
+import sys
 
 import packets
 import pparser
@@ -30,6 +33,10 @@ class Nick(Registered):
 
 
 class Whoami(Guest):
+    pass
+
+
+class Shutdown(Guest):
     pass
 
 
@@ -239,3 +246,31 @@ class GeneralCommands(SimpleCommandPlugin):
         send_message(connection,
                      "{} players on planet:\n{}".format(len(ret_list),
                                                         ", ".join(ret_list)))
+
+    @Command("shutdown",
+             role=Shutdown,
+             doc="Shutdown the server after N seconds (default 5).",
+             syntax="[time]")
+    def _shutdown(self, data, connection):
+        """
+        Shutdown the StarryPy server, disconnecting everyone.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
+        """
+        self.logger.warning("{} has called for a shutdown.".format(
+            connection.player.alias))
+        shutdown_time = 5
+        if data:
+            if data[0].isdigit():
+                self.logger.debug("We think it is an int, lets use it.")
+                shutdown_time = int(data[0])
+
+        broadcast(self, "^red;(ADMIN) The server is shutting down in {} "
+                        "seconds.^reset;".format(shutdown_time))
+        yield from asyncio.sleep(shutdown_time)
+        # this is a noisy shutdown (makes a bit of errors in the logs). Not
+        # sure how to make it better...
+        self.logger.warning("Shutting down server now.")
+        sys.exit()

@@ -855,29 +855,29 @@ class PlayerManager(SimpleCommandPlugin):
             reason = "No reason given."
 
         p = self.get_player_by_alias(alias)
+        if p is None:
+            send_message(connection,
+                         "Couldn't find a player with name {}".format(alias))
         if not p.logged_in:
             send_message(connection,
                          "Player {} is not currently logged in.".format(alias))
-            return False
-        if p is not None:
-            if p.client_id == -1 or p.connection is None:
-                p.connection = None
-                p.logged_in = False
-                p.location = None
-                return
-            kick_string = "You were kicked.\n Reason: {}".format(reason)
-            kick_packet = build_packet(packets["server_disconnect"],
-                                       ServerDisconnect.build(
-                                           dict(reason=kick_string)))
-            yield from p.connection.raw_write(kick_packet)
+        if p.client_id == -1 or p.connection is None:
             p.connection = None
             p.logged_in = False
             p.location = None
-            broadcast(self, "^red;{} has been kicked for reason: "
+            self.players_online.remove(p.uuid)
+            return
+        kick_string = "You were kicked.\n Reason: {}".format(reason)
+        kick_packet = build_packet(packets["server_disconnect"],
+                                   ServerDisconnect.build(
+                                       dict(reason=kick_string)))
+        yield from p.connection.raw_write(kick_packet)
+        p.connection = None
+        p.logged_in = False
+        p.location = None
+        self.players_online.remove(p.uuid)
+        broadcast(self, "^red;{} has been kicked for reason: "
                             "{}^reset;".format(alias, reason))
-        else:
-            send_message(connection,
-                         "Couldn't find a player with name {}".format(alias))
 
     @Command("ban",
              role=Ban,
