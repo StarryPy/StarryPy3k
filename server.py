@@ -211,18 +211,20 @@ class ServerFactory:
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, messages, **kwargs):
+    def broadcast(self, messages, *, mode=ChatReceiveMode.RADIO_MESSAGE,
+                  **kwargs):
         """
         Send a message to all connected clients.
 
         :param messages: Message(s) to be sent.
+        :param mode: Mode bit of message.
         :return: Null.
         """
         for connection in self.connections:
             try:
                 yield from connection.send_message(
                     messages,
-                    mode=ChatReceiveMode.RADIO_MESSAGE
+                    mode=mode
                 )
             except Exception as err:
                 logger.exception("Error while trying to broadcast.")

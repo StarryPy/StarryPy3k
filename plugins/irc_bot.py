@@ -15,7 +15,7 @@ import irc3
 
 from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
-from utilities import link_plugin_if_available, ChatSendMode
+from utilities import ChatSendMode, ChatReceiveMode
 
 
 # Roles
@@ -269,7 +269,8 @@ class IRCPlugin(BasePlugin):
                 # Format it like a /me is in IRC
                 yield from (
                     self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- "
-                                           "{} {}".format(nick, message))
+                                           "{} {}".format(nick, message),
+                                           mode=ChatReceiveMode.BROADCAST)
                 )
                 if self.config.get_plugin_config(self.name)["log_irc"]:
                     self.logger.info(" -*- " + nick + " " + message)
