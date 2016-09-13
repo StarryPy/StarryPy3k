@@ -14,7 +14,8 @@ import packets
 import pparser
 import data_parser
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import Admin, Moderator, Registered, Guest
+from plugins.player_manager import SuperAdmin, Admin, Moderator, Registered,\
+    Guest
 from utilities import send_message, Command, broadcast
 
 
@@ -36,7 +37,7 @@ class Whoami(Guest):
     pass
 
 
-class Shutdown(Guest):
+class Shutdown(SuperAdmin):
     pass
 
 
