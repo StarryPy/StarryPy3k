@@ -70,7 +70,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         sender = ""
         if data["parsed"]["name"]:
             if data["parsed"]["name"] != "server":
-                sender = self.plugins['player_manager'].get_player_by_alias(
+                sender = self.plugins['player_manager'].get_player_by_name(
                     data["parsed"]["name"])
                 try:
                     sender = self.decorate_line(sender.connection)

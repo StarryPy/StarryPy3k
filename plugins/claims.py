@@ -8,7 +8,7 @@ Author: medeor413
 """
 
 from base_plugin import StorageCommandPlugin
-from plugins.player_manager import Registered, SuperAdmin
+from plugins.player_manager import Registered
 from utilities import Command, send_message
 
 
@@ -160,6 +160,10 @@ class Claims(StorageCommandPlugin):
         if target is not None:
             if not self.is_owner(alias, location):
                 send_message(connection, "You don't own this planet!")
+            elif 'Registered' not in target.roles:
+                send_message(connection, "Target is not high enough rank to "
+                                         "own a planet!")
+                print(target.roles)
             else:
                 if target.alias not in self.storage["owners"]:
                     self.storage["owners"][target.alias] = []
