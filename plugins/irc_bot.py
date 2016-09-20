@@ -201,15 +201,6 @@ class IRCPlugin(BasePlugin):
             msg = data["parsed"]["message"]
             if self.sc:
                 msg = self.color_strip.sub("", msg)
-            try:
-                current_chat_style = connection.player.chat_style
-            except AttributeError:
-                # When chat_enhancements aren't available, just do it.
-                asyncio.ensure_future(
-                    self.bot_write("<{}> {}".format(
-                        connection.player.alias,
-                        msg)))
-                return True
 
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
                 asyncio.ensure_future(

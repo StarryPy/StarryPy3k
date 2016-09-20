@@ -88,18 +88,6 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                     pass
                 message = "^orange;{} {}".format(connection.player.alias,
                                                  emote)
-                try:
-                    if connection.player.chat_style == "universal":
-                        yield from (
-                            self.plugins["chat_enhancements"].send_to_universe(
-                                message))
-                        self.logger.debug("using universal broadcast")
-                    elif connection.player.chat_style == "planetary":
-                        yield from (
-                            self.plugins["chat_enhancements"].send_to_planet(
-                                message,
-                                str(connection.player.location)))
-                        self.logger.debug("using planetary broadcast")
-                except (KeyError, AttributeError):
-                    self.logger.debug("using fallback broadcast")
-                    broadcast(connection, message)
+                yield from (
+                    self.plugins["chat_enhancements"].send_to_universe(
+                        message))
