@@ -12,7 +12,8 @@ Note: This document is likely to change often, as well as become outdated quickl
 
 - /help
 - /l
-- /me , /em
+- /me
+- /mel
 - /motd
 - /spawn
 - /u
@@ -273,7 +274,11 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - /me [emote]
      - **Role:** Guest
      - **Description:** Performs a text-emote.
-     - **Alias:** /em
+     - When this command is performed with no arguments, a list of built-in actions are sent back to the player.
+
+  - /mel [emote]
+     - **Role:** Guest
+     - **Description:** Performs a text-emote in local chat.
      - When this command is performed with no arguments, a list of built-in actions are sent back to the player.
 
 #### Privileged Chatter
