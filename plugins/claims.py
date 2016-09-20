@@ -7,6 +7,8 @@ protect a limited number of planets.
 Author: medeor413
 """
 
+import asyncio
+
 from base_plugin import StorageCommandPlugin
 from plugins.player_manager import Registered
 from utilities import Command, send_message
@@ -36,6 +38,47 @@ class Claims(StorageCommandPlugin):
             return False
         else:
             return True
+
+    def on_world_start(self, data, connection):
+        """
+        Catch when a player beams onto a world.
+
+        :param data: The packet containing the world information.
+        :param connection: The connection from which the packet came.
+        :return: Boolean: True. Must be true, so that packet get passed on.
+        """
+        asyncio.ensure_future(self._protect_ship(connection))
+        return True
+
+    @asyncio.coroutine
+    def _protect_ship(self, connection):
+        """
+        Add protection to a ship.
+
+        :param connection: Connection of player to have ship protected.
+        :return: Null.
+        """
+        yield from asyncio.sleep(.5)
+        try:
+            if connection.player.location.locationtype() is "ShipWorld":
+                ship = connection.player.location
+                alias = connection.player.alias
+                if ship.player == alias:
+                    if not self.planet_protect.check_protection(ship):
+                        self.planet_protect. add_protection(ship,
+                                                            connection.player)
+                        send_message(connection,
+                                     "Your ship has been auto-claimed in "
+                                     "your name.")
+                        if alias not in self.storage["owners"]:
+                            self.storage["owners"][alias] = []
+                        self.storage["owners"][alias].append(str(ship))
+                    if alias not in self.storage["owners"]:
+                        self.storage["owners"][alias] = [str(ship)]
+                    elif str(ship) not in self.storage["owners"][alias]:
+                        self.storage["owners"][alias].append(str(ship))
+        except AttributeError:
+            pass
 
     @Command("claim",
              role=Registered,
