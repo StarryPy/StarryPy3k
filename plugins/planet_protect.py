@@ -68,17 +68,6 @@ class PlanetProtect(StorageCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_world_start(self, data, connection):
-        """
-        Catch when a player beams onto a world.
-
-        :param data: The packet containing the world information.
-        :param connection: The connection from which the packet came.
-        :return: Boolean: True. Must be true, so that packet get passed on.
-        """
-        asyncio.ensure_future(self._protect_ship(connection))
-        return True
-
     def on_spawn_entity(self, data, connection):
         """
         Catch when a player tries spawning an object in the world.
@@ -265,26 +254,6 @@ class PlanetProtect(StorageCommandPlugin):
             connection.player.alias
         ))
         connection.player.warned = time.time()
-
-    @asyncio.coroutine
-    def _protect_ship(self, connection):
-        """
-        Add protection to a ship.
-
-        :param connection: Connection of player to have ship protected.
-        :return: Null.
-        """
-        yield from asyncio.sleep(.5)
-        try:
-            if connection.player.location.locationtype() is "ShipWorld":
-                ship = connection.player.location
-                if not self.check_protection(ship):
-                    if ship.player == connection.player.alias:
-                        self.add_protection(ship, connection.player)
-                        send_message(connection,
-                                     "Your ship has been auto-protected.")
-        except AttributeError:
-            pass
 
     # Commands - In-game actions that can be performed
 

@@ -63,7 +63,7 @@ class Whois(Admin):
     pass
 
 
-class Grant(Owner):
+class Grant(Admin):
     pass
 
 
@@ -548,6 +548,29 @@ class PlayerManager(SimpleCommandPlugin):
         return [x for x in Owner.roles
                 if x.__name__.lower() == name.lower()][0]
 
+    def get_rank(self, player):
+        """
+        Returns the highest rank of the given player.
+
+        :param player: Player to check rank of.
+        :return: Int: A number representing the highest rank.
+        """
+        # Owner isn't properly listed in the player's roles, so check the
+        # owner uuid as well.
+        if player.check_role(Owner) or \
+           player.uuid == self.plugin_config.owner_uuid:
+            return 5
+        elif player.check_role(SuperAdmin):
+            return 4
+        elif player.check_role(Admin):
+            return 3
+        elif player.check_role(Moderator):
+            return 2
+        elif player.check_role(Registered):
+            return 1
+        else:
+            return 0
+
     def get_player_by_uuid(self, uuid):
         """
         Grab a hook to a player by their uuid. Returns player object.
@@ -976,6 +999,15 @@ class PlayerManager(SimpleCommandPlugin):
                 raise LookupError("Unknown role {}".format(role))
             if p is None:
                 raise LookupError("Unknown player {}".format(alias))
+            if p is connection.player:
+                raise LookupError("Can't use this command on yourself!")
+            if role.lower() not in (x.lower() for x in connection.player.roles):
+                raise LookupError("Can't promote {} to rank {}, you are not "
+                                  "a high enough rank for that!".format(
+                                  alias, role.lower()))
+            if self.get_rank(connection.player) <= self.get_rank(p):
+                raise LookupError("Can't change roles of {}, you do "
+                                  "not outrank them!".format(alias))
             p.roles = set()
             ro = [x for x in Owner.roles if
                   x.__name__.lower() == role.lower()][0]
