@@ -1,29 +1,28 @@
 import asyncio
 import logging
 import sys
-# from binascii import hexlify
 
 from configuration_manager import ConfigurationManager
 from data_parser import ChatReceived
 from packets import packets
 from pparser import build_packet
 from plugin_manager import PluginManager
-from utilities import path, read_packet, State, Direction, ChatSendMode
+from utilities import path, read_packet, State, Direction, ChatReceiveMode
 
 
 class StarryPyServer:
     """
     Primary server class. Handles all the things.
     """
-    def __init__(self, reader, writer, config:ConfigurationManager, factory):
-        logger.warning("Initializing protocol.")
+    def __init__(self, reader, writer, config, factory):
+        logger.debug("Initializing connection.")
         self._reader = reader
         self._writer = writer
         self._client_reader = None
         self._client_writer = None
         self.factory = factory
         self._client_loop_future = None
-        self._server_loop_future = asyncio.Task(self.server_loop())
+        self._server_loop_future = asyncio.ensure_future(self.server_loop())
         self.state = None
         self._alive = True
         self.config = config.config
@@ -32,37 +31,39 @@ class StarryPyServer:
         self._client_read_future = None
         self._server_write_future = None
         self._client_write_future = None
-        logger.info("Received connection from %s", self.client_ip)
+        logger.info("Received connection from {}".format(self.client_ip))
 
     @asyncio.coroutine
     def server_loop(self):
         """
         Main server loop. As clients connect to the proxy, pass the
-        connection on to the upstream server and bind it to a 'protocol'. Start
-        sniffing all packets as they fly by.
+        connection on to the upstream server and bind it to a 'connection'.
+        Start sniffing all packets as they fly by.
+
         :return:
         """
         (self._client_reader, self._client_writer) = \
             yield from asyncio.open_connection(self.config['upstream_host'],
                                                self.config['upstream_port'])
-        self._client_loop_future = asyncio.Task(self.client_loop())
+        self._client_loop_future = asyncio.ensure_future(self.client_loop())
         try:
             while True:
                 packet = yield from read_packet(self._reader,
                                                 Direction.TO_SERVER)
                 # Break in case of emergencies:
-                # if packet['type'] not in [17, 40, 43, 48, 51]:
-                #     logger.debug('c->s  {}'.format(packet['type']))
-                # if packet['type'] in [5, 15]:
-                #     logger.debug('{}'.format(hexlify(packet['data'])))
+                # if packet['type'] not in [17, 40, 41, 43, 48, 51]:
+                #    logger.debug('c->s  {}'.format(packet['type']))
+
                 if (yield from self.check_plugins(packet)):
                     yield from self.write_client(packet)
         except asyncio.IncompleteReadError:
             # Pass on these errors. These occur when a player disconnects badly
             pass
-        except Exception as e:
-            logger.error('Server loop exception occured:'
-                         '{}: {}'.format(e.__class__.__name__, e))
+        except asyncio.CancelledError:
+            logger.warning("Connection ended abruptly.")
+        except Exception as err:
+            logger.error("Server loop exception occurred:"
+                         "{}: {}".format(err.__class__.__name__, err))
         finally:
             self.die()
 
@@ -71,6 +72,7 @@ class StarryPyServer:
         """
         Main client loop. Sniff packets originating from the server and bound
         for the clients.
+
         :return:
         """
         try:
@@ -78,21 +80,20 @@ class StarryPyServer:
                 packet = yield from read_packet(self._client_reader,
                                                 Direction.TO_CLIENT)
                 # Break in case of emergencies:
-                # if packet['type'] not in [6, 17, 23, 27, 43, 49, 51]:
+                # if packet['type'] not in [7, 17, 23, 27, 31, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
-                # if packet['type'] in [5, 15]:
-                #     logger.debug('{}'.format(hexlify(packet['data'])))
+
                 send_flag = yield from self.check_plugins(packet)
                 if send_flag:
                     yield from self.write(packet)
-        except Exception as e:
-            logger.error('Client loop exception occured: {}'.format(e))
+        except asyncio.IncompleteReadError:
+            logger.error("IncompleteReadError: Connection ended abruptly.")
         finally:
             self.die()
 
     @asyncio.coroutine
-    def send_message(self, message, *messages, mode=ChatSendMode.BROADCAST,
-                     client_id=0, name="", channel="", junk=0):
+    def send_message(self, message, *messages, mode=ChatReceiveMode.BROADCAST,
+                     client_id=0, name="", channel=""):
         """
         Convenience function to send chat messages to the client. Note that
         this does *not* send messages to the server at large; broadcast
@@ -105,9 +106,9 @@ class StarryPyServer:
         :param name:
         :param channel:
         :param mode:
-        :param junk: just a padding value with no utility currently
         :return:
         """
+        header = {"mode": mode, "channel": channel, "client_id": client_id}
         try:
             if messages:
                 for m in messages:
@@ -126,18 +127,15 @@ class StarryPyServer:
                 return
 
             if self.state == State.CONNECTED_WITH_HEARTBEAT:
-                chat_packet = ChatReceived.build(
-                    {"message": message,
-                     "mode": mode,
-                     "client_id": client_id,
-                     "name": name,
-                     "junk": junk,
-                     "channel": channel})
+                chat_packet = ChatReceived.build({"message": message,
+                                                  "name": name,
+                                                  "junk": 0,
+                                                  "header": header})
                 to_send = build_packet(packets['chat_received'], chat_packet)
                 yield from self.raw_write(to_send)
-        except Exception as e:
+        except Exception as err:
             logger.exception("Error while trying to send message.")
-            logger.exception(e)
+            logger.exception(err)
 
     @asyncio.coroutine
     def raw_write(self, data):
@@ -161,7 +159,8 @@ class StarryPyServer:
     def die(self):
         """
         Handle closeout from player disconnecting.
-        :return:
+
+        :return: Null.
         """
         if self._alive:
             if hasattr(self, "player"):
@@ -173,6 +172,7 @@ class StarryPyServer:
             self._server_loop_future.cancel()
             self._client_loop_future.cancel()
             self.factory.remove(self)
+            self.state = State.DISCONNECTED
             self._alive = False
 
     @asyncio.coroutine
@@ -192,7 +192,7 @@ class StarryPyServer:
 class ServerFactory:
     def __init__(self):
         try:
-            self.protocols = []
+            self.connections = []
             self.configuration_manager = ConfigurationManager()
             self.configuration_manager.load_config(
                 path / 'config' / 'config.json',
@@ -203,113 +203,136 @@ class ServerFactory:
                 path / self.configuration_manager.config.plugin_path)
             self.plugin_manager.resolve_dependencies()
             self.plugin_manager.activate_all()
-            asyncio.Task(self.plugin_manager.get_overrides())
-        except Exception as e:
+            asyncio.ensure_future(self.plugin_manager.get_overrides())
+        except Exception as err:
             logger.exception("Error during server startup.", exc_info=True)
 
             loop.stop()
             sys.exit()
 
     @asyncio.coroutine
-    def broadcast(self, messages, *, name="", client_id=0):
+    def broadcast(self, messages, *, mode=ChatReceiveMode.RADIO_MESSAGE,
+                  **kwargs):
         """
-        Make a server-wide announcement.
+        Send a message to all connected clients.
+
+        :param messages: Message(s) to be sent.
+        :param mode: Mode bit of message.
+        :return: Null.
         """
-        for protocol in self.protocols:
+        for connection in self.connections:
             try:
-                yield from protocol.send_message(messages,
-                                                 name=name,
-                                                 mode=ChatSendMode.BROADCAST,
-                                                 client_id=client_id)
-            except Exception as e:
+                yield from connection.send_message(
+                    messages,
+                    mode=mode
+                )
+            except Exception as err:
                 logger.exception("Error while trying to broadcast.")
-                logger.exception(e)
+                logger.exception(err)
                 continue
 
-    def remove(self, protocol):
+    def remove(self, connection):
         """
-        Remove a single protocol connection.
+        Remove a single connection.
+
+        :param connection: Connection to be removed.
+        :return: Null.
         """
-        self.protocols.remove(protocol)
-        logger.debug('remaining protocols: {}'.format(self.protocols))
+        self.connections.remove(connection)
 
     def __call__(self, reader, writer):
+        """
+        Whenever a client connects, ping the server factory to start
+        handling it.
+
+        :param reader: Reader transport socket.
+        :param writer: Writer transport socket.
+        :return: Null.
+        """
         server = StarryPyServer(reader, writer, self.configuration_manager,
                                 factory=self)
-        self.protocols.append(server)
-        logger.debug('New protocol added: {}'.format(server))
+        self.connections.append(server)
+        logger.debug("New connection established.")
 
     def kill_all(self):
         """
-        Drop all protocol connections.
+        Drop all connections.
+
+        :return: Null.
         """
-        logger.debug('Dropping all connections.')
-        for protocol in self.protocols:
-            protocol.die()
+        logger.debug("Dropping all connections.")
+        for connection in self.connections:
+            connection.die()
 
 
 @asyncio.coroutine
 def start_server():
     """
     Main function for kicking off the server factory.
-    :return:
+
+    :return: Server factory object.
     """
-    server_factory = ServerFactory()
-    config = server_factory.configuration_manager.config
+    _server_factory = ServerFactory()
+    config = _server_factory.configuration_manager.config
     try:
-        yield from asyncio.start_server(server_factory,
+        yield from asyncio.start_server(_server_factory,
                                         port=config['listen_port'])
-    except OSError as e:
-        logger.exception("Error while trying to start server.")
-        logger.exception(e)
+    except OSError as err:
+        logger.error("Error while trying to start server.")
+        logger.error("{}".format(str(err)))
         sys.exit(1)
-    return server_factory
+    return _server_factory
 
 
 if __name__ == "__main__":
     DEBUG = True
 
+    if DEBUG:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
+
     formatter = logging.Formatter(
-        '%(asctime)s - %(levelname)s - %(name)s # %(message)s')
+        '%(asctime)s - %(levelname)s - %(name)s # %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S')
     aiologger = logging.getLogger("asyncio")
-    aiologger.setLevel(logging.DEBUG)
+    aiologger.setLevel(loglevel)
     logger = logging.getLogger('starrypy')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(loglevel)
     if DEBUG:
         fh_d = logging.FileHandler("debug.log")
-        fh_d.setLevel(logging.DEBUG)
+        fh_d.setLevel(loglevel)
         fh_d.setFormatter(formatter)
         aiologger.addHandler(fh_d)
         logger.addHandler(fh_d)
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+    ch.setLevel(loglevel)
     ch.setFormatter(formatter)
     aiologger.addHandler(ch)
     logger.addHandler(ch)
-    with open("commit_count") as f:
-        ver = f.read()
-    logger.info("Running commit %s", ver)
 
     loop = asyncio.get_event_loop()
-    # loop.set_debug(False)  # Removed in commit to avoid errors.
+    loop.set_debug(False)  # Removed in commit to avoid errors.
     # loop.executor = ThreadPoolExecutor(max_workers=100)
     # loop.set_default_executor(loop.executor)
 
     logger.info("Starting server")
 
-    server_factory = asyncio.Task(start_server())
+    server_factory = asyncio.ensure_future(start_server())
 
     try:
         loop.run_forever()
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Exiting")
     except Exception as e:
-        logger.warning('An exception occured: {}'.format(e))
+        logger.warning('An exception occurred: {}'.format(e))
     finally:
-        factory = server_factory.result()
-        factory.kill_all()
-        factory.plugin_manager.deactivate_all()
-        factory.configuration_manager.save_config()
+        _factory = server_factory.result()
+        _factory.kill_all()
+        _factory.plugin_manager.deactivate_all()
+        _factory.configuration_manager.save_config()
+        aiologger.removeHandler(fh_d)
+        aiologger.removeHandler(ch)
         loop.stop()
         loop.close()
         logger.info("Finished.")

@@ -16,7 +16,7 @@ class TestServer:
         self.loop.stop()
 
     def testTest(self):
-        asyncio.Task(self.beep())
+        asyncio.ensure_future(self.beep())
 
     @asyncio.coroutine
     def beep(self):

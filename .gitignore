@@ -36,13 +36,15 @@ nosetests.xml
 .pydevproject
 
 # Project specific
+/config/player.dat
+/config/player.bak
+/config/player.dir
+/config/config.json
 *config.json
 *.db
 *.db-journal
 *.log
 .idea/
-
-*/config.json
 
 # Cleanup after vim
 *.swp

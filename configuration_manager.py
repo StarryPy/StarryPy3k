@@ -1,7 +1,11 @@
 import json
+import logging
+import sys
 from pathlib import Path
 
 from utilities import recursive_dictionary_update, DotDict
+
+logger = logging.getLogger("starrypy.configuration_manager")
 
 
 class ConfigurationManager:
@@ -11,6 +15,9 @@ class ConfigurationManager:
         self._config = {}
         self._dot_dict = None
         self._path = None
+
+    def __repr__(self):
+        return "<ConfigurationManager: {}>".format(json.dumps(self.config))
 
     @property
     def config(self):
@@ -32,7 +39,13 @@ class ConfigurationManager:
                 f.write("{}")
             self._raw_config = "{}"
         self._path = path
-        recursive_dictionary_update(self._config, json.loads(self._raw_config))
+        try:
+            recursive_dictionary_update(self._config,
+                                        json.loads(self._raw_config))
+        except ValueError as e:
+            logger.error("Error while loading config.json file:\n\t"
+                         "{}".format(e))
+            sys.exit(1)
         if "plugins" not in self._config:
             self._config['plugins'] = DotDict({})
 
@@ -52,6 +65,7 @@ class ConfigurationManager:
                       separators=(',', ': '), ensure_ascii=False)
         path.unlink()
         temp_path.rename(path)
+        logger.debug("Config file saved.")
 
     def get_plugin_config(self, plugin_name):
         if plugin_name not in self.config.plugins:
@@ -60,3 +74,9 @@ class ConfigurationManager:
         else:
             storage = self.config.plugins[plugin_name]
         return storage
+
+    def update_config(self, plugin_name, new_value):
+        if plugin_name not in self.config.plugins:
+            raise ValueError("Plugin name provided is not valid.")
+        if isinstance(new_value, dict):
+            self.config.plugins[plugin_name] = new_value

@@ -1,24 +1,36 @@
+"""
+StarryPy Utilities
+
+Provides a collection of commonly used utility objects, functions and classes
+that can be utilized. Boilerplate = bad.
+
+Original authors: AMorporkian
+Updated for release: kharidiron
+"""
+
 import asyncio
-from enum import IntEnum
-import io
-from pathlib import Path
 import collections
-from types import FunctionType
+import io
 import re
 import zlib
-# from server import logger
+from enum import IntEnum
+from pathlib import Path
+from types import FunctionType
 
 path = Path(__file__).parent
 
 
+# Enums
+
 class State(IntEnum):
-    VERSION_SENT = 0
-    CLIENT_CONNECT_RECEIVED = 1
-    HANDSHAKE_CHALLENGE_SENT = 2
-    HANDSHAKE_RESPONSE_RECEIVED = 3
-    CONNECT_RESPONSE_SENT = 4
-    CONNECTED = 5
-    CONNECTED_WITH_HEARTBEAT = 6
+    DISCONNECTED = 0
+    VERSION_SENT = 1
+    CLIENT_CONNECT_RECEIVED = 2
+    HANDSHAKE_CHALLENGE_SENT = 3
+    HANDSHAKE_RESPONSE_RECEIVED = 4
+    CONNECT_RESPONSE_SENT = 5
+    CONNECTED = 6
+    CONNECTED_WITH_HEARTBEAT = 7
 
 
 class Direction(IntEnum):
@@ -33,32 +45,66 @@ class WarpType(IntEnum):
 
 
 class WarpWorldType(IntEnum):
-    UNIQUE_WORLD = 1
-    CELESTIAL_WORLD = 2
-    PLAYER_WORLD = 3
+    CELESTIAL_WORLD = 1
+    PLAYER_WORLD = 2
+    UNIQUE_WORLD = 3
     MISSION_WORLD = 4
 
 
-class ChatMode(IntEnum):
-    UNIVERSE = 0
-    WORLD = 1
-    ADMIN = 2
+class WarpAliasType(IntEnum):
+    RETURN = 0
+    ORBITED = 1
+    SHIP = 2
 
 
 class ChatSendMode(IntEnum):
-    BROADCAST = 0
+    UNIVERSE = 0
     LOCAL = 1
     PARTY = 2
 
 
 class ChatReceiveMode(IntEnum):
-    CHANNEL = 0
-    BROADCAST = 1
-    WHISPER = 2
-    COMMAND_RESULT = 3
+    LOCAL = 0
+    PARTY = 1
+    BROADCAST = 2
+    WHISPER = 3
+    COMMAND_RESULT = 4
+    RADIO_MESSAGE = 5
+    WORLD = 6
 
+
+class EntityInteractionType(IntEnum):
+    NOMINAL = 0
+    OPEN_COCKPIT_UI = 1
+    OPEN_CONTAINER_UI = 2
+    GO_PRONE = 3
+    OPEN_CRAFTING_UI = 4
+    OPEN_NPC_UI = 7
+    OPEN_SAIL_UI = 8
+    OPEN_TELEPORTER_UI = 9
+    OPEN_SCRIPTED_UI = 11
+    OPEN_SPECIAL_UI = 12
+    OPEN_CREW_UI = 13
+
+
+class EntitySpawnType(IntEnum):
+    OBJECT = 1
+    THROW_ITEM = 3
+    THROW_POD = 7
+    NPC = 8
+
+
+# Useful things
 
 def recursive_dictionary_update(d, u):
+    """
+    Given two dictionaries, update the first one with new values provided by
+    the second. Works for nested dictionary sets.
+
+    :param d: First Dictionary, to base off of.
+    :param u: Second Dictionary, to provide updated values.
+    :return: Dictionary. Merged dictionary with bias towards the second.
+    """
     for k, v in u.items():
         if isinstance(v, collections.Mapping):
             r = recursive_dictionary_update(d.get(k, {}), v)
@@ -69,7 +115,13 @@ def recursive_dictionary_update(d, u):
 
 
 class DotDict(dict):
-    def __init__(self, d):
+    """
+    Custom dictionary format that allows member access by using dot notation:
+    eg - dict.key.subkey
+    """
+
+    def __init__(self, d, **kwargs):
+        super().__init__(**kwargs)
         for k, v in d.items():
             if isinstance(v, collections.Mapping):
                 v = DotDict(v)
@@ -91,21 +143,27 @@ class DotDict(dict):
 
 @asyncio.coroutine
 def detect_overrides(cls, obj):
+    """
+    For each active plugin, check if it wield a packet hook. If it does, add
+    make a not of it. Hand back all hooks for a specific packet type when done.
+    """
     res = set()
     for key, value in cls.__dict__.items():
         if isinstance(value, classmethod):
             value = getattr(cls, key).__func__
         if isinstance(value, (FunctionType, classmethod)):
             meth = getattr(obj, key)
-            if not meth.__func__ is value:
+            if meth.__func__ is not value:
                 res.add(key)
     return res
 
 
 class BiDict(dict):
-    """A case-insensitive bidirectional dictionary that supports integers."""
-
+    """
+    A case-insensitive bidirectional dictionary that supports integers.
+    """
     def __init__(self, d, **kwargs):
+        super().__init__(**kwargs)
         for k, v in d.items():
             self[k] = v
 
@@ -138,11 +196,6 @@ class AsyncBytesIO(io.BytesIO):
     easier to interface with functions designed to work on coroutines without
     having to monkey around with a type check and extra futures.
     """
-
-    @asyncio.coroutine
-    def read(self, *args, **kwargs):
-        return super().read(*args, **kwargs)
-
     @asyncio.coroutine
     def read(self, *args, **kwargs):
         return super().read(*args, **kwargs)
@@ -150,6 +203,12 @@ class AsyncBytesIO(io.BytesIO):
 
 @asyncio.coroutine
 def read_vlq(bytestream):
+    """
+    Give a bytestream, extract the leading Variable Length Quantity (VLQ).
+
+    We have to do this as a stream, since we don't know how long a VLQ is
+    until we observe its end.
+    """
     d = b""
     v = 0
     while True:
@@ -166,6 +225,9 @@ def read_vlq(bytestream):
 
 @asyncio.coroutine
 def read_signed_vlq(reader):
+    """
+    Manipulate the read-in VLQ to account for signed-ness.
+    """
     v, d = yield from read_vlq(reader)
     if (v & 1) == 0x00:
         return v >> 1, d
@@ -174,16 +236,29 @@ def read_signed_vlq(reader):
 
 
 def extractor(*args):
-    # This extracts quoted arguments and puts them as a single argument in the
-    # passed iterator. It's not elegant, but it's the best way to do it
-    # as far as I can tell. My regex-fu isn't strong though,
-    # so if someone can come up with a better way, great.
+    """
+    Extracts quoted arguments and puts them as a single argument in the
+    passed iterator.
+    """
+    # It's not elegant, but it's the best way to do it as far as I can tell.
+    # My regex-fu isn't strong though, so if someone can come up with a
+    # better way, great.
     x = re.split(r"(?:([^\"]\S*)|\"(.+?)\")\s*", " ".join(*args))
     return [x for x in filter(None, x)]
 
 
 @asyncio.coroutine
 def read_packet(reader, direction):
+    """
+    Given an interface to read from (reader) read the next packet that comes
+    in. Determine the packet's type, decode its contents, and track the
+    direction it is flowing. Store this all in a packet object, and return it
+    for further processing down the line.
+
+    :param reader: Stream from which to read the packet.
+    :param direction: Destination for the packet (SERVER or CLIENT).
+    :return: Dictionary. Contains both raw and decoded versions of the packet.
+    """
     p = {}
     compressed = False
 
@@ -200,8 +275,11 @@ def read_packet(reader, direction):
     if not compressed:
         p['data'] = data
     else:
-        zobj = zlib.decompressobj()
-        p['data'] = zobj.decompress(data)
+        try:
+            zobj = zlib.decompressobj()
+            p['data'] = zobj.decompress(data)
+        except zlib.error as e:
+            raise asyncio.IncompleteReadError
 
     p['original_data'] = packet_type + packet_size_data + data
     p['direction'] = direction
@@ -209,32 +287,58 @@ def read_packet(reader, direction):
     return p
 
 
-def syntax(command, fn, command_prefix):
-    return "Syntax: %s%s %s" % (
+def get_syntax(command, fn, command_prefix):
+    """
+    Read back the syntax argument provided in a command's wrapper. Return it
+    in a printable format.
+
+    :param command: Command being called.
+    :param fn: Function which the command is wrapped around.
+    :param command_prefix: Prefix used for commands in chat.
+    :return: String. Syntax details of the target command.
+    """
+    return "Syntax: {}{} {!s}".format(
         command_prefix,
         command,
         fn.syntax)
 
 
-def send_message(protocol, *messages, **kwargs):
+def send_message(connection, *messages, **kwargs):
     """
-    Sends a message to a player on a protocol.
-    :param protocol: The protocol to send the message to.
+    Sends a message to a connected player.
+
+    :param connection: The connection to send the message to.
     :param messages: The message(s) to send.
-    :return: A future for the message sending.
+    :return: A Future for the message(s) being sent.
     """
-    return asyncio.Task(protocol.send_message(*messages, **kwargs))
+    return asyncio.ensure_future(connection.send_message(*messages, **kwargs))
 
 
-def broadcast(factory, *messages, **kwargs):
-    return asyncio.Task(factory.broadcast(*messages, **kwargs))
+def broadcast(connection, *messages, **kwargs):
+    """
+    Sends a message to all connected players.
+
+    :param connection: The connection from which the message came.
+    :param messages: The message(s) to send.
+    :return: A Future for the message(s) being sent.
+    """
+    return asyncio.ensure_future(
+        connection.factory.broadcast(*messages, **kwargs))
+
+
+def link_plugin_if_available(self, plugin):
+    if plugin in self.factory.plugin_manager.list_plugins().keys():
+        self.logger.debug("{} available.".format(plugin))
+        self.plugins[plugin] = \
+            self.factory.plugin_manager.list_plugins()[plugin]
 
 
 class Command:
     """
-    Defines a decorator that encapsulates a command in StarryPy3k
+    Defines a decorator that encapsulates a chat command. Provides a common
+    interface for all commands, including roles, documentation, usage syntax,
+    and aliases.
     """
-
     def __init__(self, *aliases, role=None, roles=None, doc=None, syntax=None):
         if syntax is None:
             syntax = ()
@@ -255,27 +359,36 @@ class Command:
         self.aliases = aliases
 
     def __call__(self, f):
-        def wrapped(s, data, protocol):
+        """
+        Whenever a command is called, its handling gets done here.
+
+        :param f: The function the Command decorator is wrapping.
+        :return: The now-wrapped command, with all the trappings.
+        """
+        def wrapped(s, data, connection):
             try:
                 for role in self.roles:
-                    if role not in protocol.player.roles:
+                    if role not in connection.player.roles:
                         raise PermissionError
-                return f(s, data, protocol)
+                return f(s, data, connection)
             except PermissionError:
-                send_message(protocol,
+                send_message(connection,
                              "You don't have permissions to do that.")
 
         wrapped._command = True
         wrapped._aliases = self.aliases
         wrapped.__doc__ = self.doc
         wrapped.roles = self.roles
-        wrapped.syntax = syntax
-        f.roles = self.roles
-        f.syntax = self.human_syntax
-        f.__doc__ = self.doc
+        wrapped.syntax = self.human_syntax
+        # f.roles = self.roles
+        # f.syntax = self.human_syntax
+        # f.__doc__ = self.doc
         return wrapped
 
 
 class StorageMixin:
+    """
+    Convenience class for adding access to a player's server-based storage.
+    """
     def __init__(self):
         self.storage = self.plugins.player_manager.get_storage(self)

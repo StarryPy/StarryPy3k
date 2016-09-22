@@ -32,9 +32,9 @@ class PluginManager:
         return self._plugins
 
     @asyncio.coroutine
-    def do(self, protocol, action: str, packet: dict):
+    def do(self, connection, action: str, packet: dict):
         """
-        Calls an action on all loaded plugins
+        Calls an action on all loaded plugins.
         """
         try:
             if ("on_%s" % action) in self._overrides:
@@ -42,7 +42,7 @@ class PluginManager:
                 send_flag = True
                 for plugin in self._plugins.values():
                     p = getattr(plugin, "on_%s" % action)
-                    if not (yield from p(packet, protocol)):
+                    if not (yield from p(packet, connection)):
                         send_flag = False
                 return send_flag
             else:
@@ -134,7 +134,8 @@ class PluginManager:
                 for plugin in to_load:
                     classes[name].plugins[plugin] = self._plugins[plugin]
             if len(ready) == 0:
-                raise ImportError("Unresolved dependencies found.")
+                raise ImportError("Unresolved dependencies found in: "
+                                  "{}".format(deps))
         self._resolved = True
 
     @asyncio.coroutine

@@ -1,10 +1,10 @@
 import asyncio
 import re
 
-from base_plugin import SimpleCommandPlugin
-from data_parser import PlayerWarp
 import packets
 import plugins.player_manager as player_manager
+from base_plugin import SimpleCommandPlugin
+from data_parser import PlayerWarp
 from pparser import build_packet
 from utilities import Command, send_message
 
@@ -32,9 +32,9 @@ class WarpPlugin(SimpleCommandPlugin):
 
     @Command("warp", role=Warp, doc="Warps a player to another player.",
              syntax=("[from player=self]", "(to player)"))
-    def warp(self, data, protocol):
+    def warp(self, data, connection):
         if len(data) == 1:
-            from_player = protocol.player
+            from_player = connection.player
             to_player = self.get_by_name(data[0], check_logged_in=True)
         elif len(data) == 2:
             from_player = self.get_by_name(data[0], check_logged_in=True)
@@ -44,14 +44,14 @@ class WarpPlugin(SimpleCommandPlugin):
         if (from_player is None) or (to_player is None):
             raise NameError("Couldn't find name.")
         yield from self.warp_player_to_player(from_player, to_player)
-        send_message(protocol, "Warped %s to %s." % (from_player.name,
+        send_message(connection, "Warped %s to %s." % (from_player.name,
                                                      to_player.name))
-        send_message(from_player.protocol,
-                     "%s has warped to you %s's ship." % (protocol.player.name,
+        send_message(from_player.connection,
+                     "%s has warped to you %s's ship." % (connection.player.name,
                                                           to_player.name))
-        send_message(to_player.protocol,
+        send_message(to_player.connection,
                      "%s has been warped to your ship by %s." %
-                     (from_player.name, protocol.player.name))
+                     (from_player.name, connection.player.name))
 
     @asyncio.coroutine
     def warp_player_to_player(self, from_player, to_player):
@@ -66,7 +66,7 @@ class WarpPlugin(SimpleCommandPlugin):
                                     player=to_player.name, x=0, y=0,
                                     z=0, planet=0, satellite=0))
         full = build_packet(id=packets.packets['player_warp'], data=wp)
-        yield from from_player.protocol.client_raw_write(full)
+        yield from from_player.connection.client_raw_write(full)
 
     @asyncio.coroutine
     def warp_ship_to_planet(self, from_player, to):

@@ -1,12 +1,12 @@
-from collections import OrderedDict
-import functools
-from io import BytesIO
-import io
-import struct
 import binascii
 import copy
+import functools
+import io
+import struct
+from collections import OrderedDict
+from io import BytesIO
 
-from utilities import DotDict
+from utilities import DotDict, WarpType, WarpWorldType
 
 
 #
@@ -107,8 +107,8 @@ class Struct(metaclass=MetaStruct):
                 string = BytesIO(string)
             string = io.BufferedReader(string)
 
-        # FIXME: Stream caching appears to be causing a parsing issue. Disabling
-        #  for now...
+        # FIXME: Stream caching appears to be causing a parsing issue.
+        # Disabling for now...
         # d = string.peek()
         # big_enough = len(d) > 1
         # if big_enough:
@@ -398,6 +398,118 @@ class StringSet(Struct):
         return c
 
 
+class CelestialCoordinates(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        world_x = SBInt32.parse(stream, ctx)
+        world_y = SBInt32.parse(stream, ctx)
+        world_z = SBInt32.parse(stream, ctx)
+        world_planet = SBInt32.parse(stream, ctx)
+        world_satellite = SBInt32.parse(stream, ctx)
+        return {"x": world_x,
+                "y": world_y,
+                "z": world_z,
+                "planet": world_planet,
+                "satellite": world_satellite}
+
+
+class WarpAction(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        warp_type = Byte.parse(stream, ctx)
+        d = {"warp_type": warp_type}
+
+        if warp_type == WarpType.TO_WORLD:
+            # warp_type 1
+            world_id = Byte.parse(stream, ctx)
+            d["world_id"] = world_id
+
+            if world_id == WarpWorldType.CELESTIAL_WORLD:
+                # world_id 1
+                d["celestial_coordinates"] = CelestialCoordinates.parse(stream,
+                                                                        ctx)
+                flag = Byte.parse(stream, ctx)
+                if flag == 1:
+                    d["teleporter"] = StarString.parse(stream, ctx)
+            elif world_id == WarpWorldType.PLAYER_WORLD:
+                # world_id 2
+                d["ship_id"] = UUID.parse(stream, ctx)
+                flag = Byte.parse(stream, ctx)
+                if flag == 2:
+                    d["pos_x"] = UBInt32.parse(stream, ctx)
+                    d["pos_y"] = UBInt32.parse(stream, ctx)
+            elif world_id == WarpWorldType.UNIQUE_WORLD:
+                # world_id 3
+                d["world_name"] = StarString.parse(stream, ctx)
+                d["instance_flag"] = Byte.parse(stream, ctx)
+                d["instance_id"] = UUID.parse(stream, ctx)
+                d["teleporter_flag"] = Byte.parse(stream, ctx)
+                d["teleporter"] = StarString.parse(stream, ctx)
+            elif world_id == WarpWorldType.MISSION_WORLD:
+                # world_id 4
+                d["world_name"] = StarString.parse(stream, ctx)
+
+        elif warp_type == WarpType.TO_PLAYER:
+            # warp_type 2
+            d["player_id"] = UUID.parse(stream, ctx)
+
+        elif warp_type == WarpType.TO_ALIAS:
+            # warp_type 3
+            d["alias_id"] = SBInt32.parse(stream, ctx)
+
+        return d
+
+    # @classmethod
+    # def _build(cls, obj, ctx: OrderedDotDict):
+    #     res = b''
+    #     res += Byte.build(obj["warp_type"])
+    #
+    #     return res
+
+
+class ChatHeader(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        mode = Byte.parse(stream, ctx)
+        if mode == 0 or mode == 1:
+            channel = StarString.parse(stream, ctx)
+            client_id = UBInt16.parse(stream, ctx)
+        else:
+            channel = ""
+            _ = Byte.parse(stream, ctx)
+            client_id = UBInt16.parse(stream, ctx)
+        return {"mode": mode,
+                "channel": channel,
+                "client_id": client_id}
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        res += Byte.build(obj["mode"])
+        if obj["mode"] == 0:
+            res += StarString.build(obj["channel"])
+            res += UBInt16.build(obj["client_id"])
+        else:
+            res += Byte.build(0)
+            res += UBInt16.build(obj["client_id"])
+        return res
+
+
+class ClientContextSet(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        d = {}
+        total_length = VLQ.parse(stream, ctx)
+        d["total_length"] = total_length
+        if total_length < 100:
+            sub_length = VLQ.parse(stream, ctx)
+        l = VLQ.parse(stream, ctx)
+        d["number_of_sets"] = l
+        for i in range(l):
+            d[i] = Variant.parse(stream, ctx)
+        return d
+
+
 class WorldChunks(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
@@ -406,10 +518,6 @@ class WorldChunks(Struct):
         c = []
         n = 0
         for _ in range(l):
-            # value1 = StarByteArray.parse(stream, ctx)
-            # sep = Byte.parse(stream, ctx)
-            # value2 = StarByteArray.parse(stream, ctx)
-            # c.append((value1, value2))
             v1 = VLQ.parse(stream, ctx)
             c1 = stream.read(v1)
             sep = Byte.parse(stream, ctx)
@@ -448,18 +556,19 @@ class SpawnCoordinates(Struct):
 #
 
 class ProtocolRequest(Struct):
-    """packet type: 9"""
+    """packet type: 0"""
     client_build = UBInt32
 
 
 class ProtocolResponse(Struct):
-    """packet type 0"""
+    """packet type 1"""
     server_response = Byte
 
 
 class ClientConnect(Struct):
     """packet type: 10"""
     asset_digest = StarByteArray
+    junk1 = Flag
     uuid = UUID
     name = StarString
     species = StarString
@@ -467,14 +576,14 @@ class ClientConnect(Struct):
     ship_level = UBInt32
     max_fuel = UBInt32
     # Junk means, I don't know what this value represents... <_<
-    junk1 = UBInt32
+    junk2 = UBInt32
     ship_upgrades = StringSet
     intro_complete = Byte
     account = StarString
 
 
 class ConnectSuccess(Struct):
-    """packet type: 2"""
+    """packet type: 3"""
     client_id = VLQ
     server_uuid = UUID
     planet_orbital_levels = SBInt32
@@ -487,7 +596,7 @@ class ConnectSuccess(Struct):
 
 
 class ConnectFailure(Struct):
-    """packet type: 3"""
+    """packet type: 4"""
     reason = StarString
 
 
@@ -497,24 +606,36 @@ class ClientDisconnectRequest(Struct):
 
 
 class ServerDisconnect(Struct):
-    """packet type: 11"""
+    """packet type: 2"""
     reason = StarString
 
 
 class ChatReceived(Struct):
-    """packet type: 5"""
-    mode = Byte
-    junk = Byte
-    client_id = UBInt16
+    """packet type: 6"""
+    header = ChatHeader
     name = StarString
-    channel = StarString
+    junk = Byte
     message = StarString
+
+
+class PlayerWarpResult(Struct):
+    """packet type: 9"""
+    warp_success = Flag
+    warp_action = WarpAction
 
 
 class PlayerWarp(Struct):
     """packet type: 13"""
     warp_type = Byte
-    everything_else = StarString
+
+
+class FlyShip(Struct):
+    """packet type: 14"""
+    world_x = SBInt32
+    world_y = SBInt32
+    world_z = SBInt32
+    world_planet = SBInt32
+    world_satellite = SBInt32
 
 
 class ChatSent(Struct):
@@ -547,6 +668,48 @@ class GiveItem(Struct):
     count = VLQ
     variant_type = Byte
     description = StarString
+
+
+class ClientContextUpdate(Struct):
+    """packet type: 17"""
+    contexts = ClientContextSet
+
+
+class EntityInteract(Struct):
+    """packet type: 37"""
+    source_id = UBInt32
+    source_x = BFloat32
+    source_y = BFloat32
+    target_id = UBInt32
+    target_x = BFloat32
+    target_y = BFloat32
+    request_id = UUID
+
+
+class SpawnEntity(Struct):
+    """packet type: 36"""
+    spawn_type = Byte
+    payload_size = VLQ
+    payload = StarString
+    payload_value = VLQ
+
+
+class EntityInteractResult(Struct):
+    """packet type: 28"""
+    interaction_type = UBInt32
+    target_id = UBInt32
+    entity_data = Variant
+    request_id = UUID
+
+
+class ModifyTileList(Struct):
+    """packet type: 32"""
+    brush_size = VLQ
+
+
+class StepUpdate(Struct):
+    """packet type: 51"""
+    heartbeat = VLQ
 
 
 class BasePacket(Struct):
