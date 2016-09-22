@@ -117,6 +117,8 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "This planet is not protected.")
         elif not self.is_owner(alias, location):
             send_message(connection, "You don't own this planet!")
+        elif location.locationtype() is "ShipWorld":
+            send_message(connection, "Can't unclaim your ship!")
         else:
             self.storage["owners"][alias].remove(str(location))
             if len(self.storage["owners"][alias]) == 0:
@@ -203,6 +205,9 @@ class Claims(StorageCommandPlugin):
         if target is not None:
             if not self.is_owner(alias, location):
                 send_message(connection, "You don't own this planet!")
+            elif location.locationtype() is "ShipWorld":
+                send_message(connection, "Can't transfer ownership of your "
+                                         "ship!")
             elif 'Registered' not in target.roles:
                 send_message(connection, "Target is not high enough rank to "
                                          "own a planet!")
