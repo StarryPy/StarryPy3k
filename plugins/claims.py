@@ -141,6 +141,8 @@ class Claims(StorageCommandPlugin):
                 protection = self.planet_protect.get_protection(location)
                 protection.add_builder(target)
                 try:
+                    send_message(connection, "Granted build access to player"
+                                             " {}.".format(target.alias))
                     yield from send_message(target.connection, "You've been "
                                                                "granted build "
                                                                "access on {}."
