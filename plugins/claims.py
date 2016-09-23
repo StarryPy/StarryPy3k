@@ -80,6 +80,28 @@ class Claims(StorageCommandPlugin):
         except AttributeError:
             pass
 
+    def _pretty_world_name(self, location):
+        """
+        Returns a more nicely formatted version of a raw world name.
+        Currently only works with CelestialWorld names.
+
+        :param location: String: The name to be formatted.
+        :return: String: A formatted version of the name.
+        """
+        loc = location.split(":")
+        if loc.pop(0) != "CelestialWorld":
+            return location
+        else:
+            print(loc)
+            loc[0] = "X: " + loc[0]
+            loc[1] = "Y: " + loc[1]
+            print(loc)
+            loc.remove(loc[2])
+            print(loc)
+            if loc[3] is "0":
+                loc.remove(loc[3])
+            return " ".join(loc)
+
     @Command("claim",
              role=Registered,
              doc="Claim a planet to be protected.")
@@ -240,4 +262,4 @@ class Claims(StorageCommandPlugin):
         alias = connection.player.alias
         send_message(connection, "You've claimed the following worlds:")
         for location in self.storage["owners"][alias]:
-            send_message(connection, location)
+            send_message(connection, self._pretty_world_name(location))
