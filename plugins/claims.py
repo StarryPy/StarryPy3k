@@ -91,19 +91,16 @@ class Claims(StorageCommandPlugin):
         elif alias not in self.storage["owners"]:
             self.storage["owners"][alias] = []
             self.storage["owners"][alias].append(str(location))
-            print(self.storage["owners"][alias])
             self.planet_protect.add_protection(location, connection.player)
             send_message(connection, "Successfully claimed planet {}."
                          .format(location))
         else:
             if len(self.storage["owners"][alias]) >= self.max_claims:
-                print(self.storage["owners"][alias])
                 send_message(connection, "You have reached the maximum "
                                          "number of claimed planets.")
             else:
                 self.storage["owners"][alias].append(str(location))
                 self.planet_protect.add_protection(location, connection.player)
-                print(self.storage["owners"][alias])
                 send_message(connection, "Successfully claimed planet {}."
                              .format(location))
 
@@ -153,7 +150,7 @@ class Claims(StorageCommandPlugin):
                                  .format(target.alias))
         else:
             send_message(connection, "Player {} could not be found."
-                         .format(target.alias))
+                         .format(" ".join(data)))
 
     @Command("rm_helper",
              role=Registered,
@@ -176,7 +173,7 @@ class Claims(StorageCommandPlugin):
                              .format(target.alias, location))
         else:
             send_message(connection, "Player {} could not be found."
-                         .format(target.alias))
+                         .format(" ".join(data)))
 
     @Command("helper_list",
              role=Registered,
@@ -234,4 +231,13 @@ class Claims(StorageCommandPlugin):
                                  .format(target.alias))
         else:
             send_message(connection, "Player {} could not be found."
-                         .format(target))
+                         .format(" ".join(data)))
+
+    @Command("list_claims",
+             role=Registered,
+             doc="List all of the planets you've claimed.")
+    def _list_claims(self, data, connection):
+        alias = connection.player.alias
+        send_message(connection, "You've claimed the following worlds:")
+        for location in self.storage["owners"][alias]:
+            send_message(connection, location)
