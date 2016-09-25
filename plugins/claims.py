@@ -28,6 +28,7 @@ class Claims(StorageCommandPlugin):
         super().activate()
         if "owners" not in self.storage:
             self.storage["owners"] = {}
+        # noinspection PyUnresolvedReferences
         self.max_claims = self.config.get_plugin_config(self.name)[
             "max_claims_per_person"]
 
@@ -80,6 +81,7 @@ class Claims(StorageCommandPlugin):
         except AttributeError:
             pass
 
+    # noinspection PyMethodMayBeStatic
     def _pretty_world_name(self, location):
         """
         Returns a more nicely formatted version of a raw world name.
@@ -92,12 +94,9 @@ class Claims(StorageCommandPlugin):
         if loc.pop(0) != "CelestialWorld":
             return location
         else:
-            print(loc)
             loc[0] = "X: " + loc[0]
             loc[1] = "Y: " + loc[1]
-            print(loc)
             loc.remove(loc[2])
-            print(loc)
             if loc[3] is "0":
                 loc.remove(loc[3])
             return " ".join(loc)
@@ -232,10 +231,14 @@ class Claims(StorageCommandPlugin):
             elif 'Registered' not in target.roles:
                 send_message(connection, "Target is not high enough rank to "
                                          "own a planet!")
-                print(target.roles)
             else:
                 if target.alias not in self.storage["owners"]:
                     self.storage["owners"][target.alias] = []
+                if len(self.storage["owners"][target.alias]) >= \
+                        self.max_claims:
+                    send_message(connection, "The target player has reached "
+                                             "the maximum number of claims!")
+                    return
                 self.storage["owners"][target.alias].append(str(location))
                 self.storage["owners"][alias].remove(str(location))
                 if len(self.storage["owners"][alias]) == 0:
