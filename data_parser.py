@@ -469,18 +469,21 @@ class WarpAction(Struct):
                     res += Byte.build(1)
                     res += StarString.build(obj["teleporter"])
             elif obj["world_id"] == WarpWorldType.PLAYER_WORLD:
-                res += UUID.build(bytes(obj["ship_id"]))
+                res += UUID.build(binascii.unhexlify(obj["ship_id"]))
                 if obj["flag"] == 2:
                     res += UBInt32.build(obj["pos_x"])
                     res += UBInt32.build(obj["pos_y"])
+                res += Byte.build(0)
             elif obj["world_id"] == WarpWorldType.UNIQUE_WORLD:
                 res += StarString.build(obj["world_name"])
                 res += Byte.build(obj["instance_flag"])
-                res += UUID.build(bytes(obj["instance_id"]))
+                res += UUID.build(binascii.unhexlify(obj["instance_id"]))
                 res += Byte.build(obj["teleporter_flag"])
                 res += StarString.build(obj["teleporter"])
+                res += Byte.build(0)
             elif obj["world_id"] == WarpWorldType.MISSION_WORLD:
                 res += StarString.build(obj["world_name"])
+                res += Byte.build(0)
 
         elif obj["warp_type"] == WarpType.TO_PLAYER:
             res += UUID.build(binascii.unhexlify(obj["player_id"]))
@@ -741,7 +744,6 @@ class BasePacket(Struct):
     def _build(cls, obj, ctx: OrderedDotDict):
         res = b''
         res += Byte.build(obj['id'], ctx)
-        print(obj["data"])
         v = len(obj['data'])
         if 'compressed' in ctx and ctx['compressed']:
             v = -abs(v)
