@@ -28,6 +28,7 @@ class Claims(StorageCommandPlugin):
         super().activate()
         if "owners" not in self.storage:
             self.storage["owners"] = {}
+        # noinspection PyUnresolvedReferences
         self.max_claims = self.config.get_plugin_config(self.name)[
             "max_claims_per_person"]
 
@@ -80,6 +81,26 @@ class Claims(StorageCommandPlugin):
         except AttributeError:
             pass
 
+    # noinspection PyMethodMayBeStatic
+    def _pretty_world_name(self, location):
+        """
+        Returns a more nicely formatted version of a raw world name.
+        Currently only works with CelestialWorld names.
+
+        :param location: String: The name to be formatted.
+        :return: String: A formatted version of the name.
+        """
+        loc = location.split(":")
+        if loc.pop(0) != "CelestialWorld":
+            return location
+        else:
+            loc[0] = "X: " + loc[0]
+            loc[1] = "Y: " + loc[1]
+            loc.remove(loc[2])
+            if loc[3] is "0":
+                loc.remove(loc[3])
+            return " ".join(loc)
+
     @Command("claim",
              role=Registered,
              doc="Claim a planet to be protected.")
@@ -91,19 +112,16 @@ class Claims(StorageCommandPlugin):
         elif alias not in self.storage["owners"]:
             self.storage["owners"][alias] = []
             self.storage["owners"][alias].append(str(location))
-            print(self.storage["owners"][alias])
             self.planet_protect.add_protection(location, connection.player)
             send_message(connection, "Successfully claimed planet {}."
                          .format(location))
         else:
             if len(self.storage["owners"][alias]) >= self.max_claims:
-                print(self.storage["owners"][alias])
                 send_message(connection, "You have reached the maximum "
                                          "number of claimed planets.")
             else:
                 self.storage["owners"][alias].append(str(location))
                 self.planet_protect.add_protection(location, connection.player)
-                print(self.storage["owners"][alias])
                 send_message(connection, "Successfully claimed planet {}."
                              .format(location))
 
@@ -117,6 +135,8 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "This planet is not protected.")
         elif not self.is_owner(alias, location):
             send_message(connection, "You don't own this planet!")
+        elif location.locationtype() is "ShipWorld":
+            send_message(connection, "Can't unclaim your ship!")
         else:
             self.storage["owners"][alias].remove(str(location))
             if len(self.storage["owners"][alias]) == 0:
@@ -139,6 +159,8 @@ class Claims(StorageCommandPlugin):
                 protection = self.planet_protect.get_protection(location)
                 protection.add_builder(target)
                 try:
+                    send_message(connection, "Granted build access to player"
+                                             " {}.".format(target.alias))
                     yield from send_message(target.connection, "You've been "
                                                                "granted build "
                                                                "access on {}."
@@ -149,7 +171,7 @@ class Claims(StorageCommandPlugin):
                                  .format(target.alias))
         else:
             send_message(connection, "Player {} could not be found."
-                         .format(target.alias))
+                         .format(" ".join(data)))
 
     @Command("rm_helper",
              role=Registered,
@@ -172,7 +194,7 @@ class Claims(StorageCommandPlugin):
                              .format(target.alias, location))
         else:
             send_message(connection, "Player {} could not be found."
-                         .format(target.alias))
+                         .format(" ".join(data)))
 
     @Command("helper_list",
              role=Registered,
@@ -203,13 +225,20 @@ class Claims(StorageCommandPlugin):
         if target is not None:
             if not self.is_owner(alias, location):
                 send_message(connection, "You don't own this planet!")
+            elif location.locationtype() is "ShipWorld":
+                send_message(connection, "Can't transfer ownership of your "
+                                         "ship!")
             elif 'Registered' not in target.roles:
                 send_message(connection, "Target is not high enough rank to "
                                          "own a planet!")
-                print(target.roles)
             else:
                 if target.alias not in self.storage["owners"]:
                     self.storage["owners"][target.alias] = []
+                if len(self.storage["owners"][target.alias]) >= \
+                        self.max_claims:
+                    send_message(connection, "The target player has reached "
+                                             "the maximum number of claims!")
+                    return
                 self.storage["owners"][target.alias].append(str(location))
                 self.storage["owners"][alias].remove(str(location))
                 if len(self.storage["owners"][alias]) == 0:
@@ -227,4 +256,13 @@ class Claims(StorageCommandPlugin):
                                  .format(target.alias))
         else:
             send_message(connection, "Player {} could not be found."
-                         .format(target))
+                         .format(" ".join(data)))
+
+    @Command("list_claims",
+             role=Registered,
+             doc="List all of the planets you've claimed.")
+    def _list_claims(self, data, connection):
+        alias = connection.player.alias
+        send_message(connection, "You've claimed the following worlds:")
+        for location in self.storage["owners"][alias]:
+            send_message(connection, self._pretty_world_name(location))
