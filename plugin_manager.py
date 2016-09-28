@@ -32,13 +32,13 @@ class PluginManager:
         return self._plugins
 
     @asyncio.coroutine
-    def do(self, connection, action: str, packet: dict):
+    def do(self, connection, action: str, packet: dict, direction):
         """
         Calls an action on all loaded plugins.
         """
         try:
             if ("on_%s" % action) in self._overrides:
-                packet = yield from self._packet_parser.parse(packet)
+                packet = yield from self._packet_parser.parse(packet, direction)
                 send_flag = True
                 for plugin in self._plugins.values():
                     p = getattr(plugin, "on_%s" % action)

@@ -71,7 +71,7 @@ class PacketParser:
         self._reaper = self.loop.create_task(self._reap())
 
     @asyncio.coroutine
-    def parse(self, packet):
+    def parse(self, packet, direction):
         """
         Given a packet preped packet from the stream, parse it down to its
         parts. First check if the packet is one we've seen before; if it is,
