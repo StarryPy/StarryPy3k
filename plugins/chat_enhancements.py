@@ -118,10 +118,8 @@ class ChatEnhancements(SimpleCommandPlugin):
                                            "^reset;")
         else:
             timestamp = ""
-        player = self.plugins['player_manager'].get_player_by_alias(
-            connection.player.alias)
         try:
-            sender = timestamp + self._colored_name(player)
+            sender = timestamp + self._colored_name(connection.player)
         except AttributeError as e:
             self.logger.warning(
                 "AttributeError in colored_name: {}".format(str(e)))

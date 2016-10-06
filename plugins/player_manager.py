@@ -764,6 +764,8 @@ class PlayerManager(SimpleCommandPlugin):
                 p.species = species
             elif p.species != species:
                 p.species = species
+            if p.name != name:
+                p.name = name
             return p
         else:
             if self.get_player_by_name(alias) is not None:
