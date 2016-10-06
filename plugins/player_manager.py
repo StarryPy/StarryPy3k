@@ -621,7 +621,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection: Connection of target player to be banned.
         :return: Null
         """
-        p = self.get_player_by_name(name)
+        p = self.get_player_by_alias(name)
         if p is not None:
             self.ban_by_ip(p.ip, reason, connection)
         else:
