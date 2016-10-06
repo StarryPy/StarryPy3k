@@ -10,7 +10,7 @@ Author: medeor413
 import asyncio
 
 from base_plugin import StorageCommandPlugin
-from plugins.player_manager import Registered
+from plugins.player_manager import Registered, Planet
 from utilities import Command, send_message
 
 
@@ -99,6 +99,8 @@ class Claims(StorageCommandPlugin):
             loc.remove(loc[2])
             if loc[3] is "0":
                 loc.remove(loc[3])
+            else:
+                loc[3] = chr(int(loc[3]) + ord("a"))
             return " ".join(loc)
 
     @Command("claim",
@@ -109,6 +111,8 @@ class Claims(StorageCommandPlugin):
         alias = connection.player.alias
         if self.planet_protect.check_protection(location):
             send_message(connection, "This location is already protected.")
+        elif not str(location).startswith("CelestialWorld"):
+            send_message(connection, "This location cannot be claimed.")
         elif alias not in self.storage["owners"]:
             self.storage["owners"][alias] = []
             self.storage["owners"][alias].append(str(location))
