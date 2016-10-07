@@ -555,10 +555,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param player: Player to check rank of.
         :return: Int: A number representing the highest rank.
         """
-        # Owner isn't properly listed in the player's roles, so check the
-        # owner uuid as well.
-        if player.check_role(Owner) or \
-           player.uuid == self.plugin_config.owner_uuid:
+        if player.check_role(Owner):
             return 5
         elif player.check_role(SuperAdmin):
             return 4
@@ -759,7 +756,7 @@ class PlayerManager(SimpleCommandPlugin):
             if p.logged_in:
                 raise ValueError("Player is already logged in.")
             if uuid == self.plugin_config.owner_uuid:
-                p.roles = {x.__name__ for x in Owner.roles}
+                p.roles = {x.__name__ for x in Owner.roles} | {Owner.__name__}
             if not hasattr(p, "species"):
                 p.species = species
             elif p.species != species:
@@ -773,7 +770,7 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.info("Adding new player to database: {} (UUID:{})"
                              "".format(alias, uuid))
             if uuid == self.plugin_config.owner_uuid:
-                roles = {x.__name__ for x in Owner.roles}
+                roles = {x.__name__ for x in Owner.roles} | {Owner.__name__}
             else:
                 roles = {x.__name__ for x in Guest.roles}
             new_player = Player(uuid, species, name, alias, last_seen, roles, logged_in,
@@ -1011,8 +1008,8 @@ class PlayerManager(SimpleCommandPlugin):
                 raise LookupError("Can't change roles of {}, you do "
                                   "not outrank them!".format(alias))
             p.roles = set()
-            ro = [x for x in Owner.roles if
-                  x.__name__.lower() == role.lower()][0]
+            ro = [x for x in Owner.roles if x.__name__.lower() ==
+                  role.lower()][0]
             self.add_role(p, ro)
             send_message(connection,
                          "{} has been given the role {}.".format(
