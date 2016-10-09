@@ -46,8 +46,15 @@ class Shutdown(SuperAdmin):
 class GeneralCommands(SimpleCommandPlugin):
     name = "general_commands"
     depends = ["command_dispatcher", "player_manager"]
-
+    default_config = {"maintenance_message": "This server is currently in "
+                                             "maintenance mode and is not "
+                                             "accepting new connections."}
     # Helper functions - Used by commands
+    def activate(self):
+        super().activate()
+        self.maintenance = False
+        self.rejection_message = self.config.get_plugin_config(self.name)[
+            "maintenance_message"]
 
     def generate_whois(self, target):
         """
@@ -76,6 +83,18 @@ class GeneralCommands(SimpleCommandPlugin):
                     target.team_id,
                     target.location,
                     target.last_seen))
+
+    def on_connect_success(self, data, connection):
+        if self.maintenance and "SuperAdmin" not in connection.player.roles:
+            fail = data_parser.ConnectFailure.build(dict(
+                reason=self.rejection_message))
+            pkt = pparser.build_packet(packets.packets['connect_failure'],
+                                       fail)
+            yield from connection.raw_write(pkt)
+            print("Rejection message sent. Pkt: {}".format(fail))
+            return False
+        else:
+            return True
 
     # Commands - In-game actions that can be performed
 
@@ -277,3 +296,18 @@ class GeneralCommands(SimpleCommandPlugin):
         # sure how to make it better...
         self.logger.warning("Shutting down server now.")
         sys.exit()
+
+    @Command("maintenance_mode",
+             role=SuperAdmin,
+             doc="Toggle maintenance mode on the server. While in "
+                 "maintenance mode, the server will reject all new "
+                 "connection.")
+    def _maintenance(self, data, connection):
+        if self.maintenance:
+            self.maintenance = False
+            broadcast(self, "^red;NOTICE: Maintence mode disabled. "
+                            "^reset;New connections are allowed.")
+        else:
+            self.maintenance = True
+            broadcast(self, "^red;NOTICE: The server is now in maintenance "
+                            "mode. ^reset;No additional clients can connect.")
