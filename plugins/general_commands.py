@@ -66,6 +66,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 "UUID: ^yellow;{}^green;\n"
                 "IP address: ^cyan;{}^green;\n"
                 "Team ID: ^cyan;{}^green;\n"
+                "Current location: ^yellow;{}^green;"
                 "Current location: ^yellow;{}^green;".format(
                     target.alias, l,
                     target.name,
@@ -73,7 +74,8 @@ class GeneralCommands(SimpleCommandPlugin):
                     target.uuid,
                     target.ip,
                     target.team_id,
-                    target.location))
+                    target.location,
+                    target.last_seen))
 
     # Commands - In-game actions that can be performed
 
