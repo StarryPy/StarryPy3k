@@ -73,7 +73,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 "UUID: ^yellow;{}^green;\n"
                 "IP address: ^cyan;{}^green;\n"
                 "Team ID: ^cyan;{}^green;\n"
-                "Current location: ^yellow;{}^green;"
+                "Current location: ^yellow;{}^green;\n"
                 "Last seen: ^yellow;{}^green;".format(
                     target.alias, l,
                     target.name,
