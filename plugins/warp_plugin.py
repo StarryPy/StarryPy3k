@@ -63,7 +63,7 @@ class WarpPlugin(SimpleCommandPlugin):
         full = build_packet(packets.packets['player_warp'], wp)
         yield from from_player.connection.client_raw_write(full)
 
-    @Command("warp", "tp",
+    @Command("tp",
              role=Warp,
              doc="Warps a player to another player.",
              syntax=("[from player=self]", "(to player)"))
