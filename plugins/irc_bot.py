@@ -332,7 +332,8 @@ class IRCPlugin(BasePlugin):
                                                        self.connection,
                                                        to_parse)
         else:
-            yield from self.bot_write(target, "Command not found.")
+            yield from self.bot_write("Command \"{}\" not found.".format(
+                                      command), target)
 
     @asyncio.coroutine
     def update_ops(self):
