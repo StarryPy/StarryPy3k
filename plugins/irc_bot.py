@@ -325,7 +325,11 @@ class IRCPlugin(BasePlugin):
         self.connection.player.roles = self.connection.player.guest
         if mask.split("!")[0] in self.ops:
             self.connection.player.roles = self.connection.player.owner
-        if command in self.dispatcher.commands:
+        if command.startswith(".") or command.startswith(self.prefix):
+            # It's probably not meant to be a command
+            nick = mask.split("!")[0]
+            yield from self.send_message("." + data, nick)
+        elif command in self.dispatcher.commands:
             # Only handle commands that work from IRC
             if command in ('who', 'help'):
                 yield from self.dispatcher.run_command(command,
