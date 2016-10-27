@@ -466,6 +466,8 @@ class PlayerManager(SimpleCommandPlugin):
         alias = non_ascii_strip.sub("", alias)
         multi_whitespace_strip = re.compile("[\s]{2,}")
         alias = multi_whitespace_strip.sub(" ", alias)
+        trailing_leading_whitespace_strip = re.compile("^[ \s]+|[ \s]+$")
+        alias = trailing_leading_whitespace_strip.sub("", alias)
         match_non_whitespace = re.compile("[\S]")
         if match_non_whitespace.search(alias) is None:
             return None
