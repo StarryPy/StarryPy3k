@@ -335,6 +335,9 @@ class IRCPlugin(BasePlugin):
                 yield from self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)
+            else:
+                yield from self.bot_write("Command \"{}\" is not usable from "
+                                          "IRC.".format(command))
         else:
             yield from self.bot_write("Command \"{}\" not found.".format(
                                       command), target)
