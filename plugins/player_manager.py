@@ -765,6 +765,9 @@ class PlayerManager(SimpleCommandPlugin):
                 p.species = species
             if p.name != name:
                 p.name = name
+                p.alias = self.clean_name(name)
+                if p.alias is None:
+                    p.alias = uuid[0:4]
             return p
         else:
             if self.get_player_by_name(alias) is not None:
