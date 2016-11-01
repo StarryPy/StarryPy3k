@@ -330,11 +330,7 @@ class UUID(Struct):
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
         res = b''
-        if obj:
-            res += Flag.build(True)
-            res += obj
-        else:
-            res += Flag.build(False)
+        res += obj
         return res
 
 
@@ -459,12 +455,43 @@ class WarpAction(Struct):
 
         return d
 
-    # @classmethod
-    # def _build(cls, obj, ctx: OrderedDotDict):
-    #     res = b''
-    #     res += Byte.build(obj["warp_type"])
-    #
-    #     return res
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        res += Byte.build(obj["warp_type"])
+
+        if obj["warp_type"] == WarpType.TO_WORLD:
+            res += Byte.build(obj["world_id"])
+
+            if obj["world_id"] == WarpWorldType.CELESTIAL_WORLD:
+                res += CelestialCoordinates.build(obj["celestial_coordinates"])
+                if obj["flag"] == 1:
+                    res += Byte.build(1)
+                    res += StarString.build(obj["teleporter"])
+            elif obj["world_id"] == WarpWorldType.PLAYER_WORLD:
+                res += UUID.build(binascii.unhexlify(obj["ship_id"]))
+                if obj["flag"] == 2:
+                    res += UBInt32.build(obj["pos_x"])
+                    res += UBInt32.build(obj["pos_y"])
+                res += Byte.build(0)
+            elif obj["world_id"] == WarpWorldType.UNIQUE_WORLD:
+                res += StarString.build(obj["world_name"])
+                res += Byte.build(obj["instance_flag"])
+                res += UUID.build(binascii.unhexlify(obj["instance_id"]))
+                res += Byte.build(obj["teleporter_flag"])
+                res += StarString.build(obj["teleporter"])
+                res += Byte.build(0)
+            elif obj["world_id"] == WarpWorldType.MISSION_WORLD:
+                res += StarString.build(obj["world_name"])
+                res += Byte.build(0)
+
+        elif obj["warp_type"] == WarpType.TO_PLAYER:
+            res += UUID.build(binascii.unhexlify(obj["player_id"]))
+
+        elif obj["warp_type"] == WarpType.TO_ALIAS:
+            res += SBInt32.build(obj["alias_id"])
+
+        return res
 
 
 class ChatHeader(Struct):
@@ -626,7 +653,7 @@ class PlayerWarpResult(Struct):
 
 class PlayerWarp(Struct):
     """packet type: 13"""
-    warp_type = Byte
+    warp_action = WarpAction
 
 
 class FlyShip(Struct):

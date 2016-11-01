@@ -28,6 +28,13 @@ Note: This document is likely to change often, as well as become outdated quickl
 ***Registered User Commands***
 
 - /nick
+- /claim
+- /unclaim
+- /add_helper
+- /rm_helper
+- /change_owner
+- /helper_list
+- /list_claims
 
 ***Moderator Commands***
 
@@ -40,6 +47,8 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /show_spawn
 - /unmute
 - /modchat , /m
+- /warp , /tp
+- /tps
 
 ***Admin Commands***
 
@@ -54,15 +63,12 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /give , /item , /give_item
 - /set_poi
 - /del_poi
+- /grant , /promote , /revoke , /demote
 
 ***SuperAdmin Commands***
 
 - /set_spawn
 - /del_player
-
-***Owner Commands***
-
-- /grant , /promote
 
 ## Commands by Plugin
 
@@ -177,7 +183,7 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
      - **Description:** Lists all players in the player database.
 
   - /grant (Role) (Username)
-     - **Role:** Owner
+     - **Role:** Admin
      - **Description:** Grant a role to a player.
      - **Alias:** /promote
      - Roles can be either part of the hierarchy (moderator, admin, etc...) or command-specific (/kick, /set_motd, etc...)
@@ -348,11 +354,11 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
     - **Role:** Registered*
     - **Description:** Unclaim and unprotect the planet you're standing on.
 
-  - /add_helper
+  - /add_helper (username)
     - **Role:** Registered*
     - **Description:** Add someone to the protected list of your planet.
 
-  - /rm_helper
+  - /rm_helper (username)
     - **Role:** Registered*
     - **Description:** Remove someone from the protected list of your planet.
 
@@ -360,11 +366,30 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
     - **Role:** Registered*
     - **Description:** List all of the people allowed to build on this planet.
 
-  - /change_owner
+  - /change_owner (username)
     - **Role:** Registered*
     - **Description:** Transfer ownership of the planet to another person.
+    
+  - /list_claims
+    - **Role:** Registered
+    - **Description:** List all planets the player is owner of.
 
-  - Note: All of the commands except /claim require the user to be the owner of the planet.
+  - Note: All of the commands except /claim and /list_helper require the user to be the owner of the planet.
+
+#### Warp
+
+- ***Depend on:***
+  - Command Dispatcher, Player Manager
+  
+- ***Commands Provided***
+  - /warp [from player] (to player)
+    - **Role:** Moderator
+    - **Description:** Warps the specified from player, or self if none, to the specified to player.
+    - **Alias:** /tp
+    
+  - /tps [from player] (to player)
+    - **Role:** Moderator
+    - **Description:** Warps the specified from player, or self if none, to the specified to player's ship.
 
 #### Planet Backups
 
