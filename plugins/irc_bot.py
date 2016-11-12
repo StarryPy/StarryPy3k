@@ -15,7 +15,7 @@ import irc3
 
 from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
-from utilities import ChatSendMode, ChatReceiveMode
+from utilities import ChatSendMode, ChatReceiveMode, link_plugin_if_available
 
 
 # Roles
@@ -258,18 +258,27 @@ class IRCPlugin(BasePlugin):
                 message = " ".join(message.split()[1:])[:-1]
                 # Strip the CTCP metadata from the beginning and end
                 # Format it like a /me is in IRC
-                yield from (
-                    self.factory.broadcast("< ^orange;IRC^reset; > ^green;-*- "
-                                           "{} {}".format(nick, message),
-                                           mode=ChatReceiveMode.BROADCAST)
-                )
+
                 if self.config.get_plugin_config(self.name)["log_irc"]:
                     self.logger.info(" -*- " + nick + " " + message)
+                if link_plugin_if_available(self, "discord_bot"):
+                    discord = self.plugins['discord_bot']
+                    asyncio.ensure_future(discord.bot.send_message(discord.bot.get_channel(
+                        discord.channel), "-*- {} {}".format(nick, message)))
+                yield from self.factory.broadcast("< ^orange;IRC^reset; > "
+                                                  "^green;-*- {} {}".format(
+                                                                     nick, message),
+                                                  mode=ChatReceiveMode.BROADCAST)
         else:
-            yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
-                                              "{}".format(nick, message))
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("<" + nick + "> " + message)
+            if link_plugin_if_available(self, "discord_bot"):
+                discord = self.plugins['discord_bot']
+                asyncio.ensure_future(discord.bot_write("<IRC> **<{}>** {}"
+                                                        .format(nick, message)))
+            yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
+                                          "{}".format(nick, message),
+                                              mode=ChatReceiveMode.BROADCAST)
 
     @asyncio.coroutine
     def announce_join(self, connection):
@@ -325,22 +334,14 @@ class IRCPlugin(BasePlugin):
         self.connection.player.roles = self.connection.player.guest
         if mask.split("!")[0] in self.ops:
             self.connection.player.roles = self.connection.player.owner
-        if command.startswith(".") or command.startswith(self.prefix):
-            # It's probably not meant to be a command
-            nick = mask.split("!")[0]
-            yield from self.send_message("." + data, nick)
-        elif command in self.dispatcher.commands:
+        if command in self.dispatcher.commands:
             # Only handle commands that work from IRC
             if command in ('who', 'help'):
                 yield from self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)
-            else:
-                yield from self.bot_write("Command \"{}\" is not usable from "
-                                          "IRC.".format(command))
         else:
-            yield from self.bot_write("Command \"{}\" not found.".format(
-                                      command), target)
+            yield from self.bot_write(target, "Command not found.")
 
     @asyncio.coroutine
     def update_ops(self):
