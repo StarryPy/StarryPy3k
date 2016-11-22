@@ -224,9 +224,8 @@ class GeneralCommands(SimpleCommandPlugin):
                 return
             old_alias = connection.player.alias
             connection.player.alias = clean_alias
-            broadcast(self.factory,
-                      "{}'s name has been changed to {}".format(old_alias,
-                                                                clean_alias))
+            broadcast(connection, "{}'s name has been changed to {}".format(
+                old_alias, clean_alias))
 
     @Command("whoami",
              role=Whoami,
