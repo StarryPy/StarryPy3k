@@ -105,6 +105,7 @@ class Spawn(StorageCommandPlugin):
                          "You must be standing on a planet for this to work.")
             return
         self.storage["spawn"]["spawn_location"] = planet
+        send_message(connection, "Spawn planet set to {}.".format(str(planet)))
 
     @Command("show_spawn",
              role=Moderator,
