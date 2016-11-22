@@ -166,6 +166,8 @@ class Claims(StorageCommandPlugin):
         alias = connection.player.alias
         uuid = connection.player.uuid
         target = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        if not self.planet_protect.check_protection(location):
+            send_message(connection, "This location is not protected.")
         if target is not None:
             if not self.is_owner(uuid, location):
                 send_message(connection, "You don't own this planet!")
@@ -195,6 +197,8 @@ class Claims(StorageCommandPlugin):
         alias = connection.player.alias
         uuid = connection.player.uuid
         target = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        if not self.planet_protect.check_protection(location):
+            send_message(connection, "This location is not protected.")
         if target is not None:
             if not self.is_owner(uuid, location):
                 send_message(connection, "You don't own this planet!")
@@ -218,11 +222,9 @@ class Claims(StorageCommandPlugin):
         uuid = connection.player.uuid
         location = connection.player.location
         if not self.planet_protect.check_protection(location):
-            send_message(connection,
-                         "This location is not protected.")
+            send_message(connection, "This location is not protected.")
         elif not self.is_owner(uuid, location):
-            send_message(connection,
-                         "You don't own this planet!")
+            send_message(connection, "You don't own this planet!")
         else:
             protection = self.planet_protect.get_protection(location)
             players = ", ".join(protection.get_builders())
@@ -237,6 +239,8 @@ class Claims(StorageCommandPlugin):
         uuid = connection.player.uuid
         location = connection.player.location
         target = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        if not self.planet_protect.check_protection(location):
+            send_message(connection, "This location is not protected.")
         if target is not None:
             if not self.is_owner(uuid, location):
                 send_message(connection, "You don't own this planet!")
@@ -279,6 +283,9 @@ class Claims(StorageCommandPlugin):
              doc="List all of the planets you've claimed.")
     def _list_claims(self, data, connection):
         uuid = connection.player.uuid
-        send_message(connection, "You've claimed the following worlds:")
-        for location in self.storage["owners"][uuid]:
-            send_message(connection, self._pretty_world_name(location))
+        if self.storage["owners"][uuid]:
+            send_message(connection, "You've claimed the following worlds:")
+            for location in self.storage["owners"][uuid]:
+                send_message(connection, self._pretty_world_name(location))
+        else:
+            send_message(connection, "You haven't claimed any worlds.")
