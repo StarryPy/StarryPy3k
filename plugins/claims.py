@@ -234,7 +234,6 @@ class Claims(StorageCommandPlugin):
              role=Registered,
              doc="Transfer ownership of the planet to another person.")
     def _change_owner(self, data, connection):
-        alias = connection.player.alias
         uuid = connection.player.uuid
         location = connection.player.location
         target = self.plugins.player_manager.get_player_by_alias(" ".join(data))
@@ -259,6 +258,7 @@ class Claims(StorageCommandPlugin):
                 self.storage["owners"][uuid].remove(str(location))
                 if len(self.storage["owners"][uuid]) == 0:
                     self.storage["owners"].pop(uuid)
+                self.planet_protect.add_protection(location, target)
                 send_message(connection, "Transferred ownership of {} to {}."
                              .format(location, target.alias))
                 try:
