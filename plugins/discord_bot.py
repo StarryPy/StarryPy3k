@@ -147,7 +147,7 @@ class DiscordPlugin(BasePlugin):
 
     def on_chat_sent(self, data, connection):
         """
-        Hook on message being broadcast on server. Display it in IRC.
+        Hook on message being broadcast on server. Display it in Discord.
 
         If 'sc' is True, colors are stripped from game text. e.g. -
 
