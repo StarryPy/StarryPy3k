@@ -229,7 +229,7 @@ class IRCPlugin(BasePlugin):
         """
         if data[0] == ".":
             asyncio.ensure_future(self.handle_command(target, data[1:], mask))
-        elif target == self.channel:
+        elif target.lower() == self.channel.lower():
             nick = mask.split("!")[0]
             asyncio.ensure_future(self.send_message(data, nick))
         return None
