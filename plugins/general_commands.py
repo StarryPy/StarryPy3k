@@ -64,9 +64,11 @@ class GeneralCommands(SimpleCommandPlugin):
         :param target: Player object to be looked up.
         :return: String: The data about the player.
         """
-        l = ""
+        logged_in = "(^green;Online^reset;)"
+        last_seen = "Now"
         if not target.logged_in:
-            l = "(^red;Offline^reset;)"
+            logged_in = "(^red;Offline^reset;)"
+            last_seen = target.last_seen
         return ("Name: {} {}\n"
                 "Raw Name: {}\n"
                 "Roles: ^yellow;{}^green;\n"
@@ -75,14 +77,14 @@ class GeneralCommands(SimpleCommandPlugin):
                 "Team ID: ^cyan;{}^green;\n"
                 "Current location: ^yellow;{}^green;\n"
                 "Last seen: ^yellow;{}^green;".format(
-                    target.alias, l,
+                    target.alias, logged_in,
                     target.name,
                     ", ".join(target.roles),
                     target.uuid,
                     target.ip,
                     target.team_id,
                     target.location,
-                    target.last_seen))
+                    last_seen))
 
     def on_connect_success(self, data, connection):
         if self.maintenance and "SuperAdmin" not in connection.player.roles:
