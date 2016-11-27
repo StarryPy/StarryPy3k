@@ -199,20 +199,23 @@ class DiscordPlugin(BasePlugin):
         :return: Null
         """
         nick = message.author.display_name
+        text = message.clean_content
+        server = message.server
         if message.author.id != cls.client_id:
             if message.content[0] == ".":
-                asyncio.ensure_future(cls.handle_command(message.content[
-                                                         1:]))
+                asyncio.ensure_future(cls.handle_command(message.content[1:]))
             else:
+                for emote in server.emojis:
+                    text = text.replace("<:{}:{}>".format(emote.name,emote.id),
+                                        ":{}:".format(emote.name))
                 yield from cls.factory.broadcast("<^orange;Discord^reset;> <{}> {}"
-                                                 "".format(nick, message.content),
+                                                 "".format(nick, text),
                                                  mode=ChatReceiveMode.BROADCAST)
                 if cls.config.get_plugin_config(cls.name)["log_discord"]:
-                    cls.logger.info("<{}> {}".format(nick, message.content))
+                    cls.logger.info("<{}> {}".format(nick, text))
                 if link_plugin_if_available(cls, "irc_bot"):
                     asyncio.ensure_future(cls.plugins['irc_bot'].bot_write(
-                                          "<DC><{}> {}".format(nick,
-                                                               message.content)))
+                                          "<DC><{}> {}".format(nick, text)))
 
     @asyncio.coroutine
     def make_announce(self, connection, circumstance):

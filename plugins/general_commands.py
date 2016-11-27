@@ -91,7 +91,6 @@ class GeneralCommands(SimpleCommandPlugin):
             pkt = pparser.build_packet(packets.packets['connect_failure'],
                                        fail)
             yield from connection.raw_write(pkt)
-            print("Rejection message sent. Pkt: {}".format(fail))
             return False
         else:
             return True
