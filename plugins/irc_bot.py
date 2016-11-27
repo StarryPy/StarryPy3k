@@ -114,7 +114,8 @@ class IRCPlugin(BasePlugin):
         "channel": "#starrypy",
         "username": "starrypy3k_bot",
         "strip_colors": True,
-        "log_irc": False
+        "log_irc": False,
+        "announce_join_leave": True
     }
 
     def __init__(self):
@@ -154,8 +155,11 @@ class IRCPlugin(BasePlugin):
         y = irc3.event(r"^:\S+ 353 [^&#]+(?P<channel>\S+) :(?P<nicknames>.*)",
                        self.name_check)
         y.compile(None)
+        z = irc3.event(irc3.rfc.JOIN_PART_QUIT, self.announce_irc_join)
+        z.compile(None)
         self.bot.attach_events(x)
         self.bot.attach_events(y)
+        self.bot.attach_events(z)
         self.bot.create_connection()
 
         self.ops = set()
@@ -228,6 +232,29 @@ class IRCPlugin(BasePlugin):
         elif target == self.channel:
             nick = mask.split("!")[0]
             asyncio.ensure_future(self.send_message(data, nick))
+        return None
+
+    @asyncio.coroutine
+    def announce_irc_join(self, mask, event, channel, data):
+        if self.config.get_plugin_config(self.name)["announce_join_leave"]:
+            nick = mask.split("!")[0]
+            if event == "JOIN":
+                move = "joined"
+            else:
+                move = "left"
+            if self.config.get_plugin_config(self.name)["log_irc"]:
+                self.logger.info("{} has {} the channel.".format(nick, move))
+            if link_plugin_if_available(self, "discord_bot"):
+                discord = self.plugins['discord_bot']
+                asyncio.ensure_future(discord.bot.send_message(
+                    discord.bot.get_channel(discord.channel), "<IRC> **{}** "
+                                                              "has {} the "
+                                                              "IRC "
+                                                              "channel.".format(nick, move)))
+            yield from self.factory.broadcast("< ^orange;IRC^reset; > {} has "
+                                              "{} the channel.".format(nick,
+                                                                       move),
+                                              mode=ChatReceiveMode.BROADCAST)
         return None
 
     def name_check(self, channel=None, nicknames=None):
