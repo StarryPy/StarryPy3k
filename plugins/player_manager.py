@@ -291,6 +291,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.client_id = response["client_id"]
         connection.state = State.CONNECTED
         connection.player.logged_in = True
+        connection.player.last_seen = datetime.datetime.now()
         self.players_online.append(connection.player.uuid)
         return True
 
@@ -456,6 +457,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.connection = None
         connection.player.logged_in = False
         connection.player.location = None
+        connection.player.last_seen = datetime.datetime.now()
         self.players_online.remove(connection.player.uuid)
         return True
 
