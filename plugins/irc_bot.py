@@ -130,6 +130,7 @@ class IRCPlugin(BasePlugin):
         self.ops = None
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
+        self.discord_active = False
 
     def activate(self):
         super().activate()
@@ -161,6 +162,8 @@ class IRCPlugin(BasePlugin):
         self.bot.attach_events(y)
         self.bot.attach_events(z)
         self.bot.create_connection()
+
+        self.discord_active = link_plugin_if_available(self, 'discord_bot')
 
         self.ops = set()
         asyncio.ensure_future(self.update_ops())
@@ -244,7 +247,7 @@ class IRCPlugin(BasePlugin):
                 move = "left"
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("{} has {} the channel.".format(nick, move))
-            if link_plugin_if_available(self, "discord_bot"):
+            if self.discord_active:
                 discord = self.plugins['discord_bot']
                 asyncio.ensure_future(discord.bot.send_message(
                     discord.bot.get_channel(discord.channel), "<IRC> **{}** "
@@ -288,7 +291,7 @@ class IRCPlugin(BasePlugin):
 
                 if self.config.get_plugin_config(self.name)["log_irc"]:
                     self.logger.info(" -*- " + nick + " " + message)
-                if link_plugin_if_available(self, "discord_bot"):
+                if self.discord_active:
                     discord = self.plugins['discord_bot']
                     asyncio.ensure_future(discord.bot.send_message(discord.bot.get_channel(
                         discord.channel), "-*- {} {}".format(nick, message)))
@@ -299,7 +302,7 @@ class IRCPlugin(BasePlugin):
         else:
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("<" + nick + "> " + message)
-            if link_plugin_if_available(self, "discord_bot"):
+            if self.discord_active:
                 discord = self.plugins['discord_bot']
                 asyncio.ensure_future(discord.bot_write("<IRC> **<{}>** {}"
                                                         .format(nick, message)))
