@@ -138,7 +138,7 @@ class GeneralCommands(SimpleCommandPlugin):
         if len(data) == 0:
             raise SyntaxWarning("No target provided.")
         name = " ".join(data)
-        info = self.plugins['player_manager'].get_player_by_alias(name)
+        info = self.plugins['player_manager'].find_player(name)
         if info is not None:
             send_message(connection, self.generate_whois(info))
         else:
@@ -161,7 +161,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 cannot be resolved.
         """
         arg_count = len(data)
-        target = self.plugins.player_manager.get_player_by_alias(data[0])
+        target = self.plugins.player_manager.find_player(data[0])
         if arg_count == 1:
             target = connection.player
             item = data[0]

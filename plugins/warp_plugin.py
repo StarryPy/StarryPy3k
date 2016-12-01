@@ -35,7 +35,7 @@ class WarpPlugin(SimpleCommandPlugin):
 
     def activate(self):
         super().activate()
-        self.get_by_alias = self.plugins.player_manager.get_player_by_alias
+        self.find_player = self.plugins.player_manager.find_player
 
     @asyncio.coroutine
     def warp_player_to_player(self, from_player, to_player):
@@ -70,10 +70,10 @@ class WarpPlugin(SimpleCommandPlugin):
     def warp(self, data, connection):
         if len(data) == 1:
             from_player = connection.player
-            to_player = self.get_by_alias(data[0], check_logged_in=True)
+            to_player = self.find_player(data[0], check_logged_in=True)
         elif len(data) == 2:
-            from_player = self.get_by_alias(data[0], check_logged_in=True)
-            to_player = self.get_by_alias(data[1], check_logged_in=True)
+            from_player = self.find_player(data[0], check_logged_in=True)
+            to_player = self.find_player(data[1], check_logged_in=True)
         else:
             raise SyntaxWarning
         if from_player is None or to_player is None:
@@ -96,10 +96,10 @@ class WarpPlugin(SimpleCommandPlugin):
     def ship_warp(self, data, connection):
         if len(data) == 1:
             from_player = connection.player
-            to_player = self.get_by_alias(data[0], check_logged_in=True)
+            to_player = self.find_player(data[0], check_logged_in=True)
         elif len(data) == 2:
-            from_player = self.get_by_alias(data[0], check_logged_in=True)
-            to_player = self.get_by_alias(data[1], check_logged_in=True)
+            from_player = self.find_player(data[0], check_logged_in=True)
+            to_player = self.find_player(data[1], check_logged_in=True)
         else:
             raise SyntaxWarning
         if from_player is None or to_player is None:

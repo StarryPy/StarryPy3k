@@ -165,7 +165,7 @@ class Claims(StorageCommandPlugin):
         location = connection.player.location
         alias = connection.player.alias
         uuid = connection.player.uuid
-        target = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        target = self.plugins.player_manager.find_player(" ".join(data))
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This location is not protected.")
         if target is not None:
@@ -196,7 +196,7 @@ class Claims(StorageCommandPlugin):
         location = connection.player.location
         alias = connection.player.alias
         uuid = connection.player.uuid
-        target = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        target = self.plugins.player_manager.find_player(" ".join(data))
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This location is not protected.")
         if target is not None:
@@ -238,7 +238,7 @@ class Claims(StorageCommandPlugin):
     def _change_owner(self, data, connection):
         uuid = connection.player.uuid
         location = connection.player.location
-        target = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        target = self.plugins.player_manager.find_player(" ".join(data))
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This location is not protected.")
         if target is not None:
