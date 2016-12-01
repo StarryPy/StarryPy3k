@@ -449,7 +449,7 @@ class PlayerManager(SimpleCommandPlugin):
 
     def _set_offline(self, connection):
         """
-        Convenince function to set all the players variables to off.
+        Convenience function to set all the players variables to off.
 
         :param connection: The connection to turn off.
         :return: Boolean, True. Always True, since called from the on_ packets.
