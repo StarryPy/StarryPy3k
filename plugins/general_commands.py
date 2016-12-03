@@ -10,6 +10,8 @@ import asyncio
 
 import sys
 
+import datetime
+
 import packets
 import pparser
 import data_parser
@@ -55,6 +57,7 @@ class GeneralCommands(SimpleCommandPlugin):
         self.maintenance = False
         self.rejection_message = self.config.get_plugin_config(self.name)[
             "maintenance_message"]
+        self.start_time = datetime.datetime.now()
 
     def generate_whois(self, target):
         """
@@ -275,6 +278,19 @@ class GeneralCommands(SimpleCommandPlugin):
         send_message(connection,
                      "{} players on planet:\n{}".format(len(ret_list),
                                                         ", ".join(ret_list)))
+
+    @Command("uptime",
+             role=Whoami,
+             doc="Displays the time since the server started.")
+    def _uptime(self, data, connection):
+        """
+        Displays the time since the server started.
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
+        """
+        current_time = datetime.datetime.now() - self.start_time
+        yield from send_message(connection, "Uptime: {}".format(current_time))
 
     @Command("shutdown",
              role=Shutdown,
