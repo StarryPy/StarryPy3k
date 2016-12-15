@@ -14,7 +14,7 @@ import discord
 
 from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
-from utilities import ChatSendMode, ChatReceiveMode
+from utilities import ChatSendMode, ChatReceiveMode, link_plugin_if_available
 
 bot = discord.Client()
 
@@ -62,6 +62,11 @@ class MockConnection:
         self.owner = owner
         self.player = MockPlayer()
 
+    @asyncio.coroutine
+    def send_message(self, *messages):
+        for message in messages:
+            yield from self.owner.bot_write(message)
+        return None
 
 # Discord listener
 
@@ -84,6 +89,8 @@ class DiscordPlugin(BasePlugin):
         "log_discord": False
     }
     client_id = None
+    connection = None
+    dispatcher = None
 
     def __init__(self):
         super().__init__()
@@ -93,14 +100,18 @@ class DiscordPlugin(BasePlugin):
         self.connection = None
         self.prefix = None
         self.dispatcher = None
-        self.bot = None
+        self.bot = bot
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
+        self.irc_bot_exists = False
+        self.irc_bot = None
 
     def activate(self):
         super().activate()
         self.connection = MockConnection(self)
+        DiscordPlugin.connection = self.connection
         self.dispatcher = self.plugins.command_dispatcher
+        DiscordPlugin.dispatcher = self.dispatcher
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
@@ -136,7 +147,7 @@ class DiscordPlugin(BasePlugin):
 
     def on_chat_sent(self, data, connection):
         """
-        Hook on message being broadcast on server. Display it in IRC.
+        Hook on message being broadcast on server. Display it in Discord.
 
         If 'sc' is True, colors are stripped from game text. e.g. -
 
@@ -153,9 +164,8 @@ class DiscordPlugin(BasePlugin):
 
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
                 asyncio.ensure_future(
-                    bot.send_message(bot.get_channel(self.channel),
-                                     "<{}> {}".format(connection.player.alias,
-                                                      msg)))
+                    self.bot_write("**<{}>** {}".format(connection.player.alias,
+                                                        msg)))
         return True
 
     # Helper functions - Used by commands
@@ -189,12 +199,23 @@ class DiscordPlugin(BasePlugin):
         :return: Null
         """
         nick = message.author.display_name
+        text = message.clean_content
+        server = message.server
         if message.author.id != cls.client_id:
-            yield from cls.factory.broadcast("<^orange;Discord^reset;> <{}> {}"
-                                             "".format(nick, message.content),
-                                             mode=ChatReceiveMode.BROADCAST)
-            if cls.config.get_plugin_config(cls.name)["log_discord"]:
-                cls.logger.info("<{}> {}".format(nick, message.content))
+            if message.content[0] == ".":
+                asyncio.ensure_future(cls.handle_command(message.content[1:]))
+            else:
+                for emote in server.emojis:
+                    text = text.replace("<:{}:{}>".format(emote.name,emote.id),
+                                        ":{}:".format(emote.name))
+                yield from cls.factory.broadcast("<^orange;Discord^reset;> <{}> {}"
+                                                 "".format(nick, text),
+                                                 mode=ChatReceiveMode.BROADCAST)
+                if cls.config.get_plugin_config(cls.name)["log_discord"]:
+                    cls.logger.info("<{}> {}".format(nick, text))
+                if link_plugin_if_available(cls, "irc_bot"):
+                    asyncio.ensure_future(cls.plugins['irc_bot'].bot_write(
+                                          "<DC><{}> {}".format(nick, text)))
 
     @asyncio.coroutine
     def make_announce(self, connection, circumstance):
@@ -206,7 +227,26 @@ class DiscordPlugin(BasePlugin):
         :return: Null.
         """
         yield from asyncio.sleep(1)
-        yield from bot.send_message(
-            bot.get_channel(self.channel),
-            "{} has {} the server.".format(connection.player.alias,
-                                           circumstance))
+        yield from self.bot_write("{} has {} the server.".format(
+            connection.player.alias, circumstance))
+
+    @asyncio.coroutine
+    def handle_command(data):
+        split = data.split()
+        command = split[0]
+        to_parse = split[1:]
+        DiscordPlugin.connection.player.roles = DiscordPlugin.connection.player.guest
+        if command in DiscordPlugin.dispatcher.commands:
+            # Only handle commands that work from Discord
+            if command in ('who', 'help'):
+                yield from DiscordPlugin.dispatcher.run_command(command,
+                                                       DiscordPlugin.connection,
+                                                       to_parse)
+        else:
+            yield from self.bot_write("Command not found.")
+
+    @asyncio.coroutine
+    def bot_write(self, msg, target=None):
+        if target is None:
+            target = bot.get_channel(self.channel)
+        asyncio.ensure_future(bot.send_message(target, msg))

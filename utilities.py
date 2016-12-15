@@ -331,6 +331,9 @@ def link_plugin_if_available(self, plugin):
         self.logger.debug("{} available.".format(plugin))
         self.plugins[plugin] = \
             self.factory.plugin_manager.list_plugins()[plugin]
+        return True
+    else:
+        return False
 
 
 class Command:
