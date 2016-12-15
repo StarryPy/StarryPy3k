@@ -243,7 +243,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         except IndexError:
             raise SyntaxWarning("No target provided.")
 
-        recipient = self.plugins.player_manager.get_player_by_alias(name)
+        recipient = self.plugins.player_manager.find_player(name)
         if recipient is not None:
             if not recipient.logged_in:
                 send_message(connection,

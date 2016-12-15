@@ -98,7 +98,7 @@ class ChatManager(SimpleCommandPlugin):
         :return: Null
         """
         alias = " ".join(data)
-        player = self.plugins.player_manager.get_player_by_alias(alias)
+        player = self.plugins.player_manager.find_player(alias)
         if player is None:
             raise NameError
         elif self.mute_check(player):
@@ -131,7 +131,7 @@ class ChatManager(SimpleCommandPlugin):
         :return: Null
         """
         alias = " ".join(data)
-        player = self.plugins.player_manager.get_player_by_alias(alias)
+        player = self.plugins.player_manager.find_player(alias)
         if player is None:
             raise NameError
         elif not self.mute_check(player):

@@ -291,6 +291,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.client_id = response["client_id"]
         connection.state = State.CONNECTED
         connection.player.logged_in = True
+        connection.player.last_seen = datetime.datetime.now()
         self.players_online.append(connection.player.uuid)
         return True
 
@@ -448,7 +449,7 @@ class PlayerManager(SimpleCommandPlugin):
 
     def _set_offline(self, connection):
         """
-        Convenince function to set all the players variables to off.
+        Convenience function to set all the players variables to off.
 
         :param connection: The connection to turn off.
         :return: Boolean, True. Always True, since called from the on_ packets.
@@ -456,6 +457,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player.connection = None
         connection.player.logged_in = False
         connection.player.location = None
+        connection.player.last_seen = datetime.datetime.now()
         self.players_online.remove(connection.player.uuid)
         return True
 
@@ -466,6 +468,8 @@ class PlayerManager(SimpleCommandPlugin):
         alias = non_ascii_strip.sub("", alias)
         multi_whitespace_strip = re.compile("[\s]{2,}")
         alias = multi_whitespace_strip.sub(" ", alias)
+        trailing_leading_whitespace_strip = re.compile("^[ \s]+|[ \s]+$")
+        alias = trailing_leading_whitespace_strip.sub("", alias)
         match_non_whitespace = re.compile("[\S]")
         if match_non_whitespace.search(alias) is None:
             return None
@@ -568,16 +572,6 @@ class PlayerManager(SimpleCommandPlugin):
         else:
             return 0
 
-    def get_player_by_uuid(self, uuid):
-        """
-        Grab a hook to a player by their uuid. Returns player object.
-
-        :param uuid: String: UUID of player to check.
-        :return: Mixed: Player object.
-        """
-        if uuid in self.shelf["players"]:
-            return self.shelf["players"][uuid]
-
     def ban_by_ip(self, ip, reason, connection):
         """
         Ban a player based on their IP address. Should be compatible with both
@@ -618,7 +612,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection: Connection of target player to be banned.
         :return: Null
         """
-        p = self.get_player_by_alias(name)
+        p = self.find_player(name)
         if p is not None:
             self.ban_by_ip(p.ip, reason, connection)
         else:
@@ -635,7 +629,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection: Connection of target player to be banned.
         :return: Null
         """
-        p = self.get_player_by_alias(name)
+        p = self.find_player(name)
         if p is not None:
             self.unban_by_ip(p.ip, connection)
         else:
@@ -685,6 +679,16 @@ class PlayerManager(SimpleCommandPlugin):
             self.plugin_shelf[name] = DotDict({})
         return self.plugin_shelf[name]
 
+    def get_player_by_uuid(self, uuid):
+        """
+        Grab a hook to a player by their uuid. Returns player object.
+
+        :param uuid: String: UUID of player to check.
+        :return: Mixed: Player object.
+        """
+        if uuid in self.shelf["players"]:
+            return self.shelf["players"][uuid]
+
     def get_player_by_name(self, name, check_logged_in=False) -> Player:
         """
         Grab a hook to a player by their name. Return Boolean value if only
@@ -716,6 +720,41 @@ class PlayerManager(SimpleCommandPlugin):
             if player.alias.lower() == lname:
                 if not check_logged_in or player.logged_in:
                     return player
+
+    def get_player_by_client_id(self, id, check_logged_in=False) -> Player:
+        """
+        Grab a hook to a player by their client id. Return Boolean value if
+        only checking login status. Returns player object otherwise.
+
+        :param id: Integer: Client Id of the player to check.
+        :param check_logged_in: Boolean: Whether we just want login status
+                                (true), or the player's server object (false).
+        :return: Mixed: Boolean on logged_in check, player object otherwise.
+        """
+        iid = int(id)
+        for player in self.shelf["players"].values():
+            if player.client_id == iid:
+                if not check_logged_in or player.logged_in:
+                    return player
+
+    def find_player(self, search, check_logged_in=False):
+        """
+        Convenience method to try and find a player by a variety of methods.
+        Checks for alias, then raw name, then client id.
+
+        :param search: The alias, raw name, or id of the player to check.
+        :param check_logged_in: Boolean: Return the login status only if true.
+        :return: Mixed: Boolean on logged_in check, player object otherwise.
+        """
+        player = self.get_player_by_alias(search, check_logged_in)
+        if player is not None:
+            return player
+        player = self.get_player_by_name(search, check_logged_in)
+        if player is not None:
+            return player
+        player = self.get_player_by_client_id(search, check_logged_in)
+        if player is not None:
+            return player
 
     @asyncio.coroutine
     def _add_or_get_player(self, uuid, species, name="", last_seen=None, roles=None,
@@ -763,6 +802,9 @@ class PlayerManager(SimpleCommandPlugin):
                 p.species = species
             if p.name != name:
                 p.name = name
+                p.alias = self.clean_name(name)
+                if p.alias is None:
+                    p.alias = uuid[0:4]
             return p
         else:
             if self.get_player_by_name(alias) is not None:
@@ -876,7 +918,7 @@ class PlayerManager(SimpleCommandPlugin):
         except IndexError:
             reason = "No reason given."
 
-        p = self.get_player_by_alias(alias)
+        p = self.find_player(alias)
         if p is None:
             send_message(connection,
                          "Couldn't find a player with name {}".format(alias))
@@ -992,7 +1034,7 @@ class PlayerManager(SimpleCommandPlugin):
         if not data[1:]:
             raise SyntaxWarning("Please provide a target player.")
         alias = " ".join(data[1:])
-        p = self.get_player_by_alias(alias)
+        p = self.find_player(alias)
         try:
             if role.lower() not in (x.__name__.lower() for x in Owner.roles):
                 raise LookupError("Unknown role {}".format(role))
@@ -1072,7 +1114,7 @@ class PlayerManager(SimpleCommandPlugin):
         else:
             force = False
         alias = " ".join(data)
-        player = self.get_player_by_alias(alias)
+        player = self.find_player(alias)
         if player is None:
             raise NameError
         if (not force) and player.logged_in:

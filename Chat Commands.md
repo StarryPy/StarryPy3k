@@ -382,10 +382,9 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - Command Dispatcher, Player Manager
   
 - ***Commands Provided***
-  - /warp [from player] (to player)
+  - /tp [from player] (to player)
     - **Role:** Moderator
     - **Description:** Warps the specified from player, or self if none, to the specified to player.
-    - **Alias:** /tp
     
   - /tps [from player] (to player)
     - **Role:** Moderator
