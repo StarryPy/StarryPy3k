@@ -208,14 +208,14 @@ class DiscordPlugin(BasePlugin):
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,emote.id),
                                         ":{}:".format(emote.name))
-                yield from cls.factory.broadcast("<^orange;Discord^reset;> <{}> {}"
-                                                 "".format(nick, text),
+                yield from cls.factory.broadcast("[^orange;Discord^reset;]<{}>"
+                                                 " {}".format(nick, text),
                                                  mode=ChatReceiveMode.BROADCAST)
                 if cls.config.get_plugin_config(cls.name)["log_discord"]:
                     cls.logger.info("<{}> {}".format(nick, text))
                 if link_plugin_if_available(cls, "irc_bot"):
                     asyncio.ensure_future(cls.plugins['irc_bot'].bot_write(
-                                          "<DC><{}> {}".format(nick, text)))
+                                          "[DC]<{}> {}".format(nick, text)))
 
     @asyncio.coroutine
     def make_announce(self, connection, circumstance):
@@ -227,7 +227,7 @@ class DiscordPlugin(BasePlugin):
         :return: Null.
         """
         yield from asyncio.sleep(1)
-        yield from self.bot_write("{} has {} the server.".format(
+        yield from self.bot_write("**{}** has {} the server.".format(
             connection.player.alias, circumstance))
 
     @asyncio.coroutine

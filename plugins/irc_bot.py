@@ -304,9 +304,9 @@ class IRCPlugin(BasePlugin):
                 self.logger.info("<" + nick + "> " + message)
             if self.discord_active:
                 discord = self.plugins['discord_bot']
-                asyncio.ensure_future(discord.bot_write("<IRC> **<{}>** {}"
+                asyncio.ensure_future(discord.bot_write("[IRC]**<{}>** {}"
                                                         .format(nick, message)))
-            yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
+            yield from self.factory.broadcast("[^orange;IRC^reset;] <{}> "
                                           "{}".format(nick, message),
                                               mode=ChatReceiveMode.BROADCAST)
 
