@@ -731,7 +731,10 @@ class PlayerManager(SimpleCommandPlugin):
                                 (true), or the player's server object (false).
         :return: Mixed: Boolean on logged_in check, player object otherwise.
         """
-        iid = int(id)
+        try:
+            iid = int(id)
+        except ValueError:
+            return
         for player in self.shelf["players"].values():
             if player.client_id == iid:
                 if not check_logged_in or player.logged_in:
