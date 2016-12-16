@@ -771,7 +771,7 @@ class EntityInteract(Struct):
 
 class StepUpdate(Struct):
     """packet type: 54"""
-    heartbeat = UBInt64
+    heartbeat = VLQ
 
 
 class BasePacket(Struct):
