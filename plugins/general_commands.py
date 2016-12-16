@@ -10,6 +10,8 @@ import asyncio
 
 import sys
 
+import datetime
+
 import packets
 import pparser
 import data_parser
@@ -46,8 +48,16 @@ class Shutdown(SuperAdmin):
 class GeneralCommands(SimpleCommandPlugin):
     name = "general_commands"
     depends = ["command_dispatcher", "player_manager"]
-
+    default_config = {"maintenance_message": "This server is currently in "
+                                             "maintenance mode and is not "
+                                             "accepting new connections."}
     # Helper functions - Used by commands
+    def activate(self):
+        super().activate()
+        self.maintenance = False
+        self.rejection_message = self.config.get_plugin_config(self.name)[
+            "maintenance_message"]
+        self.start_time = datetime.datetime.now()
 
     def generate_whois(self, target):
         """
@@ -57,23 +67,38 @@ class GeneralCommands(SimpleCommandPlugin):
         :param target: Player object to be looked up.
         :return: String: The data about the player.
         """
-        l = ""
+        logged_in = "(^green;Online^reset;)"
+        last_seen = "Now"
         if not target.logged_in:
-            l = "(^red;Offline^reset;)"
+            logged_in = "(^red;Offline^reset;)"
+            last_seen = target.last_seen
         return ("Name: {} {}\n"
                 "Raw Name: {}\n"
                 "Roles: ^yellow;{}^green;\n"
                 "UUID: ^yellow;{}^green;\n"
                 "IP address: ^cyan;{}^green;\n"
                 "Team ID: ^cyan;{}^green;\n"
-                "Current location: ^yellow;{}^green;".format(
-                    target.alias, l,
+                "Current location: ^yellow;{}^green;\n"
+                "Last seen: ^yellow;{}^green;".format(
+                    target.alias, logged_in,
                     target.name,
                     ", ".join(target.roles),
                     target.uuid,
                     target.ip,
                     target.team_id,
-                    target.location))
+                    target.location,
+                    last_seen))
+
+    def on_connect_success(self, data, connection):
+        if self.maintenance and "SuperAdmin" not in connection.player.roles:
+            fail = data_parser.ConnectFailure.build(dict(
+                reason=self.rejection_message))
+            pkt = pparser.build_packet(packets.packets['connect_failure'],
+                                       fail)
+            yield from connection.raw_write(pkt)
+            return False
+        else:
+            return True
 
     # Commands - In-game actions that can be performed
 
@@ -116,7 +141,7 @@ class GeneralCommands(SimpleCommandPlugin):
         if len(data) == 0:
             raise SyntaxWarning("No target provided.")
         name = " ".join(data)
-        info = self.plugins['player_manager'].get_player_by_alias(name)
+        info = self.plugins['player_manager'].find_player(name)
         if info is not None:
             send_message(connection, self.generate_whois(info))
         else:
@@ -139,7 +164,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 cannot be resolved.
         """
         arg_count = len(data)
-        target = self.plugins.player_manager.get_player_by_alias(data[0])
+        target = self.plugins.player_manager.find_player(data[0])
         if arg_count == 1:
             target = connection.player
             item = data[0]
@@ -192,7 +217,14 @@ class GeneralCommands(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        alias = " ".join(data)
+        if len(data) > 1 and connection.player.check_role(Admin):
+            target = self.plugins.player_manager.find_player(data[0])
+            alias = " ".join(data[1:])
+        else:
+            alias = " ".join(data)
+            target = connection.player
+        if len(data) == 0:
+            alias = connection.player.name
         if self.plugins.player_manager.get_player_by_alias(alias):
             raise ValueError("There's already a user by that name.")
         else:
@@ -201,11 +233,10 @@ class GeneralCommands(SimpleCommandPlugin):
                 send_message(connection,
                              "Nickname contains no valid characters.")
                 return
-            old_alias = connection.player.alias
-            connection.player.alias = clean_alias
-            broadcast(self.factory,
-                      "{}'s name has been changed to {}".format(old_alias,
-                                                                clean_alias))
+            old_alias = target.alias
+            target.alias = clean_alias
+            broadcast(connection, "{}'s name has been changed to {}".format(
+                old_alias, clean_alias))
 
     @Command("whoami",
              role=Whoami,
@@ -248,6 +279,19 @@ class GeneralCommands(SimpleCommandPlugin):
                      "{} players on planet:\n{}".format(len(ret_list),
                                                         ", ".join(ret_list)))
 
+    @Command("uptime",
+             role=Whoami,
+             doc="Displays the time since the server started.")
+    def _uptime(self, data, connection):
+        """
+        Displays the time since the server started.
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
+        """
+        current_time = datetime.datetime.now() - self.start_time
+        yield from send_message(connection, "Uptime: {}".format(current_time))
+
     @Command("shutdown",
              role=Shutdown,
              doc="Shutdown the server after N seconds (default 5).",
@@ -275,3 +319,18 @@ class GeneralCommands(SimpleCommandPlugin):
         # sure how to make it better...
         self.logger.warning("Shutting down server now.")
         sys.exit()
+
+    @Command("maintenance_mode",
+             role=SuperAdmin,
+             doc="Toggle maintenance mode on the server. While in "
+                 "maintenance mode, the server will reject all new "
+                 "connection.")
+    def _maintenance(self, data, connection):
+        if self.maintenance:
+            self.maintenance = False
+            broadcast(self, "^red;NOTICE: Maintence mode disabled. "
+                            "^reset;New connections are allowed.")
+        else:
+            self.maintenance = True
+            broadcast(self, "^red;NOTICE: The server is now in maintenance "
+                            "mode. ^reset;No additional clients can connect.")

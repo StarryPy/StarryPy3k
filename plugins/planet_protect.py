@@ -304,7 +304,7 @@ class PlanetProtect(StorageCommandPlugin):
         :return: Null.
         """
         location = connection.player.location
-        p = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        p = self.plugins.player_manager.find_player(" ".join(data))
         if p is not None:
             protection = self.get_protection(location)
             protection.add_builder(p)
@@ -336,7 +336,7 @@ class PlanetProtect(StorageCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        p = self.plugins.player_manager.get_player_by_alias(" ".join(data))
+        p = self.plugins.player_manager.find_player(" ".join(data))
         if p is not None:
             protection = self.get_protection(connection.player.location)
             protection.del_builder(p)
