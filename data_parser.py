@@ -256,6 +256,25 @@ class SBInt32(Struct):
     def _build(cls, obj, ctx: OrderedDotDict):
         return struct.pack(">l", obj)
 
+class UBInt64(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        return struct.unpack(">Q", stream.read(8))[0]
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">Q", obj)
+
+
+class SBInt64(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        return struct.unpack(">q", stream.read(8))[0]
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        return struct.pack(">q", obj)
+
 
 class BFloat32(Struct):
     @classmethod
@@ -583,19 +602,67 @@ class SpawnCoordinates(Struct):
 #
 
 class ProtocolRequest(Struct):
-    """packet type: 0"""
+    """packet type: 0 """
     client_build = UBInt32
 
 
 class ProtocolResponse(Struct):
-    """packet type 1"""
+    """packet type 1 """
     server_response = Byte
 
 
+class ServerDisconnect(Struct):
+    """packet type: 2 """
+    reason = StarString
+
+
+class ConnectSuccess(Struct):
+    """packet type: 3 """
+    client_id = VLQ
+    server_uuid = UUID
+    planet_orbital_levels = SBInt32
+    satellite_orbital_levels = SBInt32
+    chunk_size = SBInt32
+    xy_min = SBInt32
+    xy_max = SBInt32
+    z_min = SBInt32
+    z_max = SBInt32
+
+
+class ConnectFailure(Struct):
+    """packet type: 4 """
+    reason = StarString
+
+
+class HandshakeChallenge(Struct):
+    """packet type: 5 """
+    salt = StarByteArray
+
+
+class ChatReceived(Struct):
+    """packet type: 6 """
+    header = ChatHeader
+    name = StarString
+    junk = Byte
+    message = StarString
+
+
+class UniverseTimeUpdate(Struct):
+    """packet type: 7 """
+    timestamp = VLQ
+    # Questionable implementation... upstream says 'double'
+
+
+class PlayerWarpResult(Struct):
+    """packet type: 9 """
+    warp_success = Flag
+    warp_action = WarpAction
+
+
 class ClientConnect(Struct):
-    """packet type: 10"""
+    """packet type: 11 """
     asset_digest = StarByteArray
-    junk1 = Flag
+    allow_mismatch = Flag
     uuid = UUID
     name = StarString
     species = StarString
@@ -609,55 +676,18 @@ class ClientConnect(Struct):
     account = StarString
 
 
-class ConnectSuccess(Struct):
-    """packet type: 3"""
-    client_id = VLQ
-    server_uuid = UUID
-    planet_orbital_levels = SBInt32
-    satellite_orbital_levels = SBInt32
-    chunk_size = SBInt32
-    xy_min = SBInt32
-    xy_max = SBInt32
-    z_min = SBInt32
-    z_max = SBInt32
-
-
-class ConnectFailure(Struct):
-    """packet type: 4"""
-    reason = StarString
-
-
 class ClientDisconnectRequest(Struct):
-    """packet type: 11"""
+    """packet type: 12 """
     request = Byte
 
 
-class ServerDisconnect(Struct):
-    """packet type: 2"""
-    reason = StarString
-
-
-class ChatReceived(Struct):
-    """packet type: 6"""
-    header = ChatHeader
-    name = StarString
-    junk = Byte
-    message = StarString
-
-
-class PlayerWarpResult(Struct):
-    """packet type: 9"""
-    warp_success = Flag
-    warp_action = WarpAction
-
-
 class PlayerWarp(Struct):
-    """packet type: 13"""
+    """packet type: 14 """
     warp_action = WarpAction
 
 
 class FlyShip(Struct):
-    """packet type: 14"""
+    """packet type: 15 """
     world_x = SBInt32
     world_y = SBInt32
     world_z = SBInt32
@@ -666,44 +696,70 @@ class FlyShip(Struct):
 
 
 class ChatSent(Struct):
-    """packet type: 15"""
+    """packet type: 16 """
     message = StarString
     send_mode = Byte
 
 
+class ClientContextUpdate(Struct):
+    """packet type: 18 """
+    contexts = ClientContextSet
+    # Incomplete implementation
+
+
 class WorldStart(Struct):
-    """packet type: 18"""
+    """packet type: 19 """
     template_data = Variant
     sky_data = StarByteArray
     weather_data = StarByteArray
     spawn = SpawnCoordinates
+    respawn = SpawnCoordinates
     respawn_in_world = Flag
     #dungeonid = StarString
     world_properties = Variant
     client_id = UBInt16
     local_interpolation = Flag
+    # Incomplete implementation
 
 
 class WorldStop(Struct):
-    """packet type: 19"""
+    """packet type: 20 """
     reason = StarString
 
 
 class GiveItem(Struct):
-    """packet type: 26"""
+    """packet type: 29 """
     name = StarString
     count = VLQ
     variant_type = Byte
     description = StarString
 
 
-class ClientContextUpdate(Struct):
-    """packet type: 17"""
-    contexts = ClientContextSet
+class EntityInteractResult(Struct):
+    """packet type: 31 """
+    interaction_type = UBInt32
+    target_id = UBInt32
+    entity_data = Variant
+    request_id = UUID
+
+
+class ModifyTileList(Struct):
+    """packet type: 35 """
+    brush_size = VLQ
+    # Incomplete implementation
+
+
+class SpawnEntity(Struct):
+    """packet type: 39 """
+    spawn_type = Byte
+    payload_size = VLQ
+    payload = StarString
+    payload_value = VLQ
+    # Incomplete implementation
 
 
 class EntityInteract(Struct):
-    """packet type: 37"""
+    """packet type: 40 """
     source_id = UBInt32
     source_x = BFloat32
     source_y = BFloat32
@@ -713,29 +769,8 @@ class EntityInteract(Struct):
     request_id = UUID
 
 
-class SpawnEntity(Struct):
-    """packet type: 36"""
-    spawn_type = Byte
-    payload_size = VLQ
-    payload = StarString
-    payload_value = VLQ
-
-
-class EntityInteractResult(Struct):
-    """packet type: 28"""
-    interaction_type = UBInt32
-    target_id = UBInt32
-    entity_data = Variant
-    request_id = UUID
-
-
-class ModifyTileList(Struct):
-    """packet type: 32"""
-    brush_size = VLQ
-
-
 class StepUpdate(Struct):
-    """packet type: 51"""
+    """packet type: 54"""
     heartbeat = VLQ
 
 

@@ -96,172 +96,184 @@ class BasePlugin(metaclass=BaseMeta):
         """Packet type: 9 """
         return True
 
-    def on_client_connect(self, data, connection):
+    def on_planet_type_update(self, data, connection):
         """Packet type: 10 """
         return True
 
-    def on_client_disconnect_request(self, data, connection):
+    def on_client_connect(self, data, connection):
         """Packet type: 11 """
         return True
 
-    def on_handshake_response(self, data, connection):
+    def on_client_disconnect_request(self, data, connection):
         """Packet type: 12 """
         return True
 
-    def on_player_warp(self, data, connection):
+    def on_handshake_response(self, data, connection):
         """Packet type: 13 """
         return True
 
-    def on_fly_ship(self, data, connection):
+    def on_player_warp(self, data, connection):
         """Packet type: 14 """
         return True
 
-    def on_chat_sent(self, data, connection):
+    def on_fly_ship(self, data, connection):
         """Packet type: 15 """
         return True
 
-    def on_celestial_request(self, data, connection):
+    def on_chat_sent(self, data, connection):
         """Packet type: 16 """
         return True
 
-    def on_client_context_update(self, data, connection):
+    def on_celestial_request(self, data, connection):
         """Packet type: 17 """
         return True
 
-    def on_world_start(self, data, connection):
+    def on_client_context_update(self, data, connection):
         """Packet type: 18 """
         return True
 
-    def on_world_stop(self, data, connection):
+    def on_world_start(self, data, connection):
         """Packet type: 19 """
         return True
 
-    def on_central_structure_update(self, data, connection):
+    def on_world_stop(self, data, connection):
         """Packet type: 20 """
         return True
 
-    def on_tile_array_update(self, data, connection):
+    def on_world_layout_update(self, data, connection):
         """Packet type: 21 """
         return True
 
-    def on_tile_update(self, data, connection):
+    def on_world_parameters_update(self, data, connection):
         """Packet type: 22 """
         return True
 
-    def on_tile_liquid_update(self, data, connection):
+    def on_central_structure_update(self, data, connection):
         """Packet type: 23 """
         return True
 
-    def on_tile_damage_update(self, data, connection):
+    def on_tile_array_update(self, data, connection):
         """Packet type: 24 """
         return True
 
-    def on_tile_modification_failure(self, data, connection):
+    def on_tile_update(self, data, connection):
         """Packet type: 25 """
         return True
 
-    def on_give_item(self, data, connection):
+    def on_tile_liquid_update(self, data, connection):
         """Packet type: 26 """
         return True
 
-    def on_environment_update(self, data, connection):
+    def on_tile_damage_update(self, data, connection):
         """Packet type: 27 """
         return True
 
-    def on_entity_interact_result(self, data, connection):
+    def on_tile_modification_failure(self, data, connection):
         """Packet type: 28 """
         return True
 
-    def on_update_tile_protection(self, data, connection):
+    def on_give_item(self, data, connection):
         """Packet type: 29 """
         return True
 
-    def on_set_player_start(self, data, connection):
+    def on_environment_update(self, data, connection):
         """Packet type: 30 """
         return True
 
-    def on_find_unique_entity_response(self, data, connection):
+    def on_entity_interact_result(self, data, connection):
         """Packet type: 31 """
         return True
 
-    def on_modify_tile_list(self, data, connection):
+    def on_update_tile_protection(self, data, connection):
         """Packet type: 32 """
         return True
 
-    def on_damage_tile_group(self, data, connection):
+    def on_set_player_start(self, data, connection):
         """Packet type: 33 """
         return True
 
-    def on_collect_liquid(self, data, connection):
+    def on_find_unique_entity_response(self, data, connection):
         """Packet type: 34 """
         return True
 
-    def on_request_drop(self, data, connection):
+    def on_modify_tile_list(self, data, connection):
         """Packet type: 35 """
         return True
 
-    def on_spawn_entity(self, data, connection):
+    def on_damage_tile_group(self, data, connection):
         """Packet type: 36 """
         return True
 
-    def on_entity_interact(self, data, connection):
+    def on_collect_liquid(self, data, connection):
         """Packet type: 37 """
         return True
 
-    def on_connect_wire(self, data, connection):
+    def on_request_drop(self, data, connection):
         """Packet type: 38 """
         return True
 
-    def on_disconnect_all_wires(self, data, connection):
+    def on_spawn_entity(self, data, connection):
         """Packet type: 39 """
         return True
 
-    def on_world_client_state_update(self, data, connection):
+    def on_entity_interact(self, data, connection):
         """Packet type: 40 """
         return True
 
-    def on_find_unique_entity(self, data, connection):
+    def on_connect_wire(self, data, connection):
         """Packet type: 41 """
         return True
 
-    def on_entity_create(self, data, connection):
+    def on_disconnect_all_wires(self, data, connection):
         """Packet type: 42 """
         return True
 
-    def on_entity_update(self, data, connection):
+    def on_world_client_state_update(self, data, connection):
         """Packet type: 43 """
         return True
 
-    def on_entity_destroy(self, data, connection):
+    def on_find_unique_entity(self, data, connection):
         """Packet type: 44 """
         return True
 
-    def on_hit_request(self, data, connection):
+    def on_entity_create(self, data, connection):
         """Packet type: 45 """
         return True
 
-    def on_damage_request(self, data, connection):
+    def on_entity_update(self, data, connection):
         """Packet type: 46 """
         return True
 
-    def on_damage_notification(self, data, connection):
+    def on_entity_destroy(self, data, connection):
         """Packet type: 47 """
         return True
 
-    def on_entity_message(self, data, connection):
+    def on_hit_request(self, data, connection):
         """Packet type: 48 """
         return True
 
-    def on_entity_message_response(self, data, connection):
+    def on_damage_request(self, data, connection):
         """Packet type: 49 """
         return True
 
-    def on_update_world_properties(self, data, connection):
+    def on_damage_notification(self, data, connection):
         """Packet type: 50 """
         return True
 
-    def on_step_update(self, data, connection):
+    def on_entity_message(self, data, connection):
         """Packet type: 51 """
+        return True
+
+    def on_entity_message_response(self, data, connection):
+        """Packet type: 52 """
+        return True
+
+    def on_update_world_properties(self, data, connection):
+        """Packet type: 53 """
+        return True
+
+    def on_step_update(self, data, connection):
+        """Packet type: 54 """
         return True
 
     def __repr__(self):
