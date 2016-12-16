@@ -105,6 +105,7 @@ class DiscordPlugin(BasePlugin):
         self.sc = None
         self.irc_bot_exists = False
         self.irc_bot = None
+        self.chat_manager = None
 
     def activate(self):
         super().activate()
@@ -120,6 +121,8 @@ class DiscordPlugin(BasePlugin):
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
         asyncio.ensure_future(self.start_bot())
         self.update_id(self.client_id)
+        if link_plugin_if_available(self, "chat_manager"):
+            self.chat_manager = self.plugins['chat_manager']
 
     # Packet hooks - look for these packets and act on them
 
@@ -163,9 +166,11 @@ class DiscordPlugin(BasePlugin):
                 msg = self.color_strip.sub("", msg)
 
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
-                asyncio.ensure_future(
-                    self.bot_write("**<{}>** {}".format(connection.player.alias,
-                                                        msg)))
+                if self.chat_manager:
+                    if not self.chat_manager.mute_check(connection.player):
+                        asyncio.ensure_future(self.bot_write("**<{}>** {}"
+                                                             .format(connection.player.alias,
+                                                                     msg)))
         return True
 
     # Helper functions - Used by commands
@@ -208,7 +213,7 @@ class DiscordPlugin(BasePlugin):
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,emote.id),
                                         ":{}:".format(emote.name))
-                yield from cls.factory.broadcast("[^orange;Discord^reset;]<{}>"
+                yield from cls.factory.broadcast("[^orange;DC^reset;]<{}>"
                                                  " {}".format(nick, text),
                                                  mode=ChatReceiveMode.BROADCAST)
                 if cls.config.get_plugin_config(cls.name)["log_discord"]:
