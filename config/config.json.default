@@ -18,12 +18,25 @@
         },
         "chat_logger": {},
         "chat_manager": {},
+        "claims": {
+            "max_claims_per_person": 5
+        },
         "command_dispatcher": {
             "command_prefix": "/"
         },
-        "general_commands": {},
+        "discord_bot": {
+            "channel": "-- channel id --",
+            "client_id": "-- client_id --",
+            "log_discord": false
+            "strip_colors": true,
+            "token": "-- token --",
+        },
+        "general_commands": {
+            "maintenance_message": "This server is currently in maintenance mode and is not accepting new connections."
+        },
         "help_plugin": {},
         "irc_bot": {
+            "announce_join_leave": true,
             "channel": "#YourChannel",
             "log_irc": false,
             "server": "irc.example.com",
@@ -40,6 +53,16 @@
         "planet_backups": {},
         "planet_protect": {},
         "player_manager": {
+            "allowed_species": [
+                "apex",
+                "avian",
+                "glitch",
+                "floran",
+                "human",
+                "hylotl",
+                "penguin",
+                "novakid"
+            ],
             "owner_uuid": "!--REPLACE WITH YOUR UUID--!",
             "player_db": "config/player"
         },
@@ -51,7 +74,8 @@
         },
         "simple_command_plugin": {},
         "spawn": {},
-        "storage_command_plugin": {}
+        "storage_command_plugin": {},
+        "warp_plugin": {}
     },
     "upstream_host": "localhost",
     "upstream_port": 21024
