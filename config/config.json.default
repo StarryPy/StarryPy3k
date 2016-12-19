@@ -27,9 +27,9 @@
         "discord_bot": {
             "channel": "-- channel id --",
             "client_id": "-- client_id --",
-            "log_discord": false
+            "log_discord": false,
             "strip_colors": true,
-            "token": "-- token --",
+            "token": "-- token --"
         },
         "general_commands": {
             "maintenance_message": "This server is currently in maintenance mode and is not accepting new connections."
