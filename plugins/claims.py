@@ -11,7 +11,7 @@ import asyncio
 
 from base_plugin import StorageCommandPlugin
 from plugins.player_manager import Registered, Planet
-from utilities import Command, send_message
+from utilities import Command, send_message, link_plugin_if_available
 
 
 class Claims(StorageCommandPlugin):
@@ -23,6 +23,7 @@ class Claims(StorageCommandPlugin):
         super().__init__()
         self.max_claims = None
         self.planet_protect = self.plugins["planet_protect"]
+        self.planet_announcer = None
 
     def activate(self):
         super().activate()
@@ -30,6 +31,8 @@ class Claims(StorageCommandPlugin):
             self.storage["owners"] = {}
         self.max_claims = self.config.get_plugin_config(self.name)[
             "max_claims_per_person"]
+        if link_plugin_if_available(self, "planet_announcer"):
+            self.planet_announcer = self.plugins["planet_announcer"]
 
     def is_owner(self, uuid, location):
         if uuid not in self.storage["owners"]:
@@ -279,3 +282,30 @@ class Claims(StorageCommandPlugin):
                 send_message(connection, self._pretty_world_name(location))
         else:
             send_message(connection, "You haven't claimed any worlds.")
+
+    @Command("set_claim_greet",
+             role=Registered,
+             doc="Sets a custom greeting message for the planet, or clears "
+                 "it if unspecified.")
+    def _set_claim_greet(self, data, connection):
+        location = str(connection.player.location)
+        msg = " ".join(data)
+        if self.planet_announcer:
+            if self.is_owner(connection.player.uuid, location):
+                if not msg:
+                    if location in self.planet_announcer.storage["greetings"]:
+                        self.planet_announcer.storage["greetings"].pop(
+                            location)
+                        yield from send_message(connection, "Greeting message "
+                                                            "cleared.")
+                else:
+                    self.planet_announcer.storage["greetings"][location] = msg
+                    yield from send_message(connection, "Greeting message "
+                                                        "set to \"{}\"."
+                                            .format(msg))
+            else:
+                yield from send_message(connection, "You don't own this "
+                                                    "planet!")
+        else:
+            send_message(connection, "Planet greetings are not available on "
+                                     "this server.")

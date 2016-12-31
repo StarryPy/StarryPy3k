@@ -57,7 +57,7 @@ class PlanetAnnouncer(StorageCommandPlugin):
         msg = " ".join(data)
         if not msg:
             if location in self.storage["greetings"]:
-                self.storage["greetings"][location].pop()
+                self.storage["greetings"].pop(location)
                 yield from send_message(connection, "Greeting message "
                                                     "cleared.")
         else:
