@@ -30,16 +30,6 @@ class Claims(StorageCommandPlugin):
             self.storage["owners"] = {}
         self.max_claims = self.config.get_plugin_config(self.name)[
             "max_claims_per_person"]
-        # Convert alias entries to uuid entries
-        to_convert = {}
-        for alias in self.storage["owners"].keys():
-            player = self.plugins["player_manager"].get_player_by_alias(alias)
-            if player:
-                to_convert[alias] = player.uuid
-        if to_convert:
-            for alias, uuid in to_convert.items():
-                self.storage["owners"][uuid] = self.storage["owners"].pop(alias)
-
 
     def is_owner(self, uuid, location):
         if uuid not in self.storage["owners"]:
