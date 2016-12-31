@@ -10,7 +10,7 @@ Author: medeor413
 import asyncio
 
 from base_plugin import StorageCommandPlugin
-from plugins.player_manager import Registered, Planet
+from plugins.player_manager import Registered, Admin
 from utilities import Command, send_message, link_plugin_if_available
 
 
@@ -34,7 +34,10 @@ class Claims(StorageCommandPlugin):
         if link_plugin_if_available(self, "planet_announcer"):
             self.planet_announcer = self.plugins["planet_announcer"]
 
-    def is_owner(self, uuid, location):
+    def is_owner(self, connection, location):
+        uuid = connection.player.uuid
+        if connection.player.check_role(Admin):
+            return True
         if uuid not in self.storage["owners"]:
             return False
         elif str(location) not in self.storage["owners"][uuid]:
@@ -139,7 +142,7 @@ class Claims(StorageCommandPlugin):
         uuid = connection.player.uuid
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This planet is not protected.")
-        elif not self.is_owner(uuid, location):
+        elif not self.is_owner(connection, location):
             send_message(connection, "You don't own this planet!")
         elif location.locationtype() is "ShipWorld":
             send_message(connection, "Can't unclaim your ship!")
@@ -162,7 +165,7 @@ class Claims(StorageCommandPlugin):
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This location is not protected.")
         if target is not None:
-            if not self.is_owner(uuid, location):
+            if not self.is_owner(connection, location):
                 send_message(connection, "You don't own this planet!")
             else:
                 protection = self.planet_protect.get_protection(location)
@@ -193,7 +196,7 @@ class Claims(StorageCommandPlugin):
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This location is not protected.")
         if target is not None:
-            if not self.is_owner(uuid, location):
+            if not self.is_owner(connection, location):
                 send_message(connection, "You don't own this planet!")
             elif str.lower(target.alias) == str.lower(alias):
                 send_message(connection, "Can't remove yourself from the build"
@@ -216,7 +219,7 @@ class Claims(StorageCommandPlugin):
         location = connection.player.location
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This location is not protected.")
-        elif not self.is_owner(uuid, location):
+        elif not self.is_owner(connection, location):
             send_message(connection, "You don't own this planet!")
         else:
             protection = self.planet_protect.get_protection(location)
@@ -235,7 +238,7 @@ class Claims(StorageCommandPlugin):
         if not self.planet_protect.check_protection(location):
             send_message(connection, "This location is not protected.")
         if target is not None:
-            if not self.is_owner(uuid, location):
+            if not self.is_owner(connection, location):
                 send_message(connection, "You don't own this planet!")
             elif location.locationtype() is "ShipWorld":
                 send_message(connection, "Can't transfer ownership of your "
@@ -291,7 +294,7 @@ class Claims(StorageCommandPlugin):
         location = str(connection.player.location)
         msg = " ".join(data)
         if self.planet_announcer:
-            if self.is_owner(connection.player.uuid, location):
+            if self.is_owner(connection, location):
                 if not msg:
                     if location in self.planet_announcer.storage["greetings"]:
                         self.planet_announcer.storage["greetings"].pop(
