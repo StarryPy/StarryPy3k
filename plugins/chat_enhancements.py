@@ -16,14 +16,14 @@ from datetime import datetime
 import data_parser
 import pparser
 import packets
-from base_plugin import SimpleCommandPlugin
+from base_plugin import StorageCommandPlugin
 from utilities import Command, DotDict, ChatSendMode, ChatReceiveMode, \
     send_message, link_plugin_if_available
 
 
 ###
 
-class ChatEnhancements(SimpleCommandPlugin):
+class ChatEnhancements(StorageCommandPlugin):
     name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
     default_config = {"chat_timestamps": True,
@@ -52,6 +52,8 @@ class ChatEnhancements(SimpleCommandPlugin):
         self.cts_color = self.config.get_plugin_config(self.name)[
             "timestamp_color"]
         link_plugin_if_available(self, "irc_bot")
+        if "ignores" not in self.storage:
+            self.storage["ignores"] = {}
 
     # Packet hooks - look for these packets and act on them
 
@@ -72,6 +74,11 @@ class ChatEnhancements(SimpleCommandPlugin):
             if data["parsed"]["name"] != "server":
                 sender = self.plugins['player_manager'].get_player_by_name(
                     data["parsed"]["name"])
+                if connection.player.uuid not in self.storage["ignores"]:
+                    self.storage["ignores"][connection.player.uuid] = []
+                if sender.uuid in self.storage["ignores"][
+                    connection.player.uuid]:
+                    return False
                 try:
                     sender = self.decorate_line(sender.connection)
                 except AttributeError:
@@ -248,7 +255,17 @@ class ChatEnhancements(SimpleCommandPlugin):
             if not recipient.logged_in:
                 send_message(connection,
                              "Player {} is not currently logged in."
-                             "".format(name))
+                             "".format(recipient.alias))
+                return False
+            if connection.player.uuid in self.storage["ignores"][recipient.uuid]:
+                send_message(connection, "Player {} is currently ignoring you."
+                             .format(recipient.alias))
+                return False
+            if recipient.uuid in self.storage["ignores"][
+                connection.player.uuid]:
+                send_message(connection, "Cannot send message to player {} "
+                                         "as you are currently ignoring "
+                                         "them.".format(recipient.alias))
                 return False
             message = " ".join(data[1:])
             client_id = connection.player.client_id
@@ -271,3 +288,28 @@ class ChatEnhancements(SimpleCommandPlugin):
             yield from send_message(connection,
                                     "Couldn't find a player with name {}"
                                     "".format(name))
+
+    @Command("ignore",
+             doc="Ignores a player, preventing you from seeing their "
+                 "messages. Use /ignore again to toggle.")
+    def _ignore(self, data, connection):
+        user = connection.player.uuid
+        try:
+            name = data[0]
+        except IndexError:
+            raise SyntaxWarning("No target provided.")
+        target = self.plugins.player_manager.find_player(name)
+        if target is not None:
+            if target == connection.player:
+                send_message(connection, "Can't ignore yourself!")
+                return False
+            if not self.storage["ignores"][user]:
+                self.storage["ignores"][user] = []
+            if target.uuid in self.storage["ignores"][user]:
+                self.storage["ignores"][user].remove(target.uuid)
+                yield from send_message(connection, "User {} removed from "
+                                        "ignores list.".format(target.alias))
+            else:
+                self.storage["ignores"][user].append(target.uuid)
+                yield from send_message(connection, "User {} added to ignores "
+                                        "list.".format(target.alias))
