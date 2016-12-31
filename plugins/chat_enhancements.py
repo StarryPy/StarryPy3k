@@ -204,14 +204,18 @@ class ChatEnhancements(StorageCommandPlugin):
             yield from self._send_to_server(data,
                                             ChatSendMode.UNIVERSE,
                                             connection)
-            try:
+            if link_plugin_if_available(self, "irc_bot"):
                 # Try sending it to IRC if we have that available.
                 asyncio.ensure_future(
                     self.plugins["irc_bot"].bot_write(
                         "<{}> {}".format(connection.player.alias,
                                          " ".join(data))))
-            except KeyError:
-                pass
+            if link_plugin_if_available(self, "discord_bot"):
+                discord = self.plugins['discord_bot']
+                asyncio.ensure_future(discord.bot.send_message(
+                    discord.bot.get_channel(discord.channel),
+                    "**<{}>** {}".format(connection.player.alias, " ".join(
+                        data))))
             return True
 
     @Command("p",
