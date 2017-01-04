@@ -125,6 +125,29 @@ class GeneralCommands(SimpleCommandPlugin):
                      "{} players online:\n{}".format(len(ret_list),
                                                      ", ".join(ret_list)))
 
+    @Command("whereami",
+             doc="Displays your current location.")
+    def _whereami(self, data, connection):
+        """
+        Displays the user's current location.
+        This mainly exists to prevent Starbound's default "whereami" command
+        from leaking sensitive UUIDs when in a player's ship or instance world.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null.
+        """
+        location = connection.player.location
+        if connection.player.check_role(Moderator):
+            send_message(connection,
+                "Current location: {}".format(location))
+        elif hasattr(location, "locationtype") and (location.locationtype() == "CelestialWorld"):
+            send_message(connection,
+                "Current location: {}".format(location))
+        else:
+            send_message(connection,
+                "Current location: a ship or instance world.")
+
     @Command("whois",
              role=Whois,
              doc="Returns client data about the specified user.",
