@@ -721,24 +721,20 @@ class PlayerManager(SimpleCommandPlugin):
                 if not check_logged_in or player.logged_in:
                     return player
 
-    def get_player_by_client_id(self, id, check_logged_in=False) -> Player:
+    def get_player_by_client_id(self, id) -> Player:
         """
-        Grab a hook to a player by their client id. Return Boolean value if
-        only checking login status. Returns player object otherwise.
+        Grab a hook to a player by their client id. Returns player object.
 
         :param id: Integer: Client Id of the player to check.
-        :param check_logged_in: Boolean: Whether we just want login status
-                                (true), or the player's server object (false).
-        :return: Mixed: Boolean on logged_in check, player object otherwise.
+        :return: Player object.
         """
         try:
             iid = int(id)
         except ValueError:
             return
         for player in self.shelf["players"].values():
-            if player.client_id == iid:
-                if not check_logged_in or player.logged_in:
-                    return player
+            if player.client_id == iid and player.logged_in:
+                return player
 
     def find_player(self, search, check_logged_in=False):
         """
@@ -755,7 +751,7 @@ class PlayerManager(SimpleCommandPlugin):
         player = self.get_player_by_name(search, check_logged_in)
         if player is not None:
             return player
-        player = self.get_player_by_client_id(search, check_logged_in)
+        player = self.get_player_by_client_id(search)
         if player is not None:
             return player
 
