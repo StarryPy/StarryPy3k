@@ -669,11 +669,12 @@ class ClientConnect(Struct):
     shipdata = WorldChunks
     ship_level = UBInt32
     max_fuel = UBInt32
+    crew_size = UBInt32
     # Junk means, I don't know what this value represents... <_<
-    junk2 = UBInt32
+    junk2 = BFloat32
     ship_upgrades = StringSet
-    intro_complete = Byte
-    account = StarString
+    # account really does appear to be a StringSet despite always being a single string.
+    account = StringSet
 
 
 class ClientDisconnectRequest(Struct):
