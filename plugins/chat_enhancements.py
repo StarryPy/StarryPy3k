@@ -43,6 +43,7 @@ class ChatEnhancements(StorageCommandPlugin):
         self.colors = None
         self.cts = None
         self.cts_color = None
+        self.last_whisper = {}
 
     def activate(self):
         super().activate()
@@ -51,6 +52,7 @@ class ChatEnhancements(StorageCommandPlugin):
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
         self.cts_color = self.config.get_plugin_config(self.name)[
             "timestamp_color"]
+        self.last_whisper = {}
         link_plugin_if_available(self, "irc_bot")
         if "ignores" not in self.storage:
             self.storage["ignores"] = {}
@@ -271,6 +273,8 @@ class ChatEnhancements(StorageCommandPlugin):
                                          "as you are currently ignoring "
                                          "them.".format(recipient.alias))
                 return False
+            self.last_whisper[recipient.uuid] = connection.player.alias
+            self.last_whisper[connection.player.uuid] = recipient.alias
             message = " ".join(data[1:])
             client_id = connection.player.client_id
             sender = self.decorate_line(connection)
@@ -292,6 +296,61 @@ class ChatEnhancements(StorageCommandPlugin):
             yield from send_message(connection,
                                     "Couldn't find a player with name {}"
                                     "".format(name))
+
+    @Command("reply", "r",
+             doc="Send message privately to the last person who privately " \
+                 "messaged you.")
+    def _reply(self, data, connection):
+        """
+        Reply. Sends a message to the last person who whispered you.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
+        """
+        if connection.player.uuid in self.last_whisper:
+            name = self.last_whisper[connection.player.uuid]
+            recipient = self.plugins.player_manager.find_player(name)
+        else:
+            recipient = None
+        if recipient is not None:
+            if not recipient.logged_in:
+                send_message(connection,
+                             "Player {} is not currently logged in."
+                             "".format(recipient.alias))
+                return False
+            if connection.player.uuid in self.storage["ignores"][recipient.uuid]:
+                send_message(connection, "Player {} is currently ignoring you."
+                             .format(recipient.alias))
+                return False
+            if recipient.uuid in self.storage["ignores"][
+                connection.player.uuid]:
+                send_message(connection, "Cannot send message to player {} "
+                                         "as you are currently ignoring "
+                                         "them.".format(recipient.alias))
+                return False
+            self.last_whisper[recipient.uuid] = connection.player.alias
+            self.last_whisper[connection.player.uuid] = recipient.alias
+            message = " ".join(data)
+            client_id = connection.player.client_id
+            sender = self.decorate_line(connection)
+            send_mode = ChatReceiveMode.WHISPER
+            channel = "Private"
+            yield from send_message(recipient.connection,
+                                    message,
+                                    client_id=client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
+            yield from send_message(connection,
+                                    message,
+                                    client_id=client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
+        else:
+            yield from send_message(connection,
+                                    "You haven't been messaged by anyone.")
 
     @Command("ignore",
              doc="Ignores a player, preventing you from seeing their "
