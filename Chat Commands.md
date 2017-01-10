@@ -18,6 +18,8 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /spawn
 - /u
 - /whisper , /w
+- /reply , /r
+- /ignore
 - /who
 - /whoami
 - /p
@@ -35,6 +37,7 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /change_owner
 - /helper_list
 - /list_claims
+- /set_claim_greet
 
 ***Moderator Commands***
 
@@ -63,6 +66,7 @@ Note: This document is likely to change often, as well as become outdated quickl
 - /give , /item , /give_item
 - /set_poi
 - /del_poi
+- /set_greeting
 - /grant , /promote , /revoke , /demote
 
 ***SuperAdmin Commands***
@@ -237,7 +241,7 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
 #### Chat Manager
 
 - ***Depend on:***
-  - Command Dispatcher, Player Manger
+  - Command Dispatcher, Player Manager
 
 - ***Commands Provided***
   - /mute (username)
@@ -251,7 +255,7 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
 #### Chat Enhancements
 
 - ***Depend on:***
-  - Command Dispatcher, Player Manger
+  - Command Dispatcher, Player Manager
 
 - ***Commands Provided***
   - /l (message)
@@ -266,15 +270,24 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
      - **Role:** Guest
      - **Description:** Sends a private message to another user.
      - **Alias:** /w
+     
+  - /reply (message)
+    - **Role:** Guest
+    - **Description:** Sends a private message to the last person to privately message you.
+    - **Alias:** /r
 
   - /p (message)
      - **Role:** Guest
      - **Description:** Sends a message to everyone in your party. If not in a party, defaults to local chat.
+     
+  - /ignore (username)
+    - **Role:** Guest
+    - **Description:** Ignores a player, preventing you from seeing their messages. Run again to remove a player from the ignore list.
 
 #### Emotes
 
 - ***Depend on:***
-  - Command Dispatcher, Player Manger
+  - Command Dispatcher, Player Manager
 
 - ***Commands Provided***
   - /me [emote]
@@ -309,7 +322,7 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
 #### New Player Greeter
 
 - ***Depend on:***
-  - Command Dispatcher, Player Manger
+  - Command Dispatcher, Player Manager
 
 - ***Commands Provided***
   - None
@@ -317,7 +330,7 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
 #### Planet Protect
 
 - ***Depend on:***
-  - Command Dispatcher, Player Manger
+  - Command Dispatcher, Player Manager
 
 - ***Commands Provided***
   - /protect
@@ -373,6 +386,11 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - /list_claims
     - **Role:** Registered
     - **Description:** List all planets the player is owner of.
+    
+  - /set_claim_greet (message)
+    - **Role:** Registered
+    - **Description:** Sets a custom greeting message that is displayed when players beam onto the planet, or clears it if unspecified.
+    - Requires Planet Announcer to be installed.
 
   - Note: All of the commands except /claim and /list_helper require the user to be the owner of the planet.
 
@@ -389,6 +407,16 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
   - /tps [from player] (to player)
     - **Role:** Moderator
     - **Description:** Warps the specified from player, or self if none, to the specified to player's ship.
+    
+#### Planet Announcer
+
+- ***Depend on:***
+  - Command Dispatcher, Player Manager
+  
+- ***Commands Provided***
+  - /set_greeting (message)
+    - **Role:** Admin
+    - **Description:** Sets a custom greeting message that is displayed when players beam onto the planet, or clears it if unspecified.
 
 #### Planet Backups
 
