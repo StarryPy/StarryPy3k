@@ -42,6 +42,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
             "modchat_color"]
         self.report_prefix = self.config.get_plugin_config(self.name)[
             "report_prefix"]
+        self.broadcast_prefix = self.config.get_plugin_config(self.name)[
+            "broadcast_prefix"]
 
     # Commands - In-game actions that can be performed
 
@@ -115,5 +117,5 @@ class PrivilegedChatter(SimpleCommandPlugin):
         :return: Null.
         """
         if data:
-            message = " ".join(data)
+            message = self.broadcast_prefix + " ".join(data)
             broadcast(self, message)
