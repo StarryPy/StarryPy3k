@@ -387,6 +387,16 @@ Note: This is old syntax, in that each player has their own spawn planet. It wou
     - **Role:** Registered
     - **Description:** List all planets the player is owner of.
     
+  - /planet_access (arguments...)
+    - **Role:** Registered
+    - **Description:** Manage who is allowed or disallowed access to your claim.
+    - /planet_access (Player Name) (add/remove): Adds or removes a player from the planet's access list.
+    - /planet_access whitelist (true/false): Sets the access list to behave 
+    like a whitelist (only players on the list can access) or a blacklist 
+    (default, everyone except players on the list can access).
+    - /planet_access list: Lists the players on the access list.
+    - /planet_access help: Displays the help in-game.
+     
   - /set_claim_greet (message)
     - **Role:** Registered
     - **Description:** Sets a custom greeting message that is displayed when players beam onto the planet, or clears it if unspecified.
