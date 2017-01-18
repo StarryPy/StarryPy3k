@@ -91,6 +91,7 @@ class DiscordPlugin(BasePlugin):
     client_id = None
     connection = None
     dispatcher = None
+    irc_bot_exists = None
 
     def __init__(self):
         super().__init__()
@@ -105,6 +106,7 @@ class DiscordPlugin(BasePlugin):
         self.sc = None
         self.irc_bot_exists = False
         self.irc_bot = None
+        self.chat_manager = None
 
     def activate(self):
         super().activate()
@@ -112,6 +114,8 @@ class DiscordPlugin(BasePlugin):
         DiscordPlugin.connection = self.connection
         self.dispatcher = self.plugins.command_dispatcher
         DiscordPlugin.dispatcher = self.dispatcher
+        self.irc_bot_exists = link_plugin_if_available(self, 'irc_bot')
+        DiscordPlugin.irc_bot_exists = self.irc_bot_exists
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
@@ -120,6 +124,8 @@ class DiscordPlugin(BasePlugin):
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
         asyncio.ensure_future(self.start_bot())
         self.update_id(self.client_id)
+        if link_plugin_if_available(self, "chat_manager"):
+            self.chat_manager = self.plugins['chat_manager']
 
     # Packet hooks - look for these packets and act on them
 
@@ -163,9 +169,11 @@ class DiscordPlugin(BasePlugin):
                 msg = self.color_strip.sub("", msg)
 
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
-                asyncio.ensure_future(
-                    self.bot_write("**<{}>** {}".format(connection.player.alias,
-                                                        msg)))
+                if self.chat_manager:
+                    if not self.chat_manager.mute_check(connection.player):
+                        asyncio.ensure_future(self.bot_write("**<{}>** {}"
+                                                             .format(connection.player.alias,
+                                                                     msg)))
         return True
 
     # Helper functions - Used by commands
@@ -208,14 +216,14 @@ class DiscordPlugin(BasePlugin):
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,emote.id),
                                         ":{}:".format(emote.name))
-                yield from cls.factory.broadcast("<^orange;Discord^reset;> <{}> {}"
-                                                 "".format(nick, text),
+                yield from cls.factory.broadcast("[^orange;DC^reset;] <{}>"
+                                                 " {}".format(nick, text),
                                                  mode=ChatReceiveMode.BROADCAST)
                 if cls.config.get_plugin_config(cls.name)["log_discord"]:
                     cls.logger.info("<{}> {}".format(nick, text))
-                if link_plugin_if_available(cls, "irc_bot"):
+                if cls.irc_bot_exists:
                     asyncio.ensure_future(cls.plugins['irc_bot'].bot_write(
-                                          "<DC><{}> {}".format(nick, text)))
+                                          "[DC] <{}> {}".format(nick, text)))
 
     @asyncio.coroutine
     def make_announce(self, connection, circumstance):
@@ -227,11 +235,11 @@ class DiscordPlugin(BasePlugin):
         :return: Null.
         """
         yield from asyncio.sleep(1)
-        yield from self.bot_write("{} has {} the server.".format(
+        yield from self.bot_write("**{}** has {} the server.".format(
             connection.player.alias, circumstance))
 
     @asyncio.coroutine
-    def handle_command(data):
+    def handle_command(self, data):
         split = data.split()
         command = split[0]
         to_parse = split[1:]

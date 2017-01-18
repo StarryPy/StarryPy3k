@@ -16,14 +16,14 @@ from datetime import datetime
 import data_parser
 import pparser
 import packets
-from base_plugin import SimpleCommandPlugin
+from base_plugin import StorageCommandPlugin
 from utilities import Command, DotDict, ChatSendMode, ChatReceiveMode, \
     send_message, link_plugin_if_available
 
 
 ###
 
-class ChatEnhancements(SimpleCommandPlugin):
+class ChatEnhancements(StorageCommandPlugin):
     name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
     default_config = {"chat_timestamps": True,
@@ -43,6 +43,7 @@ class ChatEnhancements(SimpleCommandPlugin):
         self.colors = None
         self.cts = None
         self.cts_color = None
+        self.last_whisper = {}
 
     def activate(self):
         super().activate()
@@ -51,7 +52,10 @@ class ChatEnhancements(SimpleCommandPlugin):
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
         self.cts_color = self.config.get_plugin_config(self.name)[
             "timestamp_color"]
+        self.last_whisper = {}
         link_plugin_if_available(self, "irc_bot")
+        if "ignores" not in self.storage:
+            self.storage["ignores"] = {}
 
     # Packet hooks - look for these packets and act on them
 
@@ -72,6 +76,11 @@ class ChatEnhancements(SimpleCommandPlugin):
             if data["parsed"]["name"] != "server":
                 sender = self.plugins['player_manager'].get_player_by_name(
                     data["parsed"]["name"])
+                if connection.player.uuid not in self.storage["ignores"]:
+                    self.storage["ignores"][connection.player.uuid] = []
+                if sender.uuid in self.storage["ignores"][
+                    connection.player.uuid]:
+                    return False
                 try:
                     sender = self.decorate_line(sender.connection)
                 except AttributeError:
@@ -197,14 +206,18 @@ class ChatEnhancements(SimpleCommandPlugin):
             yield from self._send_to_server(data,
                                             ChatSendMode.UNIVERSE,
                                             connection)
-            try:
+            if link_plugin_if_available(self, "irc_bot"):
                 # Try sending it to IRC if we have that available.
                 asyncio.ensure_future(
                     self.plugins["irc_bot"].bot_write(
                         "<{}> {}".format(connection.player.alias,
                                          " ".join(data))))
-            except KeyError:
-                pass
+            if link_plugin_if_available(self, "discord_bot"):
+                discord = self.plugins['discord_bot']
+                asyncio.ensure_future(discord.bot.send_message(
+                    discord.bot.get_channel(discord.channel),
+                    "**<{}>** {}".format(connection.player.alias, " ".join(
+                        data))))
             return True
 
     @Command("p",
@@ -248,8 +261,20 @@ class ChatEnhancements(SimpleCommandPlugin):
             if not recipient.logged_in:
                 send_message(connection,
                              "Player {} is not currently logged in."
-                             "".format(name))
+                             "".format(recipient.alias))
                 return False
+            if connection.player.uuid in self.storage["ignores"][recipient.uuid]:
+                send_message(connection, "Player {} is currently ignoring you."
+                             .format(recipient.alias))
+                return False
+            if recipient.uuid in self.storage["ignores"][
+                connection.player.uuid]:
+                send_message(connection, "Cannot send message to player {} "
+                                         "as you are currently ignoring "
+                                         "them.".format(recipient.alias))
+                return False
+            self.last_whisper[recipient.uuid] = connection.player.alias
+            self.last_whisper[connection.player.uuid] = recipient.alias
             message = " ".join(data[1:])
             client_id = connection.player.client_id
             sender = self.decorate_line(connection)
@@ -271,3 +296,83 @@ class ChatEnhancements(SimpleCommandPlugin):
             yield from send_message(connection,
                                     "Couldn't find a player with name {}"
                                     "".format(name))
+
+    @Command("reply", "r",
+             doc="Send message privately to the last person who privately " \
+                 "messaged you.")
+    def _reply(self, data, connection):
+        """
+        Reply. Sends a message to the last person who whispered you.
+
+        :param data: The packet containing the command.
+        :param connection: The connection from which the packet came.
+        :return: Null
+        """
+        if connection.player.uuid in self.last_whisper:
+            name = self.last_whisper[connection.player.uuid]
+            recipient = self.plugins.player_manager.find_player(name)
+        else:
+            recipient = None
+        if recipient is not None:
+            if not recipient.logged_in:
+                send_message(connection,
+                             "Player {} is not currently logged in."
+                             "".format(recipient.alias))
+                return False
+            if connection.player.uuid in self.storage["ignores"][recipient.uuid]:
+                send_message(connection, "Player {} is currently ignoring you."
+                             .format(recipient.alias))
+                return False
+            if recipient.uuid in self.storage["ignores"][
+                connection.player.uuid]:
+                send_message(connection, "Cannot send message to player {} "
+                                         "as you are currently ignoring "
+                                         "them.".format(recipient.alias))
+                return False
+            self.last_whisper[recipient.uuid] = connection.player.alias
+            self.last_whisper[connection.player.uuid] = recipient.alias
+            message = " ".join(data)
+            client_id = connection.player.client_id
+            sender = self.decorate_line(connection)
+            send_mode = ChatReceiveMode.WHISPER
+            channel = "Private"
+            yield from send_message(recipient.connection,
+                                    message,
+                                    client_id=client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
+            yield from send_message(connection,
+                                    message,
+                                    client_id=client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
+        else:
+            yield from send_message(connection,
+                                    "You haven't been messaged by anyone.")
+
+    @Command("ignore",
+             doc="Ignores a player, preventing you from seeing their "
+                 "messages. Use /ignore again to toggle.")
+    def _ignore(self, data, connection):
+        user = connection.player.uuid
+        try:
+            name = data[0]
+        except IndexError:
+            raise SyntaxWarning("No target provided.")
+        target = self.plugins.player_manager.find_player(name)
+        if target is not None:
+            if target == connection.player:
+                send_message(connection, "Can't ignore yourself!")
+                return False
+            if not self.storage["ignores"][user]:
+                self.storage["ignores"][user] = []
+            if target.uuid in self.storage["ignores"][user]:
+                self.storage["ignores"][user].remove(target.uuid)
+                yield from send_message(connection, "User {} removed from "
+                                        "ignores list.".format(target.alias))
+            else:
+                self.storage["ignores"][user].append(target.uuid)
+                yield from send_message(connection, "User {} added to ignores "
+                                        "list.".format(target.alias))

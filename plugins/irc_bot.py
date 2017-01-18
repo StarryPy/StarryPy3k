@@ -131,6 +131,7 @@ class IRCPlugin(BasePlugin):
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
         self.discord_active = False
+        self.chat_manager = None
 
     def activate(self):
         super().activate()
@@ -164,6 +165,8 @@ class IRCPlugin(BasePlugin):
         self.bot.create_connection()
 
         self.discord_active = link_plugin_if_available(self, 'discord_bot')
+        if link_plugin_if_available(self, "chat_manager"):
+            self.chat_manager = self.plugins['chat_manager']
 
         self.ops = set()
         asyncio.ensure_future(self.update_ops())
@@ -210,10 +213,10 @@ class IRCPlugin(BasePlugin):
                 msg = self.color_strip.sub("", msg)
 
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
-                asyncio.ensure_future(
-                    self.bot_write("<{}> {}".format(
-                        connection.player.alias,
-                        msg)))
+                if self.chat_manager:
+                    if not self.chat_manager.mute_check(connection.player):
+                        asyncio.ensure_future(self.bot_write("<{}> {}".format(
+                                              connection.player.alias, msg)))
         return True
 
     # Helper functions - Used by commands
@@ -304,9 +307,9 @@ class IRCPlugin(BasePlugin):
                 self.logger.info("<" + nick + "> " + message)
             if self.discord_active:
                 discord = self.plugins['discord_bot']
-                asyncio.ensure_future(discord.bot_write("<IRC> **<{}>** {}"
+                asyncio.ensure_future(discord.bot_write("[IRC] **<{}>** {}"
                                                         .format(nick, message)))
-            yield from self.factory.broadcast("< ^orange;IRC^reset; > <{}> "
+            yield from self.factory.broadcast("[^orange;IRC^reset;] <{}> "
                                           "{}".format(nick, message),
                                               mode=ChatReceiveMode.BROADCAST)
 
