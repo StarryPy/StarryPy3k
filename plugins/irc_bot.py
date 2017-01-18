@@ -253,11 +253,11 @@ class IRCPlugin(BasePlugin):
             if self.discord_active:
                 discord = self.plugins['discord_bot']
                 asyncio.ensure_future(discord.bot.send_message(
-                    discord.bot.get_channel(discord.channel), "<IRC> **{}** "
+                    discord.bot.get_channel(discord.channel), "[IRC] **{}** "
                                                               "has {} the "
                                                               "IRC "
                                                               "channel.".format(nick, move)))
-            yield from self.factory.broadcast("< ^orange;IRC^reset; > {} has "
+            yield from self.factory.broadcast("[^orange;IRC^reset;] {} has "
                                               "{} the channel.".format(nick,
                                                                        move),
                                               mode=ChatReceiveMode.BROADCAST)
