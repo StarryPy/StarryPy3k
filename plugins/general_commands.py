@@ -238,7 +238,7 @@ class GeneralCommands(SimpleCommandPlugin):
             broadcast(connection, "{}'s name has been changed to {}".format(
                 old_alias, clean_alias))
 
-    @Command("whoami",
+    @Command("serverwhoami",
              role=Whoami,
              doc="Displays your current nickname for chat.")
     def _whoami(self, data, connection):
@@ -249,8 +249,6 @@ class GeneralCommands(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        # TODO: currently this is buggy, and will sometime not work...
-        # instead, the Starbound version of /whoami will take over.
         send_message(connection,
                      self.generate_whois(connection.player))
 
