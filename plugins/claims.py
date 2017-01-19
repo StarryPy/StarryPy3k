@@ -357,11 +357,11 @@ class Claims(StorageCommandPlugin):
             allow = "disallowed"
             if access["whitelist"]:
                 allow = "allowed"
-            if not data[0]:
+            if not data:
                 yield from send_message(connection, "Argument not recognized. "
                                                     "Usage: /planet_access ["
                                                     "name] add/remove")
-            if data[0].lower() == "whitelist":
+            elif data[0].lower() == "whitelist":
                 if data[1].lower() == "true":
                     access["whitelist"] = True
                     access["list"] = [uuid]
