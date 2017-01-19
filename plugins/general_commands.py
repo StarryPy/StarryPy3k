@@ -252,7 +252,7 @@ class GeneralCommands(SimpleCommandPlugin):
         send_message(connection,
                      self.generate_whois(connection.player))
 
-    @Command("here", "planet",
+    @Command("here",
              role=Whoami,
              doc="Displays all players on the same planet as you.")
     def _here(self, data, connection):
