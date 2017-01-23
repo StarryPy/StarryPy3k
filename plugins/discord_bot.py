@@ -211,7 +211,7 @@ class DiscordPlugin(BasePlugin):
         server = message.server
         if message.author.id != cls.client_id:
             if message.content[0] == ".":
-                asyncio.ensure_future(cls.handle_command(message.content[1:]))
+                asyncio.ensure_future(cls.handle_command(cls, message.content[1:]))
             else:
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,emote.id),
