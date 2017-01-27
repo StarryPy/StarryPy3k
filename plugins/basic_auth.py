@@ -24,11 +24,25 @@ from packets import packets
 class BasicAuth(SimpleCommandPlugin):
     name = "basic_auth"
     depends = ["player_manager"]
-    default_config = {"staff_sb_accounts": [
+    default_config = {"enabled" : False,
+                      "staff_sb_accounts": [
                          "-- REPLACE WITH STARBOUND ACCOUNT NAME --",
                          "-- REPLACE WITH ANOTHER --",
                          "-- SO ON AND SO FORTH ---"],
                       "owner_sb_account" : "-- REPLACE WITH OWNER ACCOUNT --"}
+
+    def activate(self):
+        super().activate()
+        if self.config.get_plugin_config(self.name)["enabled"]:
+            self.logger.debug("Enabled.")
+            self.enabled = True
+        else:
+            self.enabled = False
+            self.logger.warning("+---------------< WARNING >---------------+")
+            self.logger.warning("| basic_auth plugin is disabled! You are  |")
+            self.logger.warning("| vulnerable to UUID spoofing attacks!    |")
+            self.logger.warning("| Consult README for enablement info.     |")
+            self.logger.warning("+-----------------------------------------+")
 
     def on_client_connect(self, data, connection):
         """
@@ -41,6 +55,8 @@ class BasicAuth(SimpleCommandPlugin):
                  failed connection.
         """
 
+        if not self.enabled:
+            return True
         uuid = data["parsed"]["uuid"].decode("ascii")
         account = data["parsed"]["account"][0]
         # Why [0]? Because 'account' is a StringSet.

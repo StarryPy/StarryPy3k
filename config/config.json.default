@@ -5,6 +5,7 @@
     "plugin_path": "./plugins",
     "plugins": {
         "basic_auth": {
+            "enabled": true,
             "owner_sb_account": "-- REPLACE WITH OWNER ACCOUNT --",
             "staff_sb_accounts": [
                 "-- REPLACE WITH STARBOUND ACCOUNT NAME --",
