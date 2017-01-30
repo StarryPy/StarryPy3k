@@ -47,11 +47,16 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
 
     def __init__(self):
         super().__init__()
+        self.irc_active = False
+        self.discord_active = False
+        self.chat_enhancements = False
 
     def activate(self):
         super().activate()
-        link_plugin_if_available(self, "irc_bot")
-        link_plugin_if_available(self, "chat_enhancements")
+        self.irc_active = link_plugin_if_available(self, "irc_bot")
+        self.discord_active = link_plugin_if_available(self, "discord_bot")
+        self.chat_enhancements = link_plugin_if_available(self,
+                                                      "chat_enhancements")
 
     # Helper functions - Used by commands
 
@@ -93,12 +98,14 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
             except KeyError:
                 pass
             finally:
-                try:
+                if self.irc_active:
                     asyncio.ensure_future(
                         self.plugins["irc_bot"].bot_write(" -*- {} {}".format(
                             connection.player.alias, emote)))
-                except KeyError:
-                    pass
+                if self.discord_active:
+                    asyncio.ensure_future(self.plugins["discord_bot"]
+                        .bot_write(" -*- {} {}".format(
+                        connection.player.alias, emote)))
                 message = "^orange;{} {}".format(connection.player.alias,
                                                  emote)
                 try:
