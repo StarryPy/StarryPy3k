@@ -4,6 +4,15 @@
     "packet_reap_time": 600,
     "plugin_path": "./plugins",
     "plugins": {
+        "basic_auth": {
+            "enabled": true,
+            "owner_sb_account": "-- REPLACE WITH OWNER ACCOUNT --",
+            "staff_sb_accounts": [
+                "-- REPLACE WITH STARBOUND ACCOUNT NAME --",
+                "-- REPLACE WITH ANOTHER --",
+                "-- SO ON AND SO FORTH --"
+            ]
+        },
         "chat_enhancements": {
             "chat_timestamps": true,
             "colors": {

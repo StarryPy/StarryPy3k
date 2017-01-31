@@ -39,11 +39,57 @@ for the lines below, and change them to specify port 21024:
   "queryServerPort" : 21025,
 ```
 
+While editing your `starbound_server.config`, you should also add some accounts
+for your server's staff, if you have not done so already. StarryPy3k's
+basic_auth plugin uses Starbound's account system to authenticate privileged
+users (moderator and up), so you will need at least one account before your
+staff can join the server. Look for the lines below:
+
+```
+  "serverUsers" : {
+  },
+```
+
+And add some accounts (preferrably one per staff member) using the format below.
+Note: you do **not** need to set "admin" to "false". Set it to "true" if you
+would like this account to have administrator privileges on the underlying
+Starbound dedicated server.
+
+```
+  "serverUsers" : {
+    "repalceWithAccountName" : {
+      "admin" : false,
+      "password" : "replaceWithAccountPassword"
+    },
+    "repalceWithAnotherAccountName" : {
+      "admin" : false,
+      "password" : "replaceWithAnotherAccountPassword"
+    }
+  },
+```
+
 ### StarryPy Proxy Configuration
 An example configuration file, `config.json.default`, is provided in the
 `config` directory.  Copy that file to a new one named `config.json` in the
 same location.  Open it in your text editor of choice.  The following are the
 most likely changes you will have to make:
+
+```
+        "basic_auth": {
+            "enabled": true,
+            "owner_sb_account": "-- REPLACE WITH OWNER ACCOUNT --",
+            "staff_sb_accounts": [
+                "-- REPLACE WITH STARBOUND ACCOUNT NAME --",
+                "-- REPLACE WITH ANOTHER --",
+                "-- SO ON AND SO FORTH --"
+            ]
+        },
+```
+
+The section above is used by StarryPy3k's basic_auth plugin to define
+Starbound accounts that staff members can use to authenticate. Edit the example
+above to use **only** the account **names** (no passwords) that you just set up
+in your `starbound_server.config` file.
 
 ```
         "irc_bot": {
