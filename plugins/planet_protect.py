@@ -36,7 +36,7 @@ class ProtectedLocation:
     def __init__(self, location, allowed_builder):
         self.protected = True
         self.location = location
-        self.allowed_builders = {allowed_builder.alias}
+        self.allowed_builders = {allowed_builder.uuid}
 
     def unprotect(self):
         self.protected = False
@@ -45,13 +45,13 @@ class ProtectedLocation:
         self.protected = True
 
     def add_builder(self, builder):
-        self.allowed_builders.add(builder.alias)
+        self.allowed_builders.add(builder.uuid)
 
     def del_builder(self, builder):
-        self.allowed_builders.remove(builder.alias)
+        self.allowed_builders.remove(builder.uuid)
 
     def check_builder(self, builder):
-        return builder.alias in self.allowed_builders
+        return builder.uuid in self.allowed_builders
 
     def get_builders(self):
         return self.allowed_builders
@@ -65,6 +65,15 @@ class PlanetProtect(StorageCommandPlugin):
         super().activate()
         if "locations" not in self.storage:
             self.storage["locations"] = {}
+        if "converted" not in self.storage:
+            convert = {}
+            for protection in self.storage["locations"].values():
+                for alias in protection.allowed_builders:
+                    convert[alias] = self.plugins[
+                        'player_manager'].get_player_by_alias(alias).uuid
+                protection.allowed_builders = {x for x in convert.values()}
+            self.storage["converted"] = True
+
 
     # Packet hooks - look for these packets and act on them
 
@@ -87,7 +96,7 @@ class PlanetProtect(StorageCommandPlugin):
             return True
         if connection.player.check_role(Admin):
             return True
-        elif connection.player.alias in protection.get_builders():
+        elif protection.check_builder(connection.player):
             return True
         else:
             action = data["parsed"]["spawn_type"]
@@ -124,7 +133,7 @@ class PlanetProtect(StorageCommandPlugin):
             return True
         if connection.player.check_role(Admin):
             return True
-        elif connection.player.alias in protection.get_builders():
+        elif protection.check_builder(connection.player):
             return True
         else:
             action = data["parsed"]["interaction_type"]
@@ -164,7 +173,7 @@ class PlanetProtect(StorageCommandPlugin):
             return True
         if connection.player.check_role(Admin):
             return True
-        elif connection.player.alias in protection.get_builders():
+        elif protection.check_builder(connection.player):
             return True
         else:
             yield from self._protection_warn(data, connection)
@@ -365,7 +374,12 @@ class PlanetProtect(StorageCommandPlugin):
                          "This location has never been protected.")
         else:
             protection = self.get_protection(connection.player.location)
-            players = ", ".join(protection.get_builders())
+            uuids = protection.get_builders()
+            aliases = []
+            for id in uuids:
+                aliases.append(self.plugins['player_manager']
+                               .get_player_by_uuid(id).alias)
+            aliases = ", ".join(aliases)
             send_message(connection,
                          "Players allowed to build at location '{}': {}"
-                         "".format(connection.player.location, players))
+                         "".format(connection.player.location, aliases))
