@@ -347,7 +347,8 @@ class Command:
     interface for all commands, including roles, documentation, usage syntax,
     and aliases.
     """
-    def __init__(self, *aliases, role=None, roles=None, doc=None, syntax=None):
+    def __init__(self, *aliases, role=None, roles=None, doc=None,
+                 syntax=None, priority=0):
         if syntax is None:
             syntax = ()
         if isinstance(syntax, str):
@@ -365,6 +366,7 @@ class Command:
         self.human_syntax = " ".join(syntax)
         self.doc = doc
         self.aliases = aliases
+        self.priority = priority
 
     def __call__(self, f):
         """
@@ -388,6 +390,7 @@ class Command:
         wrapped.__doc__ = self.doc
         wrapped.roles = self.roles
         wrapped.syntax = self.human_syntax
+        wrapped.priority = self.priority
         # f.roles = self.roles
         # f.syntax = self.human_syntax
         # f.__doc__ = self.doc
