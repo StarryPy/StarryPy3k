@@ -93,8 +93,17 @@ class CommandDispatcher(BasePlugin):
                 self.register(fn, alias)
 
         if name in self.commands:
-            if fn.priority >= self.commands[name].priority:
+            oldfn = self.commands[name]
+            if fn.priority >= oldfn.priority:
                 self.commands[name] = fn
+                self.logger.debug("Command {} from {} overrides command {} "
+                                  "from {}.".format(name, fn.__self__, name,
+                                                    oldfn.__self__))
+            else:
+                self.logger.debug("Command {} from {} overrides command {} "
+                                  "from {}.".format(name, oldfn.__self__, name,
+                                                    fn.__self__))
+
         else:
             self.commands[name] = fn
 
