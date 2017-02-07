@@ -769,10 +769,24 @@ class EntityInteract(Struct):
     target_y = BFloat32
     request_id = UUID
 
+class EntityMessage(Struct):
+    """packet type: 51"""
+    unknown = Byte
+    target_id = SBInt32
+    message_name = StarString
+    message_args = VariantVariant
+    message_uuid = UUID
+    unknown_2 = UBInt16 # Also appears to always be 0
+
+class EntityMessageResponse(Struct):
+    success_level = Byte # 1 is a failure, 2 is a success
+    response = Variant
+    message_uuid = UUID
 
 class StepUpdate(Struct):
     """packet type: 54"""
     heartbeat = VLQ
+
 
 
 class BasePacket(Struct):

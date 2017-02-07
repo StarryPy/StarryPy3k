@@ -88,6 +88,7 @@ class EntityInteractionType(IntEnum):
 
 
 class EntitySpawnType(IntEnum):
+    PLANT = 0
     OBJECT = 1
     VEHICLE = 2
     ITEM_DROP = 3
