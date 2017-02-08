@@ -100,7 +100,7 @@ class PlanetProtect(StorageCommandPlugin):
             return True
         else:
             action = data["parsed"]["spawn_type"]
-            if action not in [EntitySpawnType.OBJECT]:
+            if action not in [EntitySpawnType.OBJECT, EntitySpawnType.VEHICLE]:
                 return True
         yield from self._protection_warn(data, connection)
 
