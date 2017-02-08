@@ -58,9 +58,15 @@ class BasicAuth(SimpleCommandPlugin):
         if not self.enabled:
             return True
         uuid = data["parsed"]["uuid"].decode("ascii")
-        account = data["parsed"]["account"][0]
-        # Why [0]? Because 'account' is a StringSet.
-        # ...but it never contains more than one string.
+        try:
+            account = data["parsed"]["account"][0]
+            # Why [0]? Because 'account' is a StringSet.
+            # ...but it never contains more than one string.
+        except:
+            # Except sometimes account is empty...
+            # I'm not entirely sure why this is, so please feel free to explore.
+            account = ''
+            #self.logger.debug(data)
         player = self.plugins["player_manager"].get_player_by_uuid(uuid)
         # We're only interested in players who already exist.
         if player:
