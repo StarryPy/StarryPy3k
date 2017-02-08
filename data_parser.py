@@ -771,8 +771,11 @@ class EntityInteract(Struct):
 
 class EntityMessage(Struct):
     """packet type: 51"""
-    unknown = Byte
-    target_id = SBInt32
+    target_unique = Flag
+    if target_unique:
+        unique_id = StarString
+    else:
+        target_id = SBInt32
     message_name = StarString
     message_args = VariantVariant
     message_uuid = UUID
