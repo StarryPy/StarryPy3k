@@ -65,8 +65,7 @@ class MockConnection:
     def send_message(self, *messages):
         for message in messages:
             if self.owner.discord_active:
-                asyncio.ensure_future(self.owner.plugins['discord_bot']
-                    .bot_write(message))
+                asyncio.ensure_future(self.owner.discord.bot_write(message))
             yield from self.owner.bot_write(message)
         return None
 
@@ -134,6 +133,7 @@ class IRCPlugin(BasePlugin):
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
         self.discord_active = False
+        self.discord = None
         self.chat_manager = None
 
     def activate(self):
@@ -167,6 +167,8 @@ class IRCPlugin(BasePlugin):
         self.bot.create_connection()
 
         self.discord_active = link_plugin_if_available(self, 'discord_bot')
+        if self.discord_active:
+            self.discord = self.plugins['discord_bot']
         if link_plugin_if_available(self, "chat_manager"):
             self.chat_manager = self.plugins['chat_manager']
 
@@ -254,10 +256,11 @@ class IRCPlugin(BasePlugin):
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("{} has {} the channel.".format(nick, move))
             if self.discord_active:
-                discord = self.plugins['discord_bot']
-                asyncio.ensure_future(discord.bot_write("[IRC] **{}** has {} "
-                                                        "the IRC channel."
-                                                        .format(nick,move)))
+                asyncio.ensure_future(self.discord.bot_write("[IRC] **{}** has"
+                                                             " {} the IRC "
+                                                             "channel."
+                                                             .format(nick,
+                                                                     move)))
             yield from self.factory.broadcast("[^orange;IRC^reset;] {} has "
                                               "{} the channel.".format(nick,
                                                                        move),
@@ -296,20 +299,18 @@ class IRCPlugin(BasePlugin):
                 if self.config.get_plugin_config(self.name)["log_irc"]:
                     self.logger.info(" -*- " + nick + " " + message)
                 if self.discord_active:
-                    discord = self.plugins['discord_bot']
-                    asyncio.ensure_future(discord.bot.send_message(discord.bot.get_channel(
-                        discord.channel), "-*- {} {}".format(nick, message)))
-                yield from self.factory.broadcast("< ^orange;IRC^reset; > "
-                                                  "^green;-*- {} {}".format(
-                                                                     nick, message),
-                                                  mode=ChatReceiveMode.BROADCAST)
+                    asyncio.ensure_future(self.discord.bot_write(
+                        "-*- {} {}".format(nick,message)))
+                yield from self.factory.broadcast(
+                    "< ^orange;IRC^reset; > ^green;-*- {} {}".format(nick,
+                                                                     message),
+                    mode=ChatReceiveMode.BROADCAST)
         else:
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("<" + nick + "> " + message)
             if self.discord_active:
-                discord = self.plugins['discord_bot']
-                asyncio.ensure_future(discord.bot_write("[IRC] **<{}>** {}"
-                                                        .format(nick, message)))
+                asyncio.ensure_future(self.discord.bot_write(
+                    "[IRC] **<{}>** {}".format(nick, message)))
             yield from self.factory.broadcast("[^orange;IRC^reset;] <{}> "
                                           "{}".format(nick, message),
                                               mode=ChatReceiveMode.BROADCAST)
@@ -373,8 +374,8 @@ class IRCPlugin(BasePlugin):
             # Only handle commands that work from IRC
             if command in ('who', 'help'):
                 if self.discord_active:
-                    asyncio.ensure_future(self.plugins['discord_bot'].bot_write(
-                        "[IRC] <{}> .{}".format(user, " ".join(split))))
+                    asyncio.ensure_future(self.discord.bot_write(
+                        "[IRC] <**{}**> .{}".format(user, " ".join(split))))
                 yield from self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)

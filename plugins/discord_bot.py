@@ -64,7 +64,7 @@ class MockConnection:
     def send_message(self, *messages):
         for message in messages:
             if self.owner.irc_bot_exists:
-                asyncio.ensure_future(self.owner.plugins['irc_bot'].bot_write(
+                asyncio.ensure_future(self.owner.irc.bot_write(
                     message))
             yield from self.owner.bot_write(message)
         return None
@@ -94,12 +94,15 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
         self.irc_bot_exists = False
+        self.irc = None
         self.chat_manager = None
 
     def activate(self):
         BasePlugin.activate(self)
         self.dispatcher = self.plugins.command_dispatcher
         self.irc_bot_exists = link_plugin_if_available(self, 'irc_bot')
+        if self.irc_bot_exists:
+            self.irc = self.plugins['irc_bot']
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
@@ -212,7 +215,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
                 if self.config.get_plugin_config(self.name)["log_discord"]:
                     self.logger.info("<{}> {}".format(nick, text))
                 if self.irc_bot_exists:
-                    asyncio.ensure_future(self.plugins['irc_bot'].bot_write(
+                    asyncio.ensure_future(self.irc.bot_write(
                                           "[DC] <{}> {}".format(nick, text)))
 
     @asyncio.coroutine
@@ -239,7 +242,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
             # Only handle commands that work from Discord
             if command in ('who', 'help'):
                 if self.irc_bot_exists:
-                    asyncio.ensure_future(self.plugins['irc_bot'].bot_write(
+                    asyncio.ensure_future(self.irc.bot_write(
                         "[DC] <{}> .{}".format(user, " ".join(split))
                     ))
                 yield from self.dispatcher.run_command(command,
