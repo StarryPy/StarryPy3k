@@ -66,8 +66,8 @@ class PlanetProtect(StorageCommandPlugin):
         if "locations" not in self.storage:
             self.storage["locations"] = {}
         if "converted" not in self.storage:
-            convert = {}
             for protection in self.storage["locations"].values():
+                convert = {}
                 for alias in protection.allowed_builders:
                     plr = self.plugins['player_manager']\
                         .get_player_by_alias(alias)
