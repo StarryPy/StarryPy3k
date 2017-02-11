@@ -93,10 +93,19 @@ class CommandDispatcher(BasePlugin):
                 self.register(fn, alias)
 
         if name in self.commands:
-            self.logger.info("Got duplicate command name")
-            raise NameError("A command is already registered with the name: "
-                            "{}".format(name))
-        self.commands[name] = fn
+            oldfn = self.commands[name]
+            if fn.priority >= oldfn.priority:
+                self.commands[name] = fn
+                self.logger.debug("Command {} from {} overrides command {} "
+                                  "from {}.".format(name, fn.__self__, name,
+                                                    oldfn.__self__))
+            else:
+                self.logger.debug("Command {} from {} overrides command {} "
+                                  "from {}.".format(name, oldfn.__self__, name,
+                                                    fn.__self__))
+
+        else:
+            self.commands[name] = fn
 
     def _send_syntax_error(self, command, error, connection):
         """

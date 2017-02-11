@@ -180,10 +180,10 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "Unclaimed planet {} "
                                      "successfully.".format(location))
 
-    @Command("add_helper",
+    @Command("add_builder",
              role=Registered,
              doc="Add someone to the protected list of your planet.")
-    def _add_helper(self, data, connection):
+    def _add_builder(self, data, connection):
         location = connection.player.location
         alias = connection.player.alias
         uuid = connection.player.uuid
@@ -211,10 +211,10 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "Player {} could not be found."
                          .format(" ".join(data)))
 
-    @Command("rm_helper",
+    @Command("del_builder",
              role=Registered,
              doc="Remove someone from the protected list of your planet.")
-    def _rm_helper(self, data, connection):
+    def _del_builder(self, data, connection):
         location = connection.player.location
         alias = connection.player.alias
         uuid = connection.player.uuid
@@ -237,10 +237,10 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "Player {} could not be found."
                          .format(" ".join(data)))
 
-    @Command("helper_list",
+    @Command("list_builders",
              role=Registered,
              doc="List all of the people allowed to build on this planet.")
-    def _helper_list(self, data, connection):
+    def _list_builders(self, data, connection):
         uuid = connection.player.uuid
         location = connection.player.location
         if not self.planet_protect.check_protection(location):
@@ -249,7 +249,9 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "You don't own this planet!")
         else:
             protection = self.planet_protect.get_protection(location)
-            players = ", ".join(protection.get_builders())
+            uuids = protection.get_builders()
+            players = ", ".join([self.plugins['player_manager']
+                                .get_player_by_uuid(x).alias for x in uuids])
             send_message(connection,
                          "Players allowed to build at location '{}': {}"
                          "".format(connection.player.location, players))
@@ -312,11 +314,11 @@ class Claims(StorageCommandPlugin):
         else:
             send_message(connection, "You haven't claimed any worlds.")
 
-    @Command("set_claim_greet",
+    @Command("set_greeting",
              role=Registered,
              doc="Sets a custom greeting message for the planet, or clears "
                  "it if unspecified.")
-    def _set_claim_greet(self, data, connection):
+    def _set_greeting(self, data, connection):
         location = str(connection.player.location)
         msg = " ".join(data)
         if self.planet_announcer:
@@ -357,11 +359,11 @@ class Claims(StorageCommandPlugin):
             allow = "disallowed"
             if access["whitelist"]:
                 allow = "allowed"
-            if not data[0]:
+            if not data:
                 yield from send_message(connection, "Argument not recognized. "
                                                     "Usage: /planet_access ["
                                                     "name] add/remove")
-            if data[0].lower() == "whitelist":
+            elif data[0].lower() == "whitelist":
                 if data[1].lower() == "true":
                     access["whitelist"] = True
                     access["list"] = [uuid]

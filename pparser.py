@@ -56,8 +56,8 @@ parse_map = {
     48: None,
     49: None,
     50: None,
-    51: None,
-    52: None,
+    51: EntityMessage,
+    52: EntityMessageResponse,
     53: None,
     54: StepUpdate
 }

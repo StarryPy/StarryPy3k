@@ -16,8 +16,6 @@ from base_plugin import BasePlugin
 from plugins.player_manager import Owner, Guest
 from utilities import ChatSendMode, ChatReceiveMode, link_plugin_if_available
 
-bot = discord.Client()
-
 
 # Roles
 
@@ -65,20 +63,14 @@ class MockConnection:
     @asyncio.coroutine
     def send_message(self, *messages):
         for message in messages:
+            if self.owner.irc_bot_exists:
+                asyncio.ensure_future(self.owner.irc.bot_write(
+                    message))
             yield from self.owner.bot_write(message)
         return None
 
-# Discord listener
 
-@bot.event
-@asyncio.coroutine
-def on_message(message):
-    yield from DiscordPlugin.send_to_game(message)
-
-
-###
-
-class DiscordPlugin(BasePlugin):
+class DiscordPlugin(BasePlugin, discord.Client):
     name = "discord_bot"
     depends = ['command_dispatcher']
     default_config = {
@@ -88,34 +80,29 @@ class DiscordPlugin(BasePlugin):
         "strip_colors": True,
         "log_discord": False
     }
-    client_id = None
-    connection = None
-    dispatcher = None
-    irc_bot_exists = None
 
     def __init__(self):
-        super().__init__()
+        BasePlugin.__init__(self)
+        discord.Client.__init__(self)
         self.token = None
         self.channel = None
         self.token = None
-        self.connection = None
+        self.client_id = None
+        self.mock_connection = None
         self.prefix = None
         self.dispatcher = None
-        self.bot = bot
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
         self.irc_bot_exists = False
-        self.irc_bot = None
+        self.irc = None
         self.chat_manager = None
 
     def activate(self):
-        super().activate()
-        self.connection = MockConnection(self)
-        DiscordPlugin.connection = self.connection
+        BasePlugin.activate(self)
         self.dispatcher = self.plugins.command_dispatcher
-        DiscordPlugin.dispatcher = self.dispatcher
         self.irc_bot_exists = link_plugin_if_available(self, 'irc_bot')
-        DiscordPlugin.irc_bot_exists = self.irc_bot_exists
+        if self.irc_bot_exists:
+            self.irc = self.plugins['irc_bot']
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
@@ -124,6 +111,7 @@ class DiscordPlugin(BasePlugin):
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
         asyncio.ensure_future(self.start_bot())
         self.update_id(self.client_id)
+        self.mock_connection = MockConnection(self)
         if link_plugin_if_available(self, "chat_manager"):
             self.chat_manager = self.plugins['chat_manager']
 
@@ -171,8 +159,9 @@ class DiscordPlugin(BasePlugin):
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
                 if self.chat_manager:
                     if not self.chat_manager.mute_check(connection.player):
+                        alias = connection.player.alias
                         asyncio.ensure_future(self.bot_write("**<{}>** {}"
-                                                             .format(connection.player.alias,
+                                                             .format(alias,
                                                                      msg)))
         return True
 
@@ -187,18 +176,20 @@ class DiscordPlugin(BasePlugin):
         """
         self.logger.info("Starting Discord Bot")
         try:
-            yield from bot.login(self.token, loop=self.loop)
-            yield from bot.connect()
+            yield from self.login(self.token, loop=self.loop)
+            yield from self.connect()
         except Exception as e:
             self.logger.exception(e)
 
-    @classmethod
-    def update_id(cls, client_id):
-        cls.client_id = client_id
+    def update_id(self, client_id):
+        self.client_id = client_id
 
-    @classmethod
     @asyncio.coroutine
-    def send_to_game(cls, message):
+    def on_message(self, message):
+        yield from self.send_to_game(message)
+
+    @asyncio.coroutine
+    def send_to_game(self, message):
         """
         Broadcast a message on the server. Make sure it isn't coming from the
         bot (or else we get duplicate messages).
@@ -209,20 +200,22 @@ class DiscordPlugin(BasePlugin):
         nick = message.author.display_name
         text = message.clean_content
         server = message.server
-        if message.author.id != cls.client_id:
+        if message.author.id != self.client_id:
             if message.content[0] == ".":
-                asyncio.ensure_future(cls.handle_command(message.content[1:]))
+                asyncio.ensure_future(self.handle_command(message.content[
+                                                          1:], nick))
             else:
                 for emote in server.emojis:
-                    text = text.replace("<:{}:{}>".format(emote.name,emote.id),
+                    text = text.replace("<:{}:{}>".format(emote.name,
+                                                          emote.id),
                                         ":{}:".format(emote.name))
-                yield from cls.factory.broadcast("[^orange;DC^reset;] <{}>"
-                                                 " {}".format(nick, text),
-                                                 mode=ChatReceiveMode.BROADCAST)
-                if cls.config.get_plugin_config(cls.name)["log_discord"]:
-                    cls.logger.info("<{}> {}".format(nick, text))
-                if cls.irc_bot_exists:
-                    asyncio.ensure_future(cls.plugins['irc_bot'].bot_write(
+                yield from self.factory.broadcast("[^orange;DC^reset;] <{}>"
+                                                  " {}".format(nick, text),
+                                                  mode=ChatReceiveMode.BROADCAST)
+                if self.config.get_plugin_config(self.name)["log_discord"]:
+                    self.logger.info("<{}> {}".format(nick, text))
+                if self.irc_bot_exists:
+                    asyncio.ensure_future(self.irc.bot_write(
                                           "[DC] <{}> {}".format(nick, text)))
 
     @asyncio.coroutine
@@ -239,16 +232,21 @@ class DiscordPlugin(BasePlugin):
             connection.player.alias, circumstance))
 
     @asyncio.coroutine
-    def handle_command(self, data):
+    def handle_command(self, data, user):
         split = data.split()
         command = split[0]
         to_parse = split[1:]
-        DiscordPlugin.connection.player.roles = DiscordPlugin.connection.player.guest
-        if command in DiscordPlugin.dispatcher.commands:
+        self.mock_connection.player.roles = \
+            self.mock_connection.player.guest
+        if command in self.dispatcher.commands:
             # Only handle commands that work from Discord
             if command in ('who', 'help'):
-                yield from DiscordPlugin.dispatcher.run_command(command,
-                                                       DiscordPlugin.connection,
+                if self.irc_bot_exists:
+                    asyncio.ensure_future(self.irc.bot_write(
+                        "[DC] <{}> .{}".format(user, " ".join(split))
+                    ))
+                yield from self.dispatcher.run_command(command,
+                                                       self.mock_connection,
                                                        to_parse)
         else:
             yield from self.bot_write("Command not found.")
@@ -256,5 +254,5 @@ class DiscordPlugin(BasePlugin):
     @asyncio.coroutine
     def bot_write(self, msg, target=None):
         if target is None:
-            target = bot.get_channel(self.channel)
-        asyncio.ensure_future(bot.send_message(target, msg))
+            target = self.get_channel(self.channel)
+        asyncio.ensure_future(self.send_message(target, msg))

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+import signal
 
 from configuration_manager import ConfigurationManager
 from data_parser import ChatReceived
@@ -310,6 +311,8 @@ if __name__ == "__main__":
     ch.setFormatter(formatter)
     aiologger.addHandler(ch)
     logger.addHandler(ch)
+
+    signal.signal(signal.SIGINT, signal.default_int_handler)
 
     loop = asyncio.get_event_loop()
     loop.set_debug(False)  # Removed in commit to avoid errors.
