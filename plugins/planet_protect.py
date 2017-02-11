@@ -69,8 +69,10 @@ class PlanetProtect(StorageCommandPlugin):
             convert = {}
             for protection in self.storage["locations"].values():
                 for alias in protection.allowed_builders:
-                    convert[alias] = self.plugins[
-                        'player_manager'].get_player_by_alias(alias).uuid
+                    plr = self.plugins['player_manager']\
+                        .get_player_by_alias(alias)
+                    if plr:
+                        convert[alias] = plr.uuid
                 protection.allowed_builders = {x for x in convert.values()}
             self.storage["converted"] = True
 
