@@ -72,7 +72,8 @@ class Player:
     """
     Prototype class for a player.
     """
-    def __init__(self, uuid, species="unknown", name="", alias="", last_seen=None, roles=None,
+    def __init__(self, uuid, species="unknown", name="", alias="",
+                 last_seen=None, roles=None, ranks=None,
                  logged_in=False, connection=None, client_id=-1, ip="",
                  planet="", muted=False, state=None, team_id=None):
         """
@@ -83,6 +84,7 @@ class Player:
         :param name:
         :param last_seen:
         :param roles:
+        :param ranks:
         :param logged_in:
         :param connection:
         :param client_id:
@@ -105,6 +107,15 @@ class Player:
             self.roles = set()
         else:
             self.roles = set(roles)
+        if ranks is None:
+            self.ranks = set()
+        else:
+            self.ranks = set(ranks)
+        self.granted_perms = set()
+        self.revoked_perms = set()
+        self.permissions = set()
+        self.chat_prefix = ""
+        self.priority = 0
         self.logged_in = logged_in
         self.connection = connection
         self.client_id = client_id
@@ -132,6 +143,23 @@ class Player:
             if r.lower() == role.__name__.lower():
                 return True
         return False
+
+    def update_ranks(self, ranks):
+        """
+        Update the player's info to match any changes made to their ranks.
+
+        :return: Null.
+        """
+        highest_rank = None
+        for r in self.ranks:
+            if not highest_rank:
+                highest_rank = r
+            self.permissions = ranks[r]['permissions'] | self.granted_perms
+            self.permissions -= self.revoked_perms
+            if ranks[r]['priority'] > ranks[highest_rank]['priority']:
+                highest_rank = r
+        self.priority = ranks[highest_rank]['priority']
+        self.chat_prefix = ranks[highest_rank]['prefix']
 
 
 class Ship:
@@ -200,7 +228,11 @@ class PlayerManager(SimpleCommandPlugin):
     def __init__(self):
         self.default_config = {"player_db": "config/player",
                                "owner_uuid": "!--REPLACE IN CONFIG FILE--!",
-                               "allowed_species": ["apex", "avian", "glitch", "floran", "human", "hylotl", "penguin", "novakid"]}
+                               "allowed_species": ["apex", "avian", "glitch",
+                                                   "floran", "human", "hylotl",
+                                                   "penguin", "novakid"],
+                               "owner_ranks": ["Owner"],
+                               "new_user_ranks": ["Guest"]}
         super().__init__()
         self.shelf = shelve.open(self.plugin_config.player_db, writeback=True)
         self.sync()
@@ -219,7 +251,7 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.error("Fatal: Could not parse permissions.json!")
             self.logger.error(e)
             raise SystemExit
-        self.ranks = self.rebuild_ranks(self.rank_config)
+        self.ranks = self._rebuild_ranks(self.rank_config)
         self.logger.debug(self.ranks)
         asyncio.ensure_future(self._reap())
 
@@ -533,7 +565,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.shelf.close()
         self.logger.debug("Closed the shelf")
 
-    def rebuild_ranks(self, ranks):
+    def _rebuild_ranks(self, ranks):
         """
         Rebuilds rank configuration from file, including inherited permissions.
 
@@ -843,6 +875,8 @@ class PlayerManager(SimpleCommandPlugin):
                 p.alias = self.clean_name(name)
                 if p.alias is None:
                     p.alias = uuid[0:4]
+            p.update_ranks(self.ranks)
+            self.logger.debug(p)
             return p
         else:
             if self.get_player_by_name(alias) is not None:
@@ -851,11 +885,16 @@ class PlayerManager(SimpleCommandPlugin):
                              "".format(alias, uuid))
             if uuid == self.plugin_config.owner_uuid:
                 roles = {x.__name__ for x in Owner.roles} | {Owner.__name__}
+                ranks = set(self.plugin_config.owner_ranks)
             else:
                 roles = {x.__name__ for x in Guest.roles}
-            new_player = Player(uuid, species, name, alias, last_seen, roles, logged_in,
-                                connection, client_id, ip, planet, muted)
+                ranks = set(self.plugin_config.new_user_ranks)
+            new_player = Player(uuid, species, name, alias, last_seen,
+                                roles, ranks, logged_in, connection,
+                                client_id, ip, planet, muted)
+            new_player.update_ranks(self.ranks)
             self.shelf["players"][uuid] = new_player
+            self.logger.debug(new_player)
             return new_player
 
     @asyncio.coroutine
