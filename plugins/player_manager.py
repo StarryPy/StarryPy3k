@@ -15,6 +15,7 @@ import datetime
 import pprint
 import re
 import shelve
+import json
 from operator import attrgetter
 
 from base_plugin import Role, SimpleCommandPlugin
@@ -207,6 +208,19 @@ class PlayerManager(SimpleCommandPlugin):
         self.planets = self.shelf["planets"]
         self.plugin_shelf = self.shelf["plugins"]
         self.players_online = []
+        try:
+            with open("config/permissions.json", "r") as file:
+                self.rank_config = json.load(file)
+        except IOError as e:
+            self.logger.error("Fatal: Could not read permissions file!")
+            self.logger.error(e)
+            raise SystemExit
+        except json.JSONDecodeError as e:
+            self.logger.error("Fatal: Could not parse permissions.json!")
+            self.logger.error(e)
+            raise SystemExit
+        self.ranks = self.rebuild_ranks(self.rank_config)
+        self.logger.debug(self.ranks)
         asyncio.ensure_future(self._reap())
 
     # Packet hooks - look for these packets and act on them
@@ -518,6 +532,31 @@ class PlayerManager(SimpleCommandPlugin):
             player.logged_in = False
         self.shelf.close()
         self.logger.debug("Closed the shelf")
+
+    def rebuild_ranks(self, ranks):
+        """
+        Rebuilds rank configuration from file, including inherited permissions.
+
+        :param ranks: The initial rank config.
+        :return: Dict: The built rank permissions.
+        """
+        final = {}
+
+        def build_inherits(inherits):
+            finalperms = set()
+            for rank in inherits:
+                if 'inherits' in ranks[rank]:
+                    finalperms |= build_inherits(ranks[rank]['inherits'])
+                finalperms |= set(ranks[rank]['permissions'])
+            return finalperms
+
+        for rank, config in ranks.items():
+            config['permissions'] = set(config['permissions'])
+            if 'inherits' in config:
+                config['permissions'] |= build_inherits(config['inherits'])
+            final[rank] = config
+
+        return final
 
     def add_role(self, player, role):
         """
