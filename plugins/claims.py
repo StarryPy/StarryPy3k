@@ -182,6 +182,7 @@ class Claims(StorageCommandPlugin):
 
     @Command("add_builder",
              role=Registered,
+             priority=1,
              doc="Add someone to the protected list of your planet.")
     def _add_builder(self, data, connection):
         location = connection.player.location
@@ -213,6 +214,7 @@ class Claims(StorageCommandPlugin):
 
     @Command("del_builder",
              role=Registered,
+             priority=1,
              doc="Remove someone from the protected list of your planet.")
     def _del_builder(self, data, connection):
         location = connection.player.location
@@ -239,6 +241,7 @@ class Claims(StorageCommandPlugin):
 
     @Command("list_builders",
              role=Registered,
+             priority=1,
              doc="List all of the people allowed to build on this planet.")
     def _list_builders(self, data, connection):
         uuid = connection.player.uuid
@@ -316,6 +319,7 @@ class Claims(StorageCommandPlugin):
 
     @Command("set_greeting",
              role=Registered,
+             priority=1,
              doc="Sets a custom greeting message for the planet, or clears "
                  "it if unspecified.")
     def _set_greeting(self, data, connection):
