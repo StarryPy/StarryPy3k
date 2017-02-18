@@ -249,7 +249,8 @@ def extractor(*args):
     # It's not elegant, but it's the best way to do it as far as I can tell.
     # My regex-fu isn't strong though, so if someone can come up with a
     # better way, great.
-    x = re.split(r"(?:([^\"]\S*)|\"(.+?)\")\s*", " ".join(*args))
+    x = re.split(r"(?:([^\"]\S*)|\"(.+?)(?<!\\)\")\s*", " ".join(*args))
+    x = [word.replace("\\\"", "\"") if word is not None else None for word in x]
     return [x for x in filter(None, x)]
 
 
