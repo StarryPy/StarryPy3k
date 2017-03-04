@@ -1151,13 +1151,34 @@ class PlayerManager(SimpleCommandPlugin):
             send_message(connection, str(e))
 
     @Command("user",
+             perm="player_manager.user",
              doc="Manages user permissions; see /user help for details.")
     def _user(self, data, connection):
         if not data:
             yield from send_message(connection, "No arguments provided. See "
                                                 "/user help for usage info.")
         elif data[0] == "help":
-            yield from send_message(connection, "placeholder")
+            send_message(connection, "Syntax:")
+            send_message(connection, "/user addperm (user) (permission)")
+            send_message(connection, "Adds a permission to a player. Fails if "
+                                     "the user doesn't have the permission.")
+            send_message(connection, "/user rmperm (player) (permission)")
+            send_message(connection, "Removes a permission from a player. "
+                                     "Fails if the user doesn't have the"
+                                     " permission, or if the target's priority"
+                                     " is higher than the user's.")
+            send_message(connection, "/user addrank (player) (rank)")
+            send_message(connection, "Adds a rank to a player. Fails if the "
+                                     "rank to be added is equal to or "
+                                     "greater than the user's highest rank.")
+            send_message(connection, "/user rmrank (player) (rank)")
+            send_message(connection, "Removes a rank from a player. Fails if "
+                                     "the target outranks or is equal in rank"
+                                     " to the user.")
+            send_message(connection, "/user listperms (player)")
+            send_message(connection, "Lists the permissions a player has.")
+            send_message(connection, "/user listranks (player)")
+            send_message(connection, "Lists the ranks a player has.")
         elif data[0] == "addperm":
             target = self.find_player(data[1])
             if target:

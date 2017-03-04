@@ -348,7 +348,7 @@ class Command:
     interface for all commands, including roles, documentation, usage syntax,
     and aliases.
     """
-    def __init__(self, *aliases, role=None, roles=None, doc=None,
+    def __init__(self, *aliases, role=None, roles=None, perm=None, doc=None,
                  syntax=None, priority=0):
         if syntax is None:
             syntax = ()
@@ -363,6 +363,7 @@ class Command:
         if doc is None:
             doc = ""
         self.roles = {role.__name__ for role in roles}
+        self.perm = perm
         self.syntax = syntax
         self.human_syntax = " ".join(syntax)
         self.doc = doc
@@ -380,6 +381,11 @@ class Command:
             try:
                 for role in self.roles:
                     if role not in connection.player.roles:
+                        raise PermissionError
+                if self.perm is not None:
+                    if self.perm not in connection.player.permissions and \
+                            "special.allperms" not in \
+                            connection.player.permissions:
                         raise PermissionError
                 return f(s, data, connection)
             except PermissionError:
