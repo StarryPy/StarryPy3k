@@ -643,6 +643,16 @@ class PlayerManager(SimpleCommandPlugin):
         else:
             return 0
 
+    def perm_check(self, player, perm):
+        if "special.allperms" in player.permissions:
+            return True
+        elif perm in player.revoked_perms:
+            return False
+        elif perm in player.permissions:
+            return True
+        else:
+            return False
+
     def ban_by_ip(self, ip, reason, connection):
         """
         Ban a player based on their IP address. Should be compatible with both
@@ -1139,6 +1149,143 @@ class PlayerManager(SimpleCommandPlugin):
                                  ro.__name__, connection.player.alias))
         except LookupError as e:
             send_message(connection, str(e))
+
+    @Command("user",
+             doc="Manages user permissions; see /user help for details.")
+    def _user(self, data, connection):
+        if not data:
+            yield from send_message(connection, "No arguments provided. See "
+                                                "/user help for usage info.")
+        elif data[0] == "help":
+            yield from send_message(connection, "placeholder")
+        elif data[0] == "addperm":
+            target = self.find_player(data[1])
+            if target:
+                if not data[2]:
+                    yield from send_message(connection, "No permission "
+                                                        "specified.")
+                elif not self.perm_check(connection.player, data[2]):
+                    yield from send_message(connection, "You don't have "
+                                            "permission to do that!")
+                elif data[2] in target.permissions:
+                    yield from send_message(connection, "Player {} already "
+                                                        "has permission {}."
+                                            .format(target.alias, data[2]))
+                else:
+                    target.revoked_perms.discard(data[2])
+                    target.granted_perms.add(data[2])
+                    target.update_ranks(self.ranks)
+                    yield from send_message(connection, "Granted permission "
+                                                        "{} to {}."
+                                            .format(data[2], target.alias))
+            else:
+                yield from send_message(connection, "User {} not "
+                                                    "found.".format(data[1]))
+        elif data[0] == "rmperm":
+            target = self.find_player(data[1])
+            if target:
+                if not data[2]:
+                    yield from send_message(connection, "No permission "
+                                                        "specified.")
+                elif not self.perm_check(connection.player, data[2]):
+                    yield from send_message(connection, "You don't have "
+                                            "permission to do that!")
+                elif target.priority >= connection.player.priority:
+                    yield from send_message(connection, "You don't have "
+                                            "permission to do that!")
+                elif data[2] not in target.permissions:
+                    yield from send_message(connection, "Player {} does not "
+                                                        "have permission {}."
+                                            .format(target.alias, data[2]))
+                else:
+                    target.granted_perms.discard(data[2])
+                    target.revoked_perms.add(data[2])
+                    target.update_ranks(self.ranks)
+                    yield from send_message(connection, "Removed permission "
+                                                        "{} from {}."
+                                            .format(data[2], target.alias))
+            else:
+                yield from send_message(connection, "User {} not "
+                                                    "found.".format(data[1]))
+        elif data[0] == "addrank":
+            target = self.find_player(data[1])
+            if target:
+                if not data[2]:
+                    send_message(connection, "No rank specified.")
+                    return
+                if data[2] not in self.ranks:
+                    send_message(connection, "Rank {} does not exist."
+                                 .format(data[2]))
+                    return
+                rank = self.ranks[data[2]]
+                if rank["priority"] >= connection.player.priority:
+                    yield from send_message(connection, "You don't have "
+                                            "permission to do that!")
+                elif data[2] in target.ranks:
+                    yield from send_message(connection, "Player {} already "
+                                                        "has rank {}."
+                                            .format(target.alias, data[2]))
+                else:
+                    target.ranks.add(data[2])
+                    target.update_ranks(self.ranks)
+                    yield from send_message(connection, "Granted rank "
+                                                        "{} to {}."
+                                            .format(data[2], target.alias))
+            else:
+                yield from send_message(connection, "User {} not "
+                                                    "found.".format(data[1]))
+        elif data[0] == "rmrank":
+            target = self.find_player(data[1])
+            if target:
+                if not data[2]:
+                    send_message(connection, "No rank specified.")
+                    return
+                if data[2] not in self.ranks:
+                    send_message(connection, "Rank {} does not exist."
+                                 .format(data[2]))
+                    return
+                rank = self.ranks[data[2]]
+                if target.priority >= connection.player.priority:
+                    yield from send_message(connection, "You don't have "
+                                            "permission to do that!")
+                elif data[2] not in target.ranks:
+                    yield from send_message(connection, "Player {} does not "
+                                                        "have rank {}."
+                                            .format(target.alias, data[2]))
+                else:
+                    target.ranks.remove(data[2])
+                    target.update_ranks(self.ranks)
+                    yield from send_message(connection, "Removed rank "
+                                                        "{} from {}."
+                                            .format(data[2], target.alias))
+            else:
+                yield from send_message(connection, "User {} not "
+                                                    "found.".format(data[1]))
+        elif data[0] == "listperms":
+            target = self.find_player(data[1])
+            if target:
+                perms = ", ".join(target.permissions)
+                yield from send_message(connection, "Permissions for user {}:"
+                                                    "\n{}"
+                                        .format(target.alias, perms))
+            else:
+                yield from send_message(connection, "User {} not "
+                                                    "found.".format(data[1]))
+        elif data[0] == "listranks":
+            target = self.find_player(data[1])
+            if target:
+                ranks = ", ".join(target.ranks)
+                yield from send_message(connection, "Ranks for user {}:"
+                                                    "\n{}"
+                                        .format(target.alias, ranks))
+            else:
+                yield from send_message(connection, "User {} not "
+                                                    "found.".format(data[1]))
+        else:
+            yield from send_message(connection, "Argument not recognized. "
+                                                "See /user help for usage "
+                                                "info.")
+
 
     @Command("list_players",
              role=Whois,
