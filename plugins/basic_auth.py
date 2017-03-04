@@ -8,28 +8,28 @@ Permitted accounts are defined in StarryPy3k's configuration file.
 Original Authors: GermaniumSystem
 """
 
-import asyncio
 
-import packets
-import utilities
-from plugins.player_manager import Owner, Moderator, Player
 from base_plugin import SimpleCommandPlugin
-from data_parser import ConnectFailure, ServerDisconnect
+from data_parser import ConnectFailure
 from pparser import build_packet
-from utilities import State
 from packets import packets
-
 
 
 class BasicAuth(SimpleCommandPlugin):
     name = "basic_auth"
     depends = ["player_manager"]
-    default_config = {"enabled" : False,
+    default_config = {"enabled": False,
+                      "staff_priority": 100,
                       "staff_sb_accounts": [
                          "-- REPLACE WITH STARBOUND ACCOUNT NAME --",
                          "-- REPLACE WITH ANOTHER --",
                          "-- SO ON AND SO FORTH ---"],
-                      "owner_sb_account" : "-- REPLACE WITH OWNER ACCOUNT --"}
+                      "owner_priority": 100000,
+                      "owner_sb_account": "-- REPLACE WITH OWNER ACCOUNT --"}
+
+    def __init__(self):
+        super().__init__()
+        self.enabled = False
 
     def activate(self):
         super().activate()
@@ -62,11 +62,11 @@ class BasicAuth(SimpleCommandPlugin):
             account = data["parsed"]["account"][0]
             # Why [0]? Because 'account' is a StringSet.
             # ...but it never contains more than one string.
-        except:
+        except IndexError:
             # Except sometimes account is empty...
-            # I'm not entirely sure why this is, so please feel free to explore.
+            # I'm not entirely sure why this is, so please feel free to explore
             account = ''
-            #self.logger.debug(data)
+            # self.logger.debug(data)
         player = self.plugins["player_manager"].get_player_by_uuid(uuid)
         # We're only interested in players who already exist.
         if player:
@@ -76,11 +76,11 @@ class BasicAuth(SimpleCommandPlugin):
             # eachother, but this is being allowed for the sake of usability.
             if (
                    (
-                        player.check_role(Owner)
+                        self.plugin_config.owner_rank in player.ranks
                         and account == self.plugin_config.owner_sb_account
                    ) or (
-                        not player.check_role(Owner)
-                        and player.check_role(Moderator)
+                        self.plugin_config.owner_priority > player.priority
+                        >= self.plugin_config.staff_priority
                         and account in self.plugin_config.staff_sb_accounts
                    )
             ):
@@ -90,7 +90,7 @@ class BasicAuth(SimpleCommandPlugin):
                                  "'{}'".format(uuid, account))
                 # We don't need to worry about anything after this.
                 # Starbound will take care of an incorrect password.
-            elif player.check_role(Owner) or player.check_role(Moderator):
+            elif self.plugin_config.staff_priority <= player.priority:
                 # They're privileged but failed to authenticate. Kill it.
                 yield from connection.raw_write(
                     self.build_rejection("^red;UNAUTHORIZED^reset;\n"
@@ -103,7 +103,6 @@ class BasicAuth(SimpleCommandPlugin):
                                     "!".format(uuid, account))
                 return False
         return True
-
 
     # Helper functions - Used by hooks and commands
 

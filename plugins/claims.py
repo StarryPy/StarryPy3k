@@ -13,7 +13,6 @@ import packets
 from base_plugin import StorageCommandPlugin
 from data_parser import PlayerWarp
 from pparser import build_packet
-from plugins.player_manager import Registered, Admin
 from utilities import Command, send_message, link_plugin_if_available
 
 
@@ -41,7 +40,8 @@ class Claims(StorageCommandPlugin):
 
     def is_owner(self, connection, location):
         uuid = connection.player.uuid
-        if connection.player.check_role(Admin):
+        if self.plugins.player_manager.perm_check(connection.player,
+                                                  "planet_protect.bypass"):
             return True
         if uuid not in self.storage["owners"]:
             return False
@@ -97,7 +97,8 @@ class Claims(StorageCommandPlugin):
         yield from asyncio.sleep(.5)
         if str(connection.player.location) in self.storage["access"]:
             access = self.storage["access"][str(connection.player.location)]
-            if connection.player.check_role(Admin):
+            if self.plugins.player_manager.perm_check(connection.player,
+                                                      "planet_protect.bypass"):
                 return
             elif connection.player.uuid in access["list"] and not \
                     access["whitelist"]:
@@ -135,7 +136,7 @@ class Claims(StorageCommandPlugin):
             return " ".join(loc)
 
     @Command("claim",
-             role=Registered,
+             perm="claims.claim",
              doc="Claim a planet to be protected.")
     def _claim(self, data, connection):
         location = connection.player.location
@@ -161,7 +162,7 @@ class Claims(StorageCommandPlugin):
                              .format(location))
 
     @Command("unclaim",
-             role=Registered,
+             perm="claims.claim",
              doc="Unclaim and unprotect the planet you're standing on.")
     def _unclaim(self, data, connection):
         location = connection.player.location
@@ -183,6 +184,7 @@ class Claims(StorageCommandPlugin):
     @Command("add_builder",
              role=Registered,
              priority=1,
+             perm="claims.manage_claims",
              doc="Add someone to the protected list of your planet.")
     def _add_builder(self, data, connection):
         location = connection.player.location
@@ -215,6 +217,7 @@ class Claims(StorageCommandPlugin):
     @Command("del_builder",
              role=Registered,
              priority=1,
+             perm="claims.manage_claims",
              doc="Remove someone from the protected list of your planet.")
     def _del_builder(self, data, connection):
         location = connection.player.location
@@ -242,6 +245,7 @@ class Claims(StorageCommandPlugin):
     @Command("list_builders",
              role=Registered,
              priority=1,
+             perm="claims.manage_claims",
              doc="List all of the people allowed to build on this planet.")
     def _list_builders(self, data, connection):
         uuid = connection.player.uuid
@@ -260,7 +264,7 @@ class Claims(StorageCommandPlugin):
                          "".format(connection.player.location, players))
 
     @Command("change_owner",
-             role=Registered,
+             perm="claims.manage_claims",
              doc="Transfer ownership of the planet to another person.")
     def _change_owner(self, data, connection):
         uuid = connection.player.uuid
@@ -306,7 +310,7 @@ class Claims(StorageCommandPlugin):
                          .format(" ".join(data)))
 
     @Command("list_claims",
-             role=Registered,
+             perm="claims.claim",
              doc="List all of the planets you've claimed.")
     def _list_claims(self, data, connection):
         uuid = connection.player.uuid
@@ -320,6 +324,7 @@ class Claims(StorageCommandPlugin):
     @Command("set_greeting",
              role=Registered,
              priority=1,
+             perm="claims.manage_claims",
              doc="Sets a custom greeting message for the planet, or clears "
                  "it if unspecified.")
     def _set_greeting(self, data, connection):
@@ -346,7 +351,7 @@ class Claims(StorageCommandPlugin):
                                      "this server.")
 
     @Command("planet_access",
-             role=Registered,
+             perm="claims.planet_access",
              doc="Allows or disallows players to beam down to the planet.")
     def _planet_access(self, data, connection):
         location = str(connection.player.location)
@@ -438,7 +443,7 @@ class Claims(StorageCommandPlugin):
                                          .format(target.alias, allow))
                     else:
                         send_message(connection, "{} is not on the {} list "
-                                                "for this planet."
+                                                 "for this planet."
                                      .format(target.alias, allow))
                 else:
                     send_message(connection, "Argument not recognized. "

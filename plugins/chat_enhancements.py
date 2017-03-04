@@ -17,7 +17,7 @@ import data_parser
 import pparser
 import packets
 from base_plugin import StorageCommandPlugin
-from utilities import Command, DotDict, ChatSendMode, ChatReceiveMode, \
+from utilities import Command, ChatSendMode, ChatReceiveMode, \
     send_message, link_plugin_if_available
 
 
@@ -27,15 +27,7 @@ class ChatEnhancements(StorageCommandPlugin):
     name = "chat_enhancements"
     depends = ["player_manager", "command_dispatcher"]
     default_config = {"chat_timestamps": True,
-                      "timestamp_color": "^gray;",
-                      "colors": DotDict({
-                          "Owner": "^#F7434C;",
-                          "SuperAdmin": "^#E23800;",
-                          "Admin": "^#C443F7;",
-                          "Moderator": "^#4385F7;",
-                          "Registered": "^#A0F743;",
-                          "default": "^yellow;"
-                      })}
+                      "timestamp_color": "^gray;"}
 
     def __init__(self):
         super().__init__()
@@ -48,7 +40,6 @@ class ChatEnhancements(StorageCommandPlugin):
     def activate(self):
         super().activate()
         self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
-        self.colors = self.config.get_plugin_config(self.name)["colors"]
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
         self.cts_color = self.config.get_plugin_config(self.name)[
             "timestamp_color"]
@@ -79,7 +70,7 @@ class ChatEnhancements(StorageCommandPlugin):
                 if connection.player.uuid not in self.storage["ignores"]:
                     self.storage["ignores"][connection.player.uuid] = []
                 if sender.uuid in self.storage["ignores"][
-                    connection.player.uuid]:
+                        connection.player.uuid]:
                     return False
                 try:
                     sender = self.decorate_line(sender.connection)
@@ -128,34 +119,13 @@ class ChatEnhancements(StorageCommandPlugin):
         else:
             timestamp = ""
         try:
-            sender = timestamp + self._colored_name(connection.player)
+            p = connection.player
+            sender = timestamp + p.chat_prefix + p.alias + "^reset;"
         except AttributeError as e:
             self.logger.warning(
                 "AttributeError in colored_name: {}".format(str(e)))
             sender = connection.player.alias
         return sender
-
-    def _colored_name(self, data):
-        """
-        Generate colored name based on target's role.
-
-        :param data: target to check against
-        :return: DotDict. Name of target will be colorized.
-        """
-        if "Owner" in data.roles:
-            color = self.colors.Owner
-        elif "SuperAdmin" in data.roles:
-            color = self.colors.SuperAdmin
-        elif "Admin" in data.roles:
-            color = self.colors.Admin
-        elif "Moderator" in data.roles:
-            color = self.colors.Moderator
-        elif "Registered" in data.roles:
-            color = self.colors.Registered
-        else:
-            color = self.colors.default
-
-        return color + data.alias + "^reset;"
 
     @asyncio.coroutine
     def _send_to_server(self, message, mode, connection):
@@ -268,7 +238,7 @@ class ChatEnhancements(StorageCommandPlugin):
                              .format(recipient.alias))
                 return False
             if recipient.uuid in self.storage["ignores"][
-                connection.player.uuid]:
+                    connection.player.uuid]:
                 send_message(connection, "Cannot send message to player {} "
                                          "as you are currently ignoring "
                                          "them.".format(recipient.alias))
@@ -298,7 +268,7 @@ class ChatEnhancements(StorageCommandPlugin):
                                     "".format(name))
 
     @Command("reply", "r",
-             doc="Send message privately to the last person who privately " \
+             doc="Send message privately to the last person who privately "
                  "messaged you.")
     def _reply(self, data, connection):
         """
@@ -324,7 +294,7 @@ class ChatEnhancements(StorageCommandPlugin):
                              .format(recipient.alias))
                 return False
             if recipient.uuid in self.storage["ignores"][
-                connection.player.uuid]:
+                    connection.player.uuid]:
                 send_message(connection, "Cannot send message to player {} "
                                          "as you are currently ignoring "
                                          "them.".format(recipient.alias))
@@ -353,6 +323,7 @@ class ChatEnhancements(StorageCommandPlugin):
                                     "You haven't been messaged by anyone.")
 
     @Command("ignore",
+             perm="chat_enhancements.ignore",
              doc="Ignores a player, preventing you from seeing their "
                  "messages. Use /ignore again to toggle.")
     def _ignore(self, data, connection):

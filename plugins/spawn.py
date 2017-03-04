@@ -11,7 +11,6 @@ import asyncio
 import data_parser
 import pparser
 import packets
-from plugins.player_manager import SuperAdmin, Moderator
 from base_plugin import StorageCommandPlugin
 from utilities import Command, send_message
 
@@ -62,6 +61,7 @@ class Spawn(StorageCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("spawn",
+             perm="spawn.spawn",
              doc="Moves a player's ship to the spawn planet.")
     def _spawn(self, data, connection):
         """
@@ -88,7 +88,7 @@ class Spawn(StorageCommandPlugin):
             pass
 
     @Command("set_spawn",
-             role=SuperAdmin,
+             perm="spawn.set_spawn",
              doc="Set the spawn planet.")
     def _set_spawn(self, data, connection):
         """
@@ -108,7 +108,7 @@ class Spawn(StorageCommandPlugin):
         send_message(connection, "Spawn planet set to {}.".format(str(planet)))
 
     @Command("show_spawn",
-             role=Moderator,
+             perm="spawn.show_spawn",
              doc="Print the current spawn location.")
     def _show_spawn(self, data, connection):
         """

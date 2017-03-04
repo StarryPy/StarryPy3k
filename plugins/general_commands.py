@@ -51,7 +51,14 @@ class GeneralCommands(SimpleCommandPlugin):
     default_config = {"maintenance_message": "This server is currently in "
                                              "maintenance mode and is not "
                                              "accepting new connections."}
+
+    def __init__(self):
+        super.__init__(self)
+        self.maintenance = False
+        self.rejection_message = ""
+        self.start_time = None
     # Helper functions - Used by commands
+
     def activate(self):
         super().activate()
         self.maintenance = False
@@ -103,6 +110,7 @@ class GeneralCommands(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("who",
+             perm="general_commands.who",
              doc="Lists players who are currently logged in.")
     def _who(self, data, connection):
         """
@@ -126,7 +134,7 @@ class GeneralCommands(SimpleCommandPlugin):
                                                      ", ".join(ret_list)))
 
     @Command("whois",
-             role=Whois,
+             perm="general_commands.whois",
              doc="Returns client data about the specified user.",
              syntax="(username)")
     def _whois(self, data, connection):
@@ -148,7 +156,7 @@ class GeneralCommands(SimpleCommandPlugin):
             send_message(connection, "Player not found!")
 
     @Command("give", "item", "give_item",
-             role=GiveItem,
+             perm="general_commands.give_item",
              doc="Gives an item to a player. "
                  "If player name is omitted, give item(s) to self.",
              syntax=("[player=self]", "(item name)", "[count=1]"))
@@ -206,7 +214,7 @@ class GeneralCommands(SimpleCommandPlugin):
             connection.player.alias, item, count))
 
     @Command("nick",
-             role=Nick,
+             perm="general_commands.nick",
              doc="Changes your nickname to another one.",
              syntax="(username)")
     def _nick(self, data, connection):
@@ -239,7 +247,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 old_alias, clean_alias))
 
     @Command("serverwhoami",
-             role=Whoami,
+             perm="general_commands.whoami",
              doc="Displays your current nickname for chat.")
     def _whoami(self, data, connection):
         """
@@ -253,7 +261,7 @@ class GeneralCommands(SimpleCommandPlugin):
                      self.generate_whois(connection.player))
 
     @Command("here",
-             role=Whoami,
+             perm="general_commands.here",
              doc="Displays all players on the same planet as you.")
     def _here(self, data, connection):
         """
@@ -278,7 +286,7 @@ class GeneralCommands(SimpleCommandPlugin):
                                                         ", ".join(ret_list)))
 
     @Command("uptime",
-             role=Whoami,
+             perm="general_commands.uptime",
              doc="Displays the time since the server started.")
     def _uptime(self, data, connection):
         """
@@ -291,7 +299,7 @@ class GeneralCommands(SimpleCommandPlugin):
         yield from send_message(connection, "Uptime: {}".format(current_time))
 
     @Command("shutdown",
-             role=Shutdown,
+             perm="general_commands.shutdown",
              doc="Shutdown the server after N seconds (default 5).",
              syntax="[time]")
     def _shutdown(self, data, connection):
@@ -319,7 +327,7 @@ class GeneralCommands(SimpleCommandPlugin):
         sys.exit()
 
     @Command("maintenance_mode",
-             role=SuperAdmin,
+             perm="general_commands.maintenance_mode",
              doc="Toggle maintenance mode on the server. While in "
                  "maintenance mode, the server will reject all new "
                  "connection.")

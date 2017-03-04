@@ -150,14 +150,16 @@ class Player:
 
         :return: Null.
         """
+        self.permissions = set()
         highest_rank = None
         for r in self.ranks:
             if not highest_rank:
                 highest_rank = r
-            self.permissions = ranks[r]['permissions'] | self.granted_perms
-            self.permissions -= self.revoked_perms
+            self.permissions |= ranks[r]['permissions']
             if ranks[r]['priority'] > ranks[highest_rank]['priority']:
                 highest_rank = r
+        self.permissions |= self.granted_perms
+        self.permissions -= self.revoked_perms
         self.priority = ranks[highest_rank]['priority']
         self.chat_prefix = ranks[highest_rank]['prefix']
 
@@ -303,7 +305,6 @@ class PlayerManager(SimpleCommandPlugin):
         bans.
 
         :param data:
-        :param species:
         :param connection:
         :return: Boolean: True on successful connection, False on a
                  failed connection.
@@ -576,10 +577,10 @@ class PlayerManager(SimpleCommandPlugin):
 
         def build_inherits(inherits):
             finalperms = set()
-            for rank in inherits:
-                if 'inherits' in ranks[rank]:
-                    finalperms |= build_inherits(ranks[rank]['inherits'])
-                finalperms |= set(ranks[rank]['permissions'])
+            for inherit in inherits:
+                if 'inherits' in ranks[inherit]:
+                    finalperms |= build_inherits(ranks[inherit]['inherits'])
+                finalperms |= set(ranks[inherit]['permissions'])
             return finalperms
 
         for rank, config in ranks.items():
@@ -589,59 +590,6 @@ class PlayerManager(SimpleCommandPlugin):
             final[rank] = config
 
         return final
-
-    def add_role(self, player, role):
-        """
-        Adds a role to a player.
-
-        :param player: Player to receive role.
-        :param role: Role to be received.
-        :return: Null.
-        """
-        if issubclass(role, Role):
-            r = role.__name__
-        else:
-            raise TypeError("add_role requires a Role subclass to be passed"
-                            " as the second argument.")
-        player.roles.add(r)
-        self.logger.info("Granted role {} to {}".format(r, player.alias))
-        for subrole in role.roles:
-            s = self.get_role(subrole)
-            if issubclass(s, role):
-                self.add_role(player, s)
-
-    def get_role(self, name):
-        """
-        Returns the roles a player is currently granted.
-
-        :param name:
-        :return: List: Roles the user player has.
-        """
-        # TODO: Need to verify this...
-        if issubclass(name, Role):
-            return name
-        return [x for x in Owner.roles
-                if x.__name__.lower() == name.lower()][0]
-
-    def get_rank(self, player):
-        """
-        Returns the highest rank of the given player.
-
-        :param player: Player to check rank of.
-        :return: Int: A number representing the highest rank.
-        """
-        if player.check_role(Owner):
-            return 5
-        elif player.check_role(SuperAdmin):
-            return 4
-        elif player.check_role(Admin):
-            return 3
-        elif player.check_role(Moderator):
-            return 2
-        elif player.check_role(Registered):
-            return 1
-        else:
-            return 0
 
     def perm_check(self, player, perm):
         if "special.allperms" in player.permissions:
@@ -802,15 +750,15 @@ class PlayerManager(SimpleCommandPlugin):
                 if not check_logged_in or player.logged_in:
                     return player
 
-    def get_player_by_client_id(self, id) -> Player:
+    def get_player_by_client_id(self, uid) -> Player:
         """
         Grab a hook to a player by their client id. Returns player object.
 
-        :param id: Integer: Client Id of the player to check.
+        :param uid: Integer: Client Id of the player to check.
         :return: Player object.
         """
         try:
-            iid = int(id)
+            iid = int(uid)
         except ValueError:
             return
         for player in self.shelf["players"].values():
@@ -886,7 +834,6 @@ class PlayerManager(SimpleCommandPlugin):
                 if p.alias is None:
                     p.alias = uuid[0:4]
             p.update_ranks(self.ranks)
-            self.logger.debug(p)
             return p
         else:
             if self.get_player_by_name(alias) is not None:
@@ -904,7 +851,6 @@ class PlayerManager(SimpleCommandPlugin):
                                 client_id, ip, planet, muted)
             new_player.update_ranks(self.ranks)
             self.shelf["players"][uuid] = new_player
-            self.logger.debug(new_player)
             return new_player
 
     @asyncio.coroutine
@@ -916,12 +862,12 @@ class PlayerManager(SimpleCommandPlugin):
         :param uuid: Target player to look up
         :return: Ship object.
         """
-        def _get_player_name(uuid):
+        def _get_player_name(uid):
             player = ""
-            if isinstance(uuid, bytes):
-                uuid = uuid.decode("utf-8")
+            if isinstance(uid, bytes):
+                uid = uid.decode("utf-8")
             for p in self.factory.connections:
-                if p.player.uuid == uuid:
+                if p.player.uuid == uid:
                     player = p.player.alias
                     return player
 
@@ -980,7 +926,7 @@ class PlayerManager(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("kick",
-             role=Kick,
+             perm="player_manager.kick",
              doc="Kicks a player.",
              syntax=("[\"]player name[\"]", "[reason]"))
     def _kick(self, data, connection):
@@ -1009,9 +955,15 @@ class PlayerManager(SimpleCommandPlugin):
         if p is None:
             send_message(connection,
                          "Couldn't find a player with name {}".format(alias))
+            return
+        if p.priority >= connection.player.priority:
+            send_message(connection, "Can't kick {}, they are equal or "
+                                     "higher than your rank!".format(p.alias))
+            return
         if not p.logged_in:
             send_message(connection,
                          "Player {} is not currently logged in.".format(alias))
+            return
         if p.client_id == -1 or p.connection is None:
             p.connection = None
             p.logged_in = False
@@ -1028,10 +980,10 @@ class PlayerManager(SimpleCommandPlugin):
         p.location = None
         self.players_online.remove(p.uuid)
         broadcast(self, "^red;{} has been kicked for reason: "
-                            "{}^reset;".format(alias, reason))
+                        "{}^reset;".format(alias, reason))
 
     @Command("ban",
-             role=Ban,
+             perm="player_manager.ban",
              doc="Bans a user or an IP address.",
              syntax=("(ip | name)", "(reason)"))
     def _ban(self, data, connection):
@@ -1051,6 +1003,11 @@ class PlayerManager(SimpleCommandPlugin):
         """
         try:
             target, reason = data[0], " ".join(data[1:])
+            if self.find_player(target).priority >= connection.player.priority:
+                send_message(connection, "Can't ban {}, they are equal or "
+                                         "higher than your rank!"
+                             .format(target))
+                return
             if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target):
                 self.ban_by_ip(target, reason, connection)
             else:
@@ -1059,7 +1016,7 @@ class PlayerManager(SimpleCommandPlugin):
             raise SyntaxWarning
 
     @Command("unban",
-             role=Ban,
+             perm="player_manager.ban",
              doc="Unbans a user or an IP address.",
              syntax=("(ip | name)"))
     def _unban(self, data, connection):
@@ -1081,7 +1038,7 @@ class PlayerManager(SimpleCommandPlugin):
             raise SyntaxWarning
 
     @Command("list_bans",
-             role=Ban,
+             perm="player_manager.ban",
              doc="Lists all active bans.")
     def _list_bans(self, data, connection):
         """
@@ -1100,55 +1057,6 @@ class PlayerManager(SimpleCommandPlugin):
                            "Reason: {reason} - "
                            "Banned by: {banned_by}".format(**ban.__dict__))
             send_message(connection, "\n".join(res))
-
-    @Command("grant", "promote", "revoke", "demote",
-             role=Grant,
-             doc="Grants/Revokes role a player has.",
-             syntax=("(role)", "(player)"))
-    def _grant(self, data, connection):
-        """
-        Grant a role to a player.
-
-        :param data: The packet containing the command.
-        :param connection: The connection from which the packet came.
-        :return: Null.
-        :raise: LookupError on unknown player or role entry.
-        """
-        try:
-            role = data[0]
-        except IndexError:
-            raise SyntaxWarning("Please provide a Role and a target player.")
-        if not data[1:]:
-            raise SyntaxWarning("Please provide a target player.")
-        alias = " ".join(data[1:])
-        p = self.find_player(alias)
-        try:
-            if role.lower() not in (x.__name__.lower() for x in Owner.roles):
-                raise LookupError("Unknown role {}".format(role))
-            if p is None:
-                raise LookupError("Unknown player {}".format(alias))
-            if p is connection.player:
-                raise LookupError("Can't use this command on yourself!")
-            if role.lower() not in (x.lower() for x in connection.player.roles):
-                raise LookupError("Can't promote {} to rank {}, you are not "
-                                  "a high enough rank for that!".format(
-                                  alias, role.lower()))
-            if self.get_rank(connection.player) <= self.get_rank(p):
-                raise LookupError("Can't change roles of {}, you do "
-                                  "not outrank them!".format(alias))
-            p.roles = set()
-            ro = [x for x in Owner.roles if x.__name__.lower() ==
-                  role.lower()][0]
-            self.add_role(p, ro)
-            send_message(connection,
-                         "{} has been given the role {}.".format(
-                             p.alias, ro.__name__))
-            if p.connection is not None:
-                send_message(p.connection,
-                             "You've been given the role {} by {}".format(
-                                 ro.__name__, connection.player.alias))
-        except LookupError as e:
-            send_message(connection, str(e))
 
     @Command("user",
              perm="player_manager.user",
@@ -1307,9 +1215,8 @@ class PlayerManager(SimpleCommandPlugin):
                                                 "See /user help for usage "
                                                 "info.")
 
-
     @Command("list_players",
-             role=Whois,
+             perm="player_manager.list_players",
              doc="Lists all players.",
              syntax=("[wildcards]",))
     def _list_players(self, data, connection):
@@ -1336,7 +1243,7 @@ class PlayerManager(SimpleCommandPlugin):
                                                         l))
 
     @Command("del_player",
-             role=DeletePlayer,
+             perm="player_manager.delete_player",
              doc="Deletes a player",
              syntax=("(username)",
                      "[*force=forces deletion of a logged in player."
@@ -1353,6 +1260,9 @@ class PlayerManager(SimpleCommandPlugin):
         :raise: NameError if is not available. ValueError if player is
                 currently logged in.
         """
+        if not data:
+            send_message(connection, "No arguments provided.")
+            return
         if data[-1] == "*force":
             force = True
             data.pop()
@@ -1362,6 +1272,11 @@ class PlayerManager(SimpleCommandPlugin):
         player = self.find_player(alias)
         if player is None:
             raise NameError
+        if player.priority >= connection.player.priority:
+            send_message(connection, "Can't delete {}, they are equal or "
+                                     "higher rank than you!"
+                         .format(player.alias))
+            return
         if (not force) and player.logged_in:
             raise ValueError(
                 "Can't delete a logged-in player; please kick them first. If "

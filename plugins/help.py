@@ -30,6 +30,7 @@ class HelpPlugin(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("help",
+             perm="help.help",
              doc="Help command.")
     def _help(self, data, connection):
         """

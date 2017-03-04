@@ -16,6 +16,7 @@ from data_parser import PlayerWarp
 from pparser import build_packet
 from utilities import Command, send_message
 
+
 class Warp(Moderator):
     pass
 
@@ -32,6 +33,10 @@ class WarpPlugin(SimpleCommandPlugin):
     """Plugin which provides commands related to warping."""
     name = "warp_plugin"
     depends = ["player_manager", "command_dispatcher"]
+
+    def __init__(self):
+        super().__init__()
+        self.find_player = None
 
     def activate(self):
         super().activate()
@@ -64,7 +69,7 @@ class WarpPlugin(SimpleCommandPlugin):
         yield from from_player.connection.client_raw_write(full)
 
     @Command("tp",
-             role=Warp,
+             perm="warp.tp_player",
              doc="Warps a player to another player.",
              syntax=("[from player=self]", "(to player)"))
     def warp(self, data, connection):
@@ -90,7 +95,7 @@ class WarpPlugin(SimpleCommandPlugin):
             send_message(connection, "Warped to {}.".format(to_player.alias))
 
     @Command("tps",
-             role=WarpShip,
+             perm="warp.tp_ship",
              doc="Warps a player to another player's ship.",
              syntax=("[from player=self]", "(to player"))
     def ship_warp(self, data, connection):
@@ -109,8 +114,8 @@ class WarpPlugin(SimpleCommandPlugin):
         yield from self.warp_player_to_ship(from_player, to_player)
         if from_player.alias != connection.player.alias:
             send_message(from_player.connection, "You've been warped to {}'s"
-                                                 " ship.".format(
-                to_player.alias))
+                                                 " ship."
+                         .format(to_player.alias))
             send_message(connection, "Warped {} to {}'s ship.".format(
                 from_player.alias, to_player.alias))
         else:

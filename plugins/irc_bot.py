@@ -300,7 +300,7 @@ class IRCPlugin(BasePlugin):
                     self.logger.info(" -*- " + nick + " " + message)
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
-                        "-*- {} {}".format(nick,message)))
+                        "-*- {} {}".format(nick, message)))
                 yield from self.factory.broadcast(
                     "< ^orange;IRC^reset; > ^green;-*- {} {}".format(nick,
                                                                      message),
@@ -312,7 +312,7 @@ class IRCPlugin(BasePlugin):
                 asyncio.ensure_future(self.discord.bot_write(
                     "[IRC] **<{}>** {}".format(nick, message)))
             yield from self.factory.broadcast("[^orange;IRC^reset;] <{}> "
-                                          "{}".format(nick, message),
+                                              "{}".format(nick, message),
                                               mode=ChatReceiveMode.BROADCAST)
 
     @asyncio.coroutine

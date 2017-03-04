@@ -76,7 +76,6 @@ class PlanetProtect(StorageCommandPlugin):
                 protection.allowed_builders = {x for x in convert.values()}
             self.storage["converted"] = True
 
-
     # Packet hooks - look for these packets and act on them
 
     def on_spawn_entity(self, data, connection):
@@ -96,7 +95,8 @@ class PlanetProtect(StorageCommandPlugin):
         protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
-        if connection.player.check_role(Admin):
+        if self.plugins.player_manager.perm_check(connection.player,
+                                                  "planet_protect.bypass"):
             return True
         elif protection.check_builder(connection.player):
             return True
@@ -133,7 +133,8 @@ class PlanetProtect(StorageCommandPlugin):
         protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
-        if connection.player.check_role(Admin):
+        elif self.plugins.player_manager.perm_check(connection.player,
+                                                    "planet_protect.bypass"):
             return True
         elif protection.check_builder(connection.player):
             return True
@@ -173,7 +174,8 @@ class PlanetProtect(StorageCommandPlugin):
         protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
-        if connection.player.check_role(Admin):
+        elif self.plugins.player_manager.perm_check(connection.player,
+                                                    "planet_protect.bypass"):
             return True
         elif protection.check_builder(connection.player):
             return True
@@ -269,7 +271,7 @@ class PlanetProtect(StorageCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("protect",
-             role=Protect,
+             perm="planet_protect.protect",
              doc="Protects a planet",
              syntax="")
     def _protect(self, data, connection):
@@ -286,7 +288,7 @@ class PlanetProtect(StorageCommandPlugin):
         send_message(connection, "Protected location: {}".format(location))
 
     @Command("unprotect",
-             role=Protect,
+             perm="planet_protect.protect",
              doc="Removes protection from a planet",
              syntax="")
     def _unprotect(self, data, connection):
@@ -303,7 +305,7 @@ class PlanetProtect(StorageCommandPlugin):
         send_message(connection, "Unprotected location ()".format(location))
 
     @Command("add_builder",
-             role=Protect,
+             perm="planet_protect.manage_protection",
              doc="Adds a player to the current location's build list.",
              syntax="[\"](player name)[\"]")
     def _add_builder(self, data, connection):
@@ -336,7 +338,7 @@ class PlanetProtect(StorageCommandPlugin):
                              " ".join(data)))
 
     @Command("del_builder",
-             role=Protect,
+             perm="planet_protect.manage_protection",
              doc="Deletes a player from the current location's build list",
              syntax="[\"](player name)[\"]")
     def _del_builder(self, data, connection):
@@ -359,7 +361,7 @@ class PlanetProtect(StorageCommandPlugin):
                              " ".join(data)))
 
     @Command("list_builders",
-             role=Protect,
+             perm="planet_protect.manage_protection",
              doc="Lists all players granted build permissions "
                  "at current location",
              syntax="")
@@ -378,9 +380,9 @@ class PlanetProtect(StorageCommandPlugin):
             protection = self.get_protection(connection.player.location)
             uuids = protection.get_builders()
             aliases = []
-            for id in uuids:
+            for uid in uuids:
                 aliases.append(self.plugins['player_manager']
-                               .get_player_by_uuid(id).alias)
+                               .get_player_by_uuid(uid).alias)
             aliases = ", ".join(aliases)
             send_message(connection,
                          "Players allowed to build at location '{}': {}"

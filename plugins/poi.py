@@ -68,6 +68,7 @@ class POI(StorageCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("poi",
+             perm="poi.poi",
              doc="Moves a player's ship to the specified Point of Interest, "
                  "or prints the POIs if no argument given.",
              syntax="[\"][POI name][\"]")
@@ -103,7 +104,7 @@ class POI(StorageCommandPlugin):
             pass
 
     @Command("set_poi",
-             role=POIControl,
+             perm="poi.set_poi",
              doc="Set the planet you're on as a POI.",
              syntax="[\"](POI name)[\"]")
     def _set_poi(self, data, connection):
@@ -134,7 +135,7 @@ class POI(StorageCommandPlugin):
                      "POI {} added to list!".format(poi_name))
 
     @Command("del_poi",
-             role=POIControl,
+             perm="poi.set_poi",
              doc="Remove the specified POI from the POI list.",
              syntax="[\"](POI name)[\"]")
     def _del_poi(self, data, connection):

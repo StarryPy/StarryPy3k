@@ -56,7 +56,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
         self.irc_active = link_plugin_if_available(self, "irc_bot")
         self.discord_active = link_plugin_if_available(self, "discord_bot")
         self.chat_enhancements = link_plugin_if_available(self,
-                                                      "chat_enhancements")
+                                                          "chat_enhancements")
 
     # Helper functions - Used by commands
 
@@ -71,6 +71,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("me",
+             perm="emotes.emote",
              doc="Perform emote actions.")
     def _emote(self, data, connection):
         """
@@ -105,7 +106,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                 if self.discord_active:
                     asyncio.ensure_future(self.plugins["discord_bot"]
                         .bot_write(" -*- {} {}".format(
-                        connection.player.alias, emote)))
+                                    connection.player.alias, emote)))
                 message = "^orange;{} {}".format(connection.player.alias,
                                                  emote)
                 try:
@@ -118,6 +119,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                     broadcast(connection, message)
 
     @Command("mel",
+             perm="emotes.emote",
              doc="Perform emote actions in local chat.")
     def _emote_local(self, data, connection):
         """
