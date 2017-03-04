@@ -73,9 +73,9 @@ class Player:
     Prototype class for a player.
     """
     def __init__(self, uuid, species="unknown", name="", alias="",
-                 last_seen=None, roles=None, ranks=None,
-                 logged_in=False, connection=None, client_id=-1, ip="",
-                 planet="", muted=False, state=None, team_id=None):
+                 last_seen=None, ranks=None, logged_in=False,
+                 connection=None, client_id=-1, ip="", planet="",
+                 muted=False, state=None, team_id=None):
         """
         Initialize a player object. Populate all the necessary details.
 
@@ -83,7 +83,6 @@ class Player:
         :param species:
         :param name:
         :param last_seen:
-        :param roles:
         :param ranks:
         :param logged_in:
         :param connection:
@@ -103,10 +102,6 @@ class Player:
             self.last_seen = datetime.datetime.now()
         else:
             self.last_seen = last_seen
-        if roles is None:
-            self.roles = set()
-        else:
-            self.roles = set(roles)
         if ranks is None:
             self.ranks = set()
         else:
@@ -132,18 +127,6 @@ class Player:
         """
         return pprint.pformat(self.__dict__)
 
-    def check_role(self, role):
-        """
-        Check if player has a specific role.
-
-        :param role: Role to be checked.
-        :return: Boolean: True if player has role, False if they do not.
-        """
-        for r in self.roles:
-            if r.lower() == role.__name__.lower():
-                return True
-        return False
-
     def update_ranks(self, ranks):
         """
         Update the player's info to match any changes made to their ranks.
@@ -160,8 +143,9 @@ class Player:
                 highest_rank = r
         self.permissions |= self.granted_perms
         self.permissions -= self.revoked_perms
-        self.priority = ranks[highest_rank]['priority']
-        self.chat_prefix = ranks[highest_rank]['prefix']
+        if highest_rank:
+            self.priority = ranks[highest_rank]['priority']
+            self.chat_prefix = ranks[highest_rank]['prefix']
 
 
 class Ship:
@@ -254,8 +238,22 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.error(e)
             raise SystemExit
         self.ranks = self._rebuild_ranks(self.rank_config)
-        self.logger.debug(self.ranks)
         asyncio.ensure_future(self._reap())
+        if not self.shelf.get("converted", False):
+            self.logger.info("Converting roles to ranks...")
+            for player in self.shelf["players"].values():
+                if not hasattr(player, "ranks"):
+                    player.ranks = set()
+                    player.granted_perms = set()
+                    player.revoked_perms = set()
+                for role in player.roles:
+                    if role in self.ranks:
+                        player.ranks.add(role)
+                player.roles = None
+                if not player.ranks:
+                    player.ranks.add("Guest")
+                player.update_ranks(self.ranks)
+            self.shelf["converted"] = True
 
     # Packet hooks - look for these packets and act on them
 
@@ -785,9 +783,10 @@ class PlayerManager(SimpleCommandPlugin):
             return player
 
     @asyncio.coroutine
-    def _add_or_get_player(self, uuid, species, name="", last_seen=None, roles=None,
-                           logged_in=False, connection=None, client_id=-1,
-                           ip="", planet="", muted=False, **kwargs) -> Player:
+    def _add_or_get_player(self, uuid, species, name="", last_seen=None,
+                           ranks=None, logged_in=False, connection=None,
+                           client_id=-1, ip="", planet="", muted=False,
+                           **kwargs) -> Player:
         """
         Given a UUID, try to find the player's info in storage. In the event
         that the player has never connected to the server before, add their
@@ -822,8 +821,6 @@ class PlayerManager(SimpleCommandPlugin):
             p = self.shelf["players"][uuid]
             if p.logged_in:
                 raise ValueError("Player is already logged in.")
-            if uuid == self.plugin_config.owner_uuid:
-                p.roles = {x.__name__ for x in Owner.roles} | {Owner.__name__}
             if not hasattr(p, "species"):
                 p.species = species
             elif p.species != species:
@@ -841,14 +838,12 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.info("Adding new player to database: {} (UUID:{})"
                              "".format(alias, uuid))
             if uuid == self.plugin_config.owner_uuid:
-                roles = {x.__name__ for x in Owner.roles} | {Owner.__name__}
                 ranks = set(self.plugin_config.owner_ranks)
             else:
-                roles = {x.__name__ for x in Guest.roles}
                 ranks = set(self.plugin_config.new_user_ranks)
             new_player = Player(uuid, species, name, alias, last_seen,
-                                roles, ranks, logged_in, connection,
-                                client_id, ip, planet, muted)
+                                ranks, logged_in, connection, client_id, ip,
+                                planet, muted)
             new_player.update_ranks(self.ranks)
             self.shelf["players"][uuid] = new_player
             return new_player

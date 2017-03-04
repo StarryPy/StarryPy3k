@@ -354,15 +354,8 @@ class Command:
             syntax = ()
         if isinstance(syntax, str):
             syntax = (syntax,)
-        if roles is None:
-            roles = set()
-        elif not isinstance(roles, set):
-            roles = {x for x in roles}
-        if role is not None:
-            roles.add(role)
         if doc is None:
             doc = ""
-        self.roles = {role.__name__ for role in roles}
         self.perm = perm
         self.syntax = syntax
         self.human_syntax = " ".join(syntax)
@@ -379,9 +372,6 @@ class Command:
         """
         def wrapped(s, data, connection):
             try:
-                for role in self.roles:
-                    if role not in connection.player.roles:
-                        raise PermissionError
                 if self.perm is not None:
                     if self.perm not in connection.player.permissions and \
                             "special.allperms" not in \
@@ -395,7 +385,7 @@ class Command:
         wrapped._command = True
         wrapped._aliases = self.aliases
         wrapped.__doc__ = self.doc
-        wrapped.roles = self.roles
+        wrapped.perm = self.perm
         wrapped.syntax = self.human_syntax
         wrapped.priority = self.priority
         # f.roles = self.roles

@@ -1,0 +1,91 @@
+{
+  "Owner": {
+    "priority": 100000,
+    "prefix": "^#F7434C;",
+    "inherits": [
+      "SuperAdmin"
+    ],
+    "permissions": [
+      "special.allperms"
+    ]
+  },
+  "SuperAdmin": {
+    "priority": 10000,
+    "prefix": "^#F444A4;",
+    "inherits": [
+      "Admin"
+    ],
+    "permissions": [
+      "player_manager.delete_player",
+      "general_commands.shutdown",
+      "general_commands.maintenance_mode",
+      "motd.set_motd",
+      "spawn.set_spawn"
+    ]
+  },
+  "Admin": {
+    "priority": 1000,
+    "prefix": "^#C443F7;",
+    "inherits": [
+      "Moderator"
+    ],
+    "permissions": [
+      "player_manager.list_players",
+      "planet_protect.bypass",
+      "general_commands.whois",
+      "general_commands.give_item",
+      "planet_announcer.set_greeting",
+      "planet_protect.protect",
+      "planet_protect.manage_protection",
+      "poi.set_poi",
+      "privileged_chatter.broadcast",
+      "warp.tp_player",
+      "warp.tp_ship"
+    ]
+  },
+  "Moderator": {
+    "priority": 100,
+    "prefix": "^#4385F7;",
+    "inherits": [
+      "Registered"
+    ],
+    "permissions": [
+      "player_manager.kick",
+      "player_manager.ban",
+      "player_manager.user",
+      "privileged_chatter.modchat"
+    ]
+  },
+  "Registered": {
+    "priority": 10,
+    "prefix": "^#A0F743;",
+    "inherits": [
+      "Guest"
+    ],
+    "permissions": [
+      "claims.claim",
+      "claims.manage_claims",
+      "claims.planet_access",
+      "general_commands.nick"
+    ]
+  },
+  "Guest": {
+    "priority": 1,
+    "prefix": "^yellow;",
+    "inherits": [],
+    "permissions": [
+      "chat_enhancements.ignore",
+      "emotes.emote",
+      "general_commands.who",
+      "general_commands.here",
+      "general_commands.whoami",
+      "general_commands.uptime",
+      "help.help",
+      "motd.motd",
+      "poi.poi",
+      "privileged_chatter.report",
+      "spawn.spawn",
+      "spawn.show_spawn"
+    ]
+  }
+}

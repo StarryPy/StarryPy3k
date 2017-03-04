@@ -53,7 +53,7 @@ class GeneralCommands(SimpleCommandPlugin):
                                              "accepting new connections."}
 
     def __init__(self):
-        super.__init__(self)
+        super().__init__()
         self.maintenance = False
         self.rejection_message = ""
         self.start_time = None
@@ -81,7 +81,7 @@ class GeneralCommands(SimpleCommandPlugin):
             last_seen = target.last_seen
         return ("Name: {} {}\n"
                 "Raw Name: {}\n"
-                "Roles: ^yellow;{}^green;\n"
+                "Ranks: ^yellow;{}^green;\n"
                 "UUID: ^yellow;{}^green;\n"
                 "IP address: ^cyan;{}^green;\n"
                 "Team ID: ^cyan;{}^green;\n"
@@ -89,7 +89,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 "Last seen: ^yellow;{}^green;".format(
                     target.alias, logged_in,
                     target.name,
-                    ", ".join(target.roles),
+                    ", ".join(target.ranks),
                     target.uuid,
                     target.ip,
                     target.team_id,
