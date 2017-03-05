@@ -105,7 +105,7 @@ class ChatManager(SimpleCommandPlugin):
             send_message(connection,
                          "{} is already muted.".format(player.alias))
             return
-        elif player.check_role(Unmuteable):
+        elif player.priority >= connection.player.priority:
             send_message(connection,
                          "{} is unmuteable.".format(player.alias))
             return

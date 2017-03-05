@@ -40,18 +40,6 @@ class MockPlayer:
     revoked_perms = set()
     permissions = set()
 
-    def check_role(self, role):
-        """
-        Mimics the 'check_role' function of the real Player object.
-
-        This is mainly a hack to make sure commands give in IRC don't give
-        more information than they should (eg - only see what a guest sees).
-
-        :param role: Role to be checked. We're ignoring this.
-        :return: Boolean: False. We're a restricted bot.
-        """
-        return False
-
 
 class MockConnection:
     """
@@ -370,7 +358,7 @@ class IRCPlugin(BasePlugin):
         self.connection.player.permissions = \
             self.plugins.player_manager.ranks["Guest"]["permissions"]
         if user in self.ops:
-            self.connection.player.roles = \
+            self.connection.player.permissions = \
                 self.plugins.player_manager.ranks["Admin"]["permissions"]
         if command in self.dispatcher.commands:
             # Only handle commands that work from IRC

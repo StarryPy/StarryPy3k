@@ -48,7 +48,7 @@ class PlanetAnnouncer(StorageCommandPlugin):
             send_message(connection, self.storage["greetings"][location])
 
     @Command("set_greeting",
-             role="planet_announcer.set_greeting",
+             perm="planet_announcer.set_greeting",
              doc="Sets the greeting message to be displayed when a player "
                  "enters this planet, or clears it if unspecified.")
     def _set_greeting(self, data, connection):

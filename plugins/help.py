@@ -47,8 +47,7 @@ class HelpPlugin(SimpleCommandPlugin):
         if not data:
             commands = []
             for c, f in self.commands.items():
-                if self.plugins.player_manager.perm_check(connection.player,
-                                                          f.perm):
+                if connection.player.perm_check(f.perm):
                     commands.append(c)
             send_message(connection,
                          "Available commands: {}".format(" ".join(

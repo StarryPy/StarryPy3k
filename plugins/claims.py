@@ -40,8 +40,7 @@ class Claims(StorageCommandPlugin):
 
     def is_owner(self, connection, location):
         uuid = connection.player.uuid
-        if self.plugins.player_manager.perm_check(connection.player,
-                                                  "planet_protect.bypass"):
+        if connection.player.perm_check("planet_protect.bypass"):
             return True
         if uuid not in self.storage["owners"]:
             return False
@@ -97,8 +96,7 @@ class Claims(StorageCommandPlugin):
         yield from asyncio.sleep(.5)
         if str(connection.player.location) in self.storage["access"]:
             access = self.storage["access"][str(connection.player.location)]
-            if self.plugins.player_manager.perm_check(connection.player,
-                                                      "planet_protect.bypass"):
+            if connection.player.perm_check("planet_protect.bypass"):
                 return
             elif connection.player.uuid in access["list"] and not \
                     access["whitelist"]:
@@ -275,7 +273,7 @@ class Claims(StorageCommandPlugin):
             elif location.locationtype() is "ShipWorld":
                 send_message(connection, "Can't transfer ownership of your "
                                          "ship!")
-            elif 'Registered' not in target.roles:
+            elif target.perm_check("claims.claim"):
                 send_message(connection, "Target is not high enough rank to "
                                          "own a planet!")
             else:

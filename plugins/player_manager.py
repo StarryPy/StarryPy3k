@@ -147,6 +147,17 @@ class Player:
             self.priority = ranks[highest_rank]['priority']
             self.chat_prefix = ranks[highest_rank]['prefix']
 
+    def perm_check(self, perm):
+        if not perm:
+            return True
+        elif "special.allperms" in self.permissions:
+            return True
+        elif perm in self.revoked_perms:
+            return False
+        elif perm in self.permissions:
+            return True
+        else:
+            return False
 
 class Ship:
     """
@@ -588,18 +599,6 @@ class PlayerManager(SimpleCommandPlugin):
             final[rank] = config
 
         return final
-
-    def perm_check(self, player, perm):
-        if not perm:
-            return True
-        elif "special.allperms" in player.permissions:
-            return True
-        elif perm in player.revoked_perms:
-            return False
-        elif perm in player.permissions:
-            return True
-        else:
-            return False
 
     def ban_by_ip(self, ip, reason, connection):
         """
@@ -1090,7 +1089,7 @@ class PlayerManager(SimpleCommandPlugin):
                 if not data[2]:
                     yield from send_message(connection, "No permission "
                                                         "specified.")
-                elif not self.perm_check(connection.player, data[2]):
+                elif not connection.player.perm_check(data[2]):
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
                 elif data[2] in target.permissions:
@@ -1113,7 +1112,7 @@ class PlayerManager(SimpleCommandPlugin):
                 if not data[2]:
                     yield from send_message(connection, "No permission "
                                                         "specified.")
-                elif not self.perm_check(connection.player, data[2]):
+                elif not connection.player.perm_check(data[2]):
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
                 elif target.priority >= connection.player.priority:

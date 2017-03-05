@@ -67,7 +67,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             for p in self.factory.connections:
-                if "ModeratorChat" in p.player.roles:
+                if p.player.perm_check("privileged_chatter.modchat"):
                     yield from send_message(p,
                                             "{}{}^reset;".format(
                                                 self.modchat_color, message),
@@ -95,7 +95,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             for p in self.factory.connections:
-                if "ModeratorChat" in p.player.roles or p == connection:
+                if p.player.perm_check("privileged_chatter.modchat") \
+                        or p == connection:
                     yield from send_message(p,
                                             "{}{}^reset;".format(
                                                 self.report_prefix, message),

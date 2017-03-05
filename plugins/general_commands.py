@@ -97,7 +97,8 @@ class GeneralCommands(SimpleCommandPlugin):
                     last_seen))
 
     def on_connect_success(self, data, connection):
-        if self.maintenance and "SuperAdmin" not in connection.player.roles:
+        if self.maintenance and not connection.player.perm_check(
+                "general_commands.maintenance_bypass"):
             fail = data_parser.ConnectFailure.build(dict(
                 reason=self.rejection_message))
             pkt = pparser.build_packet(packets.packets['connect_failure'],
@@ -123,7 +124,7 @@ class GeneralCommands(SimpleCommandPlugin):
         ret_list = []
         for player in self.plugins['player_manager'].players_online:
             target = self.plugins['player_manager'].get_player_by_uuid(player)
-            if connection.player.check_role(Moderator):
+            if connection.player.perm_check("general_commands.who_clientids"):
                 ret_list.append(
                     "[^red;{}^reset;] {}".format(target.client_id,
                                                  target.alias))
@@ -225,7 +226,8 @@ class GeneralCommands(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        if len(data) > 1 and connection.player.check_role(Admin):
+        if len(data) > 1 and connection.player.perm_check(
+                "general_commands.nick_others"):
             target = self.plugins.player_manager.find_player(data[0])
             alias = " ".join(data[1:])
         else:
@@ -275,7 +277,8 @@ class GeneralCommands(SimpleCommandPlugin):
         location = str(connection.player.location)
         for p in self.factory.connections:
             if str(p.player.location) == location:
-                if connection.player.check_role(Moderator):
+                if connection.player.perm_check(
+                        "general_commands.who_clientids"):
                     ret_list.append(
                         "[^red;{}^reset;] {}".format(p.player.client_id,
                                                      p.player.alias))

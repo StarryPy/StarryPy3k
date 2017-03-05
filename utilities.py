@@ -373,9 +373,7 @@ class Command:
         def wrapped(s, data, connection):
             try:
                 if self.perm is not None:
-                    if self.perm not in connection.player.permissions and \
-                            "special.allperms" not in \
-                            connection.player.permissions:
+                    if not connection.player.perm_check(self.perm):
                         raise PermissionError
                 return f(s, data, connection)
             except PermissionError:

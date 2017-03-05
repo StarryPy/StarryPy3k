@@ -19,6 +19,7 @@
       "player_manager.delete_player",
       "general_commands.shutdown",
       "general_commands.maintenance_mode",
+      "general_commands.maintenance_bypass",
       "motd.set_motd",
       "spawn.set_spawn"
     ]
@@ -32,6 +33,8 @@
     "permissions": [
       "player_manager.list_players",
       "planet_protect.bypass",
+      "general_commands.nick_others",
+      "general_commands.who_clientids",
       "general_commands.whois",
       "general_commands.give_item",
       "planet_announcer.set_greeting",

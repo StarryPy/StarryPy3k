@@ -95,8 +95,7 @@ class PlanetProtect(StorageCommandPlugin):
         protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
-        if self.plugins.player_manager.perm_check(connection.player,
-                                                  "planet_protect.bypass"):
+        if connection.player.perm_check("planet_protect.bypass"):
             return True
         elif protection.check_builder(connection.player):
             return True
@@ -133,8 +132,7 @@ class PlanetProtect(StorageCommandPlugin):
         protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
-        elif self.plugins.player_manager.perm_check(connection.player,
-                                                    "planet_protect.bypass"):
+        elif connection.player.perm_check("planet_protect.bypass"):
             return True
         elif protection.check_builder(connection.player):
             return True
@@ -174,8 +172,7 @@ class PlanetProtect(StorageCommandPlugin):
         protection = self.get_protection(connection.player.location)
         if not protection.protected:
             return True
-        elif self.plugins.player_manager.perm_check(connection.player,
-                                                    "planet_protect.bypass"):
+        elif connection.player.perm_check("planet_protect.bypass"):
             return True
         elif protection.check_builder(connection.player):
             return True
