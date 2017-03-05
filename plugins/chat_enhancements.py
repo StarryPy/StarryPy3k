@@ -210,6 +210,7 @@ class ChatEnhancements(StorageCommandPlugin):
             return True
 
     @Command("whisper", "w",
+             perm="chat_enhancements.whisper",
              doc="Send message privately to a person.")
     def _whisper(self, data, connection):
         """
@@ -268,6 +269,7 @@ class ChatEnhancements(StorageCommandPlugin):
                                     "".format(name))
 
     @Command("reply", "r",
+             perm="chat_enhancements.whisper",
              doc="Send message privately to the last person who privately "
                  "messaged you.")
     def _reply(self, data, connection):

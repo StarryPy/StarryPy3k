@@ -74,6 +74,7 @@
     "prefix": "^yellow;",
     "inherits": [],
     "permissions": [
+      "chat_enhancements.whisper",
       "chat_enhancements.ignore",
       "emotes.emote",
       "general_commands.who",
