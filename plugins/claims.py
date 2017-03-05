@@ -182,7 +182,6 @@ class Claims(StorageCommandPlugin):
                                      "successfully.".format(location))
 
     @Command("add_builder",
-             role=Registered,
              priority=1,
              perm="claims.manage_claims",
              doc="Add someone to the protected list of your planet.")
@@ -215,7 +214,6 @@ class Claims(StorageCommandPlugin):
                          .format(" ".join(data)))
 
     @Command("del_builder",
-             role=Registered,
              priority=1,
              perm="claims.manage_claims",
              doc="Remove someone from the protected list of your planet.")
@@ -243,7 +241,6 @@ class Claims(StorageCommandPlugin):
                          .format(" ".join(data)))
 
     @Command("list_builders",
-             role=Registered,
              priority=1,
              perm="claims.manage_claims",
              doc="List all of the people allowed to build on this planet.")
@@ -322,7 +319,6 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "You haven't claimed any worlds.")
 
     @Command("set_greeting",
-             role=Registered,
              priority=1,
              perm="claims.manage_claims",
              doc="Sets a custom greeting message for the planet, or clears "

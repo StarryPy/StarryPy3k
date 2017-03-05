@@ -590,7 +590,9 @@ class PlayerManager(SimpleCommandPlugin):
         return final
 
     def perm_check(self, player, perm):
-        if "special.allperms" in player.permissions:
+        if not perm:
+            return True
+        elif "special.allperms" in player.permissions:
             return True
         elif perm in player.revoked_perms:
             return False
