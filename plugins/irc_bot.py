@@ -34,11 +34,11 @@ class MockPlayer:
     real Player object that don't map correctly, and would cause all sorts
     of headaches.
     """
-    owner = {x.__name__ for x in Owner.roles}
-    guest = {x.__name__ for x in IRCBot.roles}
-    roles = set()
     name = "IRCBot"
     logged_in = True
+    granted_perms = set()
+    revoked_perms = set()
+    permissions = set()
 
     def check_role(self, role):
         """
@@ -367,12 +367,14 @@ class IRCPlugin(BasePlugin):
         command = split[0]
         to_parse = split[1:]
         user = mask.split("!")[0]
-        self.connection.player.roles = self.connection.player.guest
+        self.connection.player.permissions = \
+            self.plugins.player_manager.ranks["Guest"]["permissions"]
         if user in self.ops:
-            self.connection.player.roles = self.connection.player.owner
+            self.connection.player.roles = \
+                self.plugins.player_manager.ranks["Admin"]["permissions"]
         if command in self.dispatcher.commands:
             # Only handle commands that work from IRC
-            if command in ('who', 'help'):
+            if command in ('who', 'help', 'uptime'):
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
                         "[IRC] <**{}**> .{}".format(user, " ".join(split))))
