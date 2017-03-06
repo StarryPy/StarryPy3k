@@ -76,7 +76,7 @@ class BasicAuth(SimpleCommandPlugin):
             # eachother, but this is being allowed for the sake of usability.
             if (
                    (
-                        self.plugin_config.owner_rank in player.ranks
+                        self.plugin_config.owner_priority <= player.priority
                         and account == self.plugin_config.owner_sb_account
                    ) or (
                         self.plugin_config.owner_priority > player.priority
