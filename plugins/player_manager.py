@@ -406,30 +406,31 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection:
         :return: Boolean: True. Don't stop the packet here.
         """
-        warp_data = data["parsed"]["warp_action"]
-        if warp_data["warp_type"] == WarpType.TO_ALIAS:
-            if warp_data["alias_id"] == WarpAliasType.ORBITED:
-                # down to planet, need coordinates from world_start
-                pass
-            elif warp_data["alias_id"] == WarpAliasType.SHIP:
-                # back on own ship
-                connection.player.location = yield from self._add_or_get_ship(
-                    connection.player.uuid)
-        elif warp_data["warp_type"] == WarpType.TO_PLAYER:
-            target = self.get_player_by_uuid(warp_data["player_id"].decode(
-                "utf-8"))
-            connection.player.location = target.location
-        elif warp_data["warp_type"] == WarpType.TO_WORLD:
-            if warp_data["world_id"] == WarpWorldType.CELESTIAL_WORLD:
-                pass
-            elif warp_data["world_id"] == WarpWorldType.PLAYER_WORLD:
-                connection.player.location = yield from self._add_or_get_ship(
-                    warp_data["ship_id"])
-            elif warp_data["world_id"] == WarpWorldType.UNIQUE_WORLD:
-                connection.player.location = yield from \
-                    self._add_or_get_instance(warp_data)
-            elif warp_data["world_id"] == WarpWorldType.MISSION_WORLD:
-                pass
+        if data["parsed"]["warp_success"]:
+            warp_data = data["parsed"]["warp_action"]
+            if warp_data["warp_type"] == WarpType.TO_ALIAS:
+                if warp_data["alias_id"] == WarpAliasType.ORBITED:
+                    # down to planet, need coordinates from world_start
+                    pass
+                elif warp_data["alias_id"] == WarpAliasType.SHIP:
+                    # back on own ship
+                    connection.player.location = yield from \
+                        self._add_or_get_ship(connection.player.uuid)
+            elif warp_data["warp_type"] == WarpType.TO_PLAYER:
+                target = self.get_player_by_uuid(warp_data["player_id"]
+                    .decode("utf-8"))
+                connection.player.location = target.location
+            elif warp_data["warp_type"] == WarpType.TO_WORLD:
+                if warp_data["world_id"] == WarpWorldType.CELESTIAL_WORLD:
+                    pass
+                elif warp_data["world_id"] == WarpWorldType.PLAYER_WORLD:
+                    connection.player.location = yield from \
+                        self._add_or_get_ship(warp_data["ship_id"])
+                elif warp_data["world_id"] == WarpWorldType.UNIQUE_WORLD:
+                    connection.player.location = yield from \
+                        self._add_or_get_instance(warp_data)
+                elif warp_data["world_id"] == WarpWorldType.MISSION_WORLD:
+                    pass
         return True
 
     # def on_client_context_update(self, data, connection):

@@ -324,7 +324,7 @@ class Byte(Struct):
 class Flag(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        return bool(stream.read(1))
+        return struct.unpack(">?", stream.read(1))[0]
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -772,8 +772,8 @@ class EntityInteract(Struct):
 
 class EntityMessage(Struct):
     """packet type: 51"""
-    target_unique = Byte
-    if target_unique == 1:
+    target_unique = Flag
+    if target_unique:
         unique_id = StarString
     else:
         target_id = SBInt32
