@@ -408,31 +408,37 @@ class PlayerManager(SimpleCommandPlugin):
         :return: Boolean: True. Don't stop the packet here.
         """
         if data["parsed"]["warp_success"]:
-            connection.player.last_location = connection.player.location
             warp_data = data["parsed"]["warp_action"]
             p = connection.player
             if warp_data["warp_type"] == WarpType.TO_ALIAS:
                 if warp_data["alias_id"] == WarpAliasType.ORBITED:
                     # down to planet, need coordinates from world_start
+                    p.last_location = p.location
                     pass
                 elif warp_data["alias_id"] == WarpAliasType.SHIP:
                     # back on own ship
+                    p.last_location = p.location
                     p.location = yield from self._add_or_get_ship(p.uuid)
                 elif warp_data["alias_id"] == WarpAliasType.RETURN:
                     p.location, p.last_location = p.last_location, p.location
             elif warp_data["warp_type"] == WarpType.TO_PLAYER:
                 target = self.get_player_by_uuid(warp_data["player_id"]
                     .decode("utf-8"))
+                p.last_location = p.location
                 p.location = target.location
             elif warp_data["warp_type"] == WarpType.TO_WORLD:
                 if warp_data["world_id"] == WarpWorldType.CELESTIAL_WORLD:
+                    p.last_location = p.location
                     pass
                 elif warp_data["world_id"] == WarpWorldType.PLAYER_WORLD:
+                    p.last_location = p.location
                     p.location = yield from self._add_or_get_ship(
                         warp_data["ship_id"])
                 elif warp_data["world_id"] == WarpWorldType.UNIQUE_WORLD:
+                    p.last_location = p.location
                     p.location = yield from self._add_or_get_instance(warp_data)
                 elif warp_data["world_id"] == WarpWorldType.MISSION_WORLD:
+                    p.last_location = p.location
                     pass
         return True
 
