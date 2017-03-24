@@ -84,7 +84,7 @@ class ChatManager(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("mute",
-             role=MutePlayer,
+             perm="chat_manager.mute",
              doc="Mutes a user",
              syntax="(username)")
     def _mute(self, data, connection):
@@ -105,7 +105,7 @@ class ChatManager(SimpleCommandPlugin):
             send_message(connection,
                          "{} is already muted.".format(player.alias))
             return
-        elif player.check_role(Unmuteable):
+        elif player.priority >= connection.player.priority:
             send_message(connection,
                          "{} is unmuteable.".format(player.alias))
             return
@@ -117,7 +117,7 @@ class ChatManager(SimpleCommandPlugin):
                          "{} has muted you.".format(connection.player.alias))
 
     @Command("unmute",
-             role=UnmutePlayer,
+             perm="chat_manager.mute",
              doc="Unmutes a player",
              syntax="(username)")
     def _unmute(self, data, connection):

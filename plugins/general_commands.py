@@ -51,7 +51,14 @@ class GeneralCommands(SimpleCommandPlugin):
     default_config = {"maintenance_message": "This server is currently in "
                                              "maintenance mode and is not "
                                              "accepting new connections."}
+
+    def __init__(self):
+        super().__init__()
+        self.maintenance = False
+        self.rejection_message = ""
+        self.start_time = None
     # Helper functions - Used by commands
+
     def activate(self):
         super().activate()
         self.maintenance = False
@@ -74,7 +81,7 @@ class GeneralCommands(SimpleCommandPlugin):
             last_seen = target.last_seen
         return ("Name: {} {}\n"
                 "Raw Name: {}\n"
-                "Roles: ^yellow;{}^green;\n"
+                "Ranks: ^yellow;{}^green;\n"
                 "UUID: ^yellow;{}^green;\n"
                 "IP address: ^cyan;{}^green;\n"
                 "Team ID: ^cyan;{}^green;\n"
@@ -82,7 +89,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 "Last seen: ^yellow;{}^green;".format(
                     target.alias, logged_in,
                     target.name,
-                    ", ".join(target.roles),
+                    ", ".join(target.ranks),
                     target.uuid,
                     target.ip,
                     target.team_id,
@@ -90,7 +97,8 @@ class GeneralCommands(SimpleCommandPlugin):
                     last_seen))
 
     def on_connect_success(self, data, connection):
-        if self.maintenance and "SuperAdmin" not in connection.player.roles:
+        if self.maintenance and not connection.player.perm_check(
+                "general_commands.maintenance_bypass"):
             fail = data_parser.ConnectFailure.build(dict(
                 reason=self.rejection_message))
             pkt = pparser.build_packet(packets.packets['connect_failure'],
@@ -103,6 +111,7 @@ class GeneralCommands(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("who",
+             perm="general_commands.who",
              doc="Lists players who are currently logged in.")
     def _who(self, data, connection):
         """
@@ -115,7 +124,7 @@ class GeneralCommands(SimpleCommandPlugin):
         ret_list = []
         for player in self.plugins['player_manager'].players_online:
             target = self.plugins['player_manager'].get_player_by_uuid(player)
-            if connection.player.check_role(Moderator):
+            if connection.player.perm_check("general_commands.who_clientids"):
                 ret_list.append(
                     "[^red;{}^reset;] {}".format(target.client_id,
                                                  target.alias))
@@ -126,7 +135,7 @@ class GeneralCommands(SimpleCommandPlugin):
                                                      ", ".join(ret_list)))
 
     @Command("whois",
-             role=Whois,
+             perm="general_commands.whois",
              doc="Returns client data about the specified user.",
              syntax="(username)")
     def _whois(self, data, connection):
@@ -148,7 +157,7 @@ class GeneralCommands(SimpleCommandPlugin):
             send_message(connection, "Player not found!")
 
     @Command("give", "item", "give_item",
-             role=GiveItem,
+             perm="general_commands.give_item",
              doc="Gives an item to a player. "
                  "If player name is omitted, give item(s) to self.",
              syntax=("[player=self]", "(item name)", "[count=1]"))
@@ -206,7 +215,7 @@ class GeneralCommands(SimpleCommandPlugin):
             connection.player.alias, item, count))
 
     @Command("nick",
-             role=Nick,
+             perm="general_commands.nick",
              doc="Changes your nickname to another one.",
              syntax="(username)")
     def _nick(self, data, connection):
@@ -217,7 +226,8 @@ class GeneralCommands(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        if len(data) > 1 and connection.player.check_role(Admin):
+        if len(data) > 1 and connection.player.perm_check(
+                "general_commands.nick_others"):
             target = self.plugins.player_manager.find_player(data[0])
             alias = " ".join(data[1:])
         else:
@@ -239,7 +249,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 old_alias, clean_alias))
 
     @Command("serverwhoami",
-             role=Whoami,
+             perm="general_commands.whoami",
              doc="Displays your current nickname for chat.")
     def _whoami(self, data, connection):
         """
@@ -253,7 +263,7 @@ class GeneralCommands(SimpleCommandPlugin):
                      self.generate_whois(connection.player))
 
     @Command("here",
-             role=Whoami,
+             perm="general_commands.here",
              doc="Displays all players on the same planet as you.")
     def _here(self, data, connection):
         """
@@ -267,7 +277,8 @@ class GeneralCommands(SimpleCommandPlugin):
         location = str(connection.player.location)
         for p in self.factory.connections:
             if str(p.player.location) == location:
-                if connection.player.check_role(Moderator):
+                if connection.player.perm_check(
+                        "general_commands.who_clientids"):
                     ret_list.append(
                         "[^red;{}^reset;] {}".format(p.player.client_id,
                                                      p.player.alias))
@@ -278,7 +289,7 @@ class GeneralCommands(SimpleCommandPlugin):
                                                         ", ".join(ret_list)))
 
     @Command("uptime",
-             role=Whoami,
+             perm="general_commands.uptime",
              doc="Displays the time since the server started.")
     def _uptime(self, data, connection):
         """
@@ -291,7 +302,7 @@ class GeneralCommands(SimpleCommandPlugin):
         yield from send_message(connection, "Uptime: {}".format(current_time))
 
     @Command("shutdown",
-             role=Shutdown,
+             perm="general_commands.shutdown",
              doc="Shutdown the server after N seconds (default 5).",
              syntax="[time]")
     def _shutdown(self, data, connection):
@@ -319,7 +330,7 @@ class GeneralCommands(SimpleCommandPlugin):
         sys.exit()
 
     @Command("maintenance_mode",
-             role=SuperAdmin,
+             perm="general_commands.maintenance_mode",
              doc="Toggle maintenance mode on the server. While in "
                  "maintenance mode, the server will reject all new "
                  "connection.")

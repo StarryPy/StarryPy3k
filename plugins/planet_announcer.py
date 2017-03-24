@@ -10,7 +10,6 @@ Reimplemented for StarryPy3k by medeor413.
 import asyncio
 
 from base_plugin import StorageCommandPlugin
-from plugins.player_manager import Admin
 from utilities import send_message, Command
 
 
@@ -49,7 +48,7 @@ class PlanetAnnouncer(StorageCommandPlugin):
             send_message(connection, self.storage["greetings"][location])
 
     @Command("set_greeting",
-             role=Admin,
+             perm="planet_announcer.set_greeting",
              doc="Sets the greeting message to be displayed when a player "
                  "enters this planet, or clears it if unspecified.")
     def _set_greeting(self, data, connection):

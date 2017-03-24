@@ -30,6 +30,7 @@ class HelpPlugin(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("help",
+             perm="help.help",
              doc="Help command.")
     def _help(self, data, connection):
         """
@@ -46,9 +47,8 @@ class HelpPlugin(SimpleCommandPlugin):
         if not data:
             commands = []
             for c, f in self.commands.items():
-                if f.roles - connection.player.roles:
-                    continue
-                commands.append(c)
+                if connection.player.perm_check(f.perm):
+                    commands.append(c)
             send_message(connection,
                          "Available commands: {}".format(" ".join(
                              [command for command in sorted(commands)])))

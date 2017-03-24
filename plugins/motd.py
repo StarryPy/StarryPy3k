@@ -71,7 +71,7 @@ class MOTD(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("set_motd",
-             role=SetMOTD,
+             perm="motd.set_motd",
              doc="Sets the 'Message of the Day' text.",
              syntax="(message text)")
     def _set_motd(self, data, connection):
@@ -90,6 +90,7 @@ class MOTD(SimpleCommandPlugin):
             return True
 
     @Command("motd",
+             perm="motd.motd",
              doc="Displays the 'Message of the Day' text.")
     def _motd(self, data, connection):
         """

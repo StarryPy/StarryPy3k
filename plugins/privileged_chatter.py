@@ -35,6 +35,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
         super().__init__()
         self.modchat_color = None
         self.report_prefix = None
+        self.broadcast_prefix = None
 
     def activate(self):
         super().activate()
@@ -48,7 +49,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
     # Commands - In-game actions that can be performed
 
     @Command("modchat", "m",
-             role=ModeratorChat,
+             perm="privileged_chatter.modchat",
              doc="Send a message that can only be seen by other moderators.",
              syntax="(message)")
     def _moderatorchat(self, data, connection):
@@ -66,7 +67,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             for p in self.factory.connections:
-                if "ModeratorChat" in p.player.roles:
+                if p.player.perm_check("privileged_chatter.modchat"):
                     yield from send_message(p,
                                             "{}{}^reset;".format(
                                                 self.modchat_color, message),
@@ -76,6 +77,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
                                             channel=channel)
 
     @Command("report",
+             perm="privileged_chatter.report",
              doc="Privately make a report to all online moderators.",
              syntax="(message)")
     def _report(self, data, connection):
@@ -93,7 +95,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             for p in self.factory.connections:
-                if "ModeratorChat" in p.player.roles or p == connection:
+                if p.player.perm_check("privileged_chatter.modchat") \
+                        or p == connection:
                     yield from send_message(p,
                                             "{}{}^reset;".format(
                                                 self.report_prefix, message),
@@ -103,7 +106,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
                                             channel=channel)
 
     @Command("broadcast",
-             role=Broadcast,
+             perm="privileged_chatter.broadcast",
              doc="Sends a message to everyone on the server.",
              syntax="(message)")
     def _broadcast(self, data, connection):

@@ -348,21 +348,15 @@ class Command:
     interface for all commands, including roles, documentation, usage syntax,
     and aliases.
     """
-    def __init__(self, *aliases, role=None, roles=None, doc=None,
+    def __init__(self, *aliases, role=None, roles=None, perm=None, doc=None,
                  syntax=None, priority=0):
         if syntax is None:
             syntax = ()
         if isinstance(syntax, str):
             syntax = (syntax,)
-        if roles is None:
-            roles = set()
-        elif not isinstance(roles, set):
-            roles = {x for x in roles}
-        if role is not None:
-            roles.add(role)
         if doc is None:
             doc = ""
-        self.roles = {role.__name__ for role in roles}
+        self.perm = perm
         self.syntax = syntax
         self.human_syntax = " ".join(syntax)
         self.doc = doc
@@ -378,8 +372,8 @@ class Command:
         """
         def wrapped(s, data, connection):
             try:
-                for role in self.roles:
-                    if role not in connection.player.roles:
+                if self.perm is not None:
+                    if not connection.player.perm_check(self.perm):
                         raise PermissionError
                 return f(s, data, connection)
             except PermissionError:
@@ -389,7 +383,7 @@ class Command:
         wrapped._command = True
         wrapped._aliases = self.aliases
         wrapped.__doc__ = self.doc
-        wrapped.roles = self.roles
+        wrapped.perm = self.perm
         wrapped.syntax = self.human_syntax
         wrapped.priority = self.priority
         # f.roles = self.roles

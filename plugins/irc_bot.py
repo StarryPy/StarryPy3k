@@ -34,23 +34,11 @@ class MockPlayer:
     real Player object that don't map correctly, and would cause all sorts
     of headaches.
     """
-    owner = {x.__name__ for x in Owner.roles}
-    guest = {x.__name__ for x in IRCBot.roles}
-    roles = set()
     name = "IRCBot"
     logged_in = True
-
-    def check_role(self, role):
-        """
-        Mimics the 'check_role' function of the real Player object.
-
-        This is mainly a hack to make sure commands give in IRC don't give
-        more information than they should (eg - only see what a guest sees).
-
-        :param role: Role to be checked. We're ignoring this.
-        :return: Boolean: False. We're a restricted bot.
-        """
-        return False
+    granted_perms = set()
+    revoked_perms = set()
+    permissions = set()
 
 
 class MockConnection:
@@ -300,7 +288,7 @@ class IRCPlugin(BasePlugin):
                     self.logger.info(" -*- " + nick + " " + message)
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
-                        "-*- {} {}".format(nick,message)))
+                        "-*- {} {}".format(nick, message)))
                 yield from self.factory.broadcast(
                     "< ^orange;IRC^reset; > ^green;-*- {} {}".format(nick,
                                                                      message),
@@ -312,7 +300,7 @@ class IRCPlugin(BasePlugin):
                 asyncio.ensure_future(self.discord.bot_write(
                     "[IRC] **<{}>** {}".format(nick, message)))
             yield from self.factory.broadcast("[^orange;IRC^reset;] <{}> "
-                                          "{}".format(nick, message),
+                                              "{}".format(nick, message),
                                               mode=ChatReceiveMode.BROADCAST)
 
     @asyncio.coroutine
@@ -367,12 +355,14 @@ class IRCPlugin(BasePlugin):
         command = split[0]
         to_parse = split[1:]
         user = mask.split("!")[0]
-        self.connection.player.roles = self.connection.player.guest
+        self.connection.player.permissions = \
+            self.plugins.player_manager.ranks["Guest"]["permissions"]
         if user in self.ops:
-            self.connection.player.roles = self.connection.player.owner
+            self.connection.player.permissions = \
+                self.plugins.player_manager.ranks["Admin"]["permissions"]
         if command in self.dispatcher.commands:
             # Only handle commands that work from IRC
-            if command in ('who', 'help'):
+            if command in ('who', 'help', 'uptime'):
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
                         "[IRC] <**{}**> .{}".format(user, " ".join(split))))
