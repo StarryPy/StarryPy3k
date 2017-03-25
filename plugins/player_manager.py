@@ -153,9 +153,9 @@ class Player:
             return True
         elif "special.allperms" in self.permissions:
             return True
-        elif perm in self.revoked_perms:
+        elif perm.lower() in self.revoked_perms:
             return False
-        elif perm in self.permissions:
+        elif perm.lower() in self.permissions:
             return True
         else:
             return False
@@ -1071,7 +1071,7 @@ class PlayerManager(SimpleCommandPlugin):
         if not data:
             yield from send_message(connection, "No arguments provided. See "
                                                 "/user help for usage info.")
-        elif data[0] == "help":
+        elif data[0].lower() == "help":
             send_message(connection, "Syntax:")
             send_message(connection, "/user addperm (user) (permission)")
             send_message(connection, "Adds a permission to a player. Fails if "
@@ -1093,7 +1093,7 @@ class PlayerManager(SimpleCommandPlugin):
             send_message(connection, "Lists the permissions a player has.")
             send_message(connection, "/user listranks (player)")
             send_message(connection, "Lists the ranks a player has.")
-        elif data[0] == "addperm":
+        elif data[0].lower() == "addperm":
             target = self.find_player(data[1])
             if target:
                 if not data[2]:
@@ -1102,13 +1102,13 @@ class PlayerManager(SimpleCommandPlugin):
                 elif not connection.player.perm_check(data[2]):
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
-                elif data[2] in target.permissions:
+                elif data[2].lower() in target.permissions:
                     yield from send_message(connection, "Player {} already "
                                                         "has permission {}."
                                             .format(target.alias, data[2]))
                 else:
-                    target.revoked_perms.discard(data[2])
-                    target.granted_perms.add(data[2])
+                    target.revoked_perms.discard(data[2].lower())
+                    target.granted_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
                     yield from send_message(connection, "Granted permission "
                                                         "{} to {}."
@@ -1116,7 +1116,7 @@ class PlayerManager(SimpleCommandPlugin):
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
-        elif data[0] == "rmperm":
+        elif data[0].lower() == "rmperm":
             target = self.find_player(data[1])
             if target:
                 if not data[2]:
@@ -1128,13 +1128,13 @@ class PlayerManager(SimpleCommandPlugin):
                 elif target.priority >= connection.player.priority:
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
-                elif data[2] not in target.permissions:
+                elif data[2].lower() not in target.permissions:
                     yield from send_message(connection, "Player {} does not "
                                                         "have permission {}."
                                             .format(target.alias, data[2]))
                 else:
-                    target.granted_perms.discard(data[2])
-                    target.revoked_perms.add(data[2])
+                    target.granted_perms.discard(data[2].lower())
+                    target.revoked_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
                     yield from send_message(connection, "Removed permission "
                                                         "{} from {}."
@@ -1142,7 +1142,7 @@ class PlayerManager(SimpleCommandPlugin):
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
-        elif data[0] == "addrank":
+        elif data[0].lower() == "addrank":
             target = self.find_player(data[1])
             if target:
                 if not data[2]:
@@ -1169,7 +1169,7 @@ class PlayerManager(SimpleCommandPlugin):
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
-        elif data[0] == "rmrank":
+        elif data[0].lower() == "rmrank":
             target = self.find_player(data[1])
             if target:
                 if not data[2]:
@@ -1196,7 +1196,7 @@ class PlayerManager(SimpleCommandPlugin):
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
-        elif data[0] == "listperms":
+        elif data[0].lower() == "listperms":
             target = self.find_player(data[1])
             if target:
                 perms = ", ".join(target.permissions)
@@ -1206,7 +1206,7 @@ class PlayerManager(SimpleCommandPlugin):
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
-        elif data[0] == "listranks":
+        elif data[0].lower() == "listranks":
             target = self.find_player(data[1])
             if target:
                 ranks = ", ".join(target.ranks)
