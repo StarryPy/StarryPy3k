@@ -66,7 +66,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         "client_id": "-- client_id --",
         "channel": "-- channel id --",
         "strip_colors": True,
-        "log_discord": False
+        "log_discord": False,
+        "command_prefix": "!"
     }
 
     def __init__(self):
@@ -78,6 +79,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.client_id = None
         self.mock_connection = None
         self.prefix = None
+        self.command_prefix = None
         self.dispatcher = None
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
@@ -92,6 +94,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         if self.irc_bot_exists:
             self.irc = self.plugins['irc_bot']
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
+            "command_prefix"]
+        self.command_prefix = self.config.get_plugin_config(self.name)[
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
         self.client_id = self.config.get_plugin_config(self.name)["client_id"]
@@ -189,7 +193,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         text = message.clean_content
         server = message.server
         if message.author.id != self.client_id:
-            if message.content[0] == ".":
+            if message.content[0] == self.command_prefix:
                 asyncio.ensure_future(self.handle_command(message.content[
                                                           1:], nick))
             else:
