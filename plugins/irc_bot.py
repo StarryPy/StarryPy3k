@@ -36,10 +36,23 @@ class MockPlayer:
     """
     name = "IRCBot"
     logged_in = True
-    granted_perms = set()
-    revoked_perms = set()
-    permissions = set()
 
+    def __init__(self):
+        self.granted_perms = set()
+        self.revoked_perms = set()
+        self.permissions = set()
+
+    def perm_check(self, perm):
+        if not perm:
+            return True
+        elif "special.allperms" in self.permissions:
+            return True
+        elif perm.lower() in self.revoked_perms:
+            return False
+        elif perm.lower() in self.permissions:
+            return True
+        else:
+            return False
 
 class MockConnection:
     """
