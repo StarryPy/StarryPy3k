@@ -26,6 +26,10 @@ class ChatLogger(BasePlugin):
             "stopAltMusic",
             "playCinematic"
         ]
+        self.blocked_world_properties = [
+            "nonCombat",
+            "invinciblePlayers"
+        ]
 
     def on_entity_message(self, data, connection):
         """
@@ -47,7 +51,25 @@ class ChatLogger(BasePlugin):
                                       .format(data['parsed']['message_name'],
                                               connection.player.alias))
                     return False
-                else:
-                    return True
-            else:
-                return True
+            return True
+
+    def on_update_world_properties(self, data, connection):
+        """
+        Catch when world properties are modified and block it, depending on
+        its contents.
+        :param data:
+        :param connection:
+        :return: Boolean: True if the change is allowed, false otherwise
+        """
+        if data['direction'] == Direction.TO_CLIENT:
+            # The server is just informing the clients of changes.
+            return True
+        else:
+            for key in data['parsed'].keys():
+                if key in self.blocked_world_properties:
+                    if not connection.player.perm_check("emsg_blocker.bypass"):
+                        self.logger.debug("Blocked change of world property "
+                                          "{} from player {}.".format(
+                            key, connection.player.alias))
+                        return False
+            return True
