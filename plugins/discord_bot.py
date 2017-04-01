@@ -35,9 +35,23 @@ class MockPlayer:
     """
     name = "DiscordBot"
     logged_in = True
-    granted_perms = set()
-    revoked_perms = set()
-    permissions = set()
+
+    def __init__(self):
+        self.granted_perms = set()
+        self.revoked_perms = set()
+        self.permissions = set()
+
+    def perm_check(self, perm):
+        if not perm:
+            return True
+        elif "special.allperms" in self.permissions:
+            return True
+        elif perm.lower() in self.revoked_perms:
+            return False
+        elif perm.lower() in self.permissions:
+            return True
+        else:
+            return False
 
 
 class MockConnection:
@@ -66,7 +80,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         "client_id": "-- client_id --",
         "channel": "-- channel id --",
         "strip_colors": True,
-        "log_discord": False
+        "log_discord": False,
+        "command_prefix": "!"
     }
 
     def __init__(self):
@@ -78,6 +93,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.client_id = None
         self.mock_connection = None
         self.prefix = None
+        self.command_prefix = None
         self.dispatcher = None
         self.color_strip = re.compile("\^(.*?);")
         self.sc = None
@@ -92,6 +108,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         if self.irc_bot_exists:
             self.irc = self.plugins['irc_bot']
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
+            "command_prefix"]
+        self.command_prefix = self.config.get_plugin_config(self.name)[
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
         self.client_id = self.config.get_plugin_config(self.name)["client_id"]
@@ -189,7 +207,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         text = message.clean_content
         server = message.server
         if message.author.id != self.client_id:
-            if message.content[0] == ".":
+            if message.content[0] == self.command_prefix:
                 asyncio.ensure_future(self.handle_command(message.content[
                                                           1:], nick))
             else:

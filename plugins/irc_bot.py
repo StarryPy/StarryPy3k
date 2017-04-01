@@ -36,10 +36,23 @@ class MockPlayer:
     """
     name = "IRCBot"
     logged_in = True
-    granted_perms = set()
-    revoked_perms = set()
-    permissions = set()
 
+    def __init__(self):
+        self.granted_perms = set()
+        self.revoked_perms = set()
+        self.permissions = set()
+
+    def perm_check(self, perm):
+        if not perm:
+            return True
+        elif "special.allperms" in self.permissions:
+            return True
+        elif perm.lower() in self.revoked_perms:
+            return False
+        elif perm.lower() in self.permissions:
+            return True
+        else:
+            return False
 
 class MockConnection:
     """
@@ -105,7 +118,8 @@ class IRCPlugin(BasePlugin):
         "username": "starrypy3k_bot",
         "strip_colors": True,
         "log_irc": False,
-        "announce_join_leave": True
+        "announce_join_leave": True,
+        "command_prefix": "!"
     }
 
     def __init__(self):
@@ -115,6 +129,7 @@ class IRCPlugin(BasePlugin):
         self.username = None
         self.connection = None
         self.prefix = None
+        self.command_prefix = None
         self.dispatcher = None
         self.bot = None
         self.ops = None
@@ -128,6 +143,8 @@ class IRCPlugin(BasePlugin):
         super().activate()
         self.dispatcher = self.plugins.command_dispatcher
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
+            "command_prefix"]
+        self.command_prefix = self.config.get_plugin_config(self.name)[
             "command_prefix"]
         self.server = self.config.get_plugin_config(self.name)["server"]
         self.channel = self.config.get_plugin_config(self.name)["channel"]
@@ -226,7 +243,7 @@ class IRCPlugin(BasePlugin):
         :param data: Message body.
         :return: None
         """
-        if data[0] == ".":
+        if data[0] == self.command_prefix:
             asyncio.ensure_future(self.handle_command(target, data[1:], mask))
         elif target.lower() == self.channel.lower():
             nick = mask.split("!")[0]

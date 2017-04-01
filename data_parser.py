@@ -324,7 +324,7 @@ class Byte(Struct):
 class Flag(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        return bool(stream.read(1))
+        return struct.unpack(">?", stream.read(1))[0]
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -334,7 +334,7 @@ class Flag(Struct):
 class BDouble(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        return struct.unpack(">d", stream.read(8))
+        return struct.unpack(">d", stream.read(8))[0]
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -769,17 +769,36 @@ class EntityInteract(Struct):
     target_y = BFloat32
     request_id = UUID
 
+
 class EntityMessage(Struct):
     """packet type: 51"""
-    target_unique = Flag
-    if target_unique:
-        unique_id = StarString
-    else:
-        target_id = SBInt32
-    message_name = StarString
-    message_args = VariantVariant
-    message_uuid = UUID
-    unknown_2 = UBInt16 # Also appears to always be 0
+    @classmethod
+    def _parse(cls, stream, ctx=None):
+        res = {}
+        res['target_unique'] = Flag.parse(stream, ctx)
+        if res['target_unique']:
+            res['unique_id'] = StarString.parse(stream, ctx)
+        else:
+            res['target_id'] = SBInt32.parse(stream, ctx)
+        res['message_name'] = StarString.parse(stream, ctx)
+        res['message_args'] = VariantVariant.parse(stream, ctx)
+        res['message_uuid'] = UUID.parse(stream, ctx)
+        res['unknown'] = UBInt16.parse(stream, ctx) # Appears to always be 0
+        return res
+
+    def _build(cls, obj, ctx=None):
+        res = b''
+        res += Flag.build(obj['target_unique'])
+        if obj['target_unique']:
+            res += StarString.build(obj['unique_id'])
+        else:
+            res += SBInt32.build(obj['target_id'])
+        res += StarString.build(obj['message_name'])
+        res += VariantVariant.build(obj['message_args'])
+        res += UUID.build(obj['message_uuid'])
+        res += UBInt16.build(obj['unknown'])
+        return res
+
 
 class EntityMessageResponse(Struct):
     success_level = Byte # 1 is a failure, 2 is a success

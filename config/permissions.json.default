@@ -43,7 +43,8 @@
       "poi.set_poi",
       "privileged_chatter.broadcast",
       "warp.tp_player",
-      "warp.tp_ship"
+      "warp.tp_ship",
+      "emsg_blocker.bypass"
     ]
   },
   "Moderator": {

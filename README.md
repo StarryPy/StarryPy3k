@@ -1,6 +1,6 @@
 # StarryPy3k
 
-##About
+## About
 StarryPy3k is the successor to StarryPy. StarryPy is a plugin-driven Starbound
 server wrapper that adds a great deal of functionality to Starbound. StarryPy3k
  is written using asyncio is Python 3.
@@ -138,11 +138,27 @@ and privileges.  You can find your UUID by watching the Starbound server log
 as you connect, by using the `list` RCON command, or by observing the names
 of your save files on the computer you use to play Starbound.
 
+Once you have finished editing `config.json`, copy the `permissions.json.default`
+ file to `permissions.json` and edit it to your liking. Example of 
+ permissions format is provided below:
+ ```
+"Role Name": {
+  "priority": 100000, // This determines the role heirarchy for administrative commands such as /kick, /ban, and /user
+  "prefix": "^#F7434C;", // This role's chat prefix, typically a color
+  "inherits": [ // Roles to inherit permissions from
+    "Another Role"
+  ],
+  "permissions": [ // An array of permissions; see permissions.json.default for all the permissions included
+    "special.allperms"
+  ]
+}
+```
+
 ### Starting the proxy
 Starting StarryPy is as simple as issueing the command `python3 ./server.py`
-once you have finised editing `config/config.json`.  To terminate the proxy,
-either press `^C` in an interactive terminal session, or send it a `TERM`
-signal.
+once you have finised editing `config/config.json` and `config/permissions
+.json`.  To terminate the proxy, either press `^C` in an interactive 
+terminal session, or send it a `TERM` signal.
 
 
 ## Contributing
