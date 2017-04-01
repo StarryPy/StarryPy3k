@@ -334,7 +334,7 @@ class Flag(Struct):
 class BDouble(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        return struct.unpack(">d", stream.read(8))
+        return struct.unpack(">d", stream.read(8))[0]
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -804,7 +804,6 @@ class EntityMessageResponse(Struct):
     success_level = Byte # 1 is a failure, 2 is a success
     response = Variant
     message_uuid = UUID
-
 
 class StepUpdate(Struct):
     """packet type: 54"""
