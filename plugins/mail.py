@@ -118,17 +118,18 @@ class MailPlugin(StorageCommandPlugin):
                     yield from send_message(connection, "No mail with that "
                                                         "number.")
                     return
-            yield from send_message(connection, "From {} at {}: \n{}"
+            yield from send_message(connection, "From {} on {}: \n{}"
                                     .format(mail.author.alias,
-                                            mail.time.strftime("%H:%M"),
+                                            mail.time.strftime("%d %b %H:%M"),
                                             mail.message))
         else:
             if mailbox['unread']:
                 for mail in mailbox['unread']:
                     mailbox['read'].insert(0, mail)
-                    yield from send_message(connection, "From {} at {}: \n{}"
+                    yield from send_message(connection, "From {} on {}: \n{}"
                                             .format(mail.author.alias,
-                                                    mail.time.strftime("%H:%M"),
+                                                    mail.time
+                                                    .strftime("%d %b %H:%M"),
                                                     mail.message))
                 mailbox['unread'] = []
             else:
@@ -150,10 +151,10 @@ class MailPlugin(StorageCommandPlugin):
             if data[0] == "unread":
                 count = 1
                 for mail in mailbox['unread']:
-                    yield from send_message(connection, "* {}: From {} at {}"
+                    yield from send_message(connection, "* {}: From {} on {}"
                                             .format(count, mail.author.alias,
                                                     mail.time.strftime(
-                                                        "%H:%M")))
+                                                        "%d %b %H:%M")))
                     count += 1
                 if count == 1:
                     yield from send_message(connection, "No unread mail in "
@@ -161,10 +162,10 @@ class MailPlugin(StorageCommandPlugin):
             elif data[0] == "read":
                 count = len(mailbox['unread']) + 1
                 for mail in mailbox['read']:
-                    yield from send_message(connection, "{}: From {} at {}"
+                    yield from send_message(connection, "{}: From {} on {}"
                                             .format(count, mail.author.alias,
                                                     mail.time.strftime(
-                                                        "%H:%M")))
+                                                        "%d %b %H:%M")))
                     count += 1
                 if count == len(mailbox['unread']) + 1:
                     yield from send_message(connection, "No read mail in "
@@ -175,14 +176,16 @@ class MailPlugin(StorageCommandPlugin):
         else:
             count = 1
             for mail in mailbox['unread']:
-                yield from send_message(connection, "* {}: From {} at {}"
+                yield from send_message(connection, "* {}: From {} on {}"
                                         .format(count, mail.author.alias,
-                                                mail.time.strftime("%H:%M")))
+                                                mail.time.strftime(
+                                                    "%d %b %H:%M")))
                 count += 1
             for mail in mailbox['read']:
-                yield from send_message(connection, "{}: From {} at {}"
+                yield from send_message(connection, "{}: From {} on {}"
                                         .format(count, mail.author.alias,
-                                                mail.time.strftime("%H:%M")))
+                                                mail.time.strftime("%d %b "
+                                                                   "%H:%M")))
                 count += 1
             if count == 1:
                 yield from send_message(connection, "No mail in mailbox.")
