@@ -866,7 +866,7 @@ class PlayerManager(SimpleCommandPlugin):
             p.update_ranks(self.ranks)
             return p
         else:
-            if self.get_player_by_name(alias) is not None:
+            if self.get_player_by_alias(alias) is not None:
                 raise NameError("A user with that name already exists.")
             self.logger.info("Adding new player to database: {} (UUID:{})"
                              "".format(alias, uuid))
