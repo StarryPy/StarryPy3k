@@ -64,7 +64,7 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection we're showing the message to.
         :return: Null.
         """
-        yield from asyncio.sleep(1)
+        yield from asyncio.sleep(3)
         yield from send_message(connection, "{}".format(self.motd))
         return
 
