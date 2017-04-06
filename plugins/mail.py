@@ -19,6 +19,7 @@ class Mail:
         self.message = message
         self.time = datetime.datetime.now()
         self.author = author
+        self.unread = True
 
 
 class MailPlugin(StorageCommandPlugin):
@@ -46,19 +47,20 @@ class MailPlugin(StorageCommandPlugin):
         :param connection:
         :return: True. Must always be true so the packet continues.
         """
-        if self.storage['mail'][connection.player.uuid]['unread']:
-            asyncio.ensure_future(self._display_unread(connection))
+        asyncio.ensure_future(self._display_unread(connection))
         return True
 
     def _display_unread(self, connection):
         yield from asyncio.sleep(3)
-        unread_count = len(self.storage['mail'][connection.player.uuid][
-            'unread'])
-        mail_count = unread_count + len(self.storage['mail']
-                                        [connection.player.uuid]['read'])
-        yield from send_message(connection, "You have {} unread messages."
-                                .format(unread_count))
-        if mail_count > self.max_mail * 0.8:
+        if connection.player.uuid not in self.storage['mail']:
+            self.storage['mail'][connection.player.uuid] = []
+        mailbox = self.storage['mail'][connection.player.uuid]
+        unread_count = len([x for x in mailbox if x.unread])
+        mail_count = len(mailbox)
+        if unread_count > 0:
+            yield from send_message(connection, "You have {} unread messages."
+                                    .format(unread_count))
+        if mail_count >= self.max_mail * 0.8:
             yield from send_message(connection, "Your mailbox is almost full!")
 
     @Command("sendmail",
@@ -74,14 +76,14 @@ class MailPlugin(StorageCommandPlugin):
                 raise SyntaxWarning("No message provided.")
             uid = target.uuid
             if uid not in self.storage['mail']:
-                self.storage['mail'][uid] = {"unread": [], "read": []}
+                self.storage['mail'][uid] = []
             mailbox = self.storage['mail'][uid]
-            if len(mailbox['unread']) + len(mailbox['read']) >= self.max_mail:
+            if len(mailbox) >= self.max_mail:
                 yield from send_message(connection, "{}'s mailbox is full!"
                                         .format(target.alias))
             else:
                 mail = Mail(" ".join(data[1:]), connection.player)
-                mailbox['unread'].insert(0, mail)
+                mailbox.insert(0, mail)
                 yield from send_message(connection, "Mail delivered to {}."
                                         .format(target.alias))
                 if target.logged_in:
@@ -97,42 +99,36 @@ class MailPlugin(StorageCommandPlugin):
                  "specific mail, or no number for all unread mails.",
              syntax="[index]")
     def _readmail(self, data, connection):
-        try:
-            mailbox = self.storage['mail'][connection.player.uuid]
-        except KeyError:
-            self.storage['mail'][connection.player.uuid] = {"unread": [],
-                                                            "read": []}
-            mailbox = self.storage['mail'][connection.player.uuid]
+        if connection.player.uuid not in self.storage['mail']:
+            self.storage['mail'][connection.player.uuid] = []
+        mailbox = self.storage['mail'][connection.player.uuid]
         if data:
             try:
                 index = int(data[0]) - 1
-                mail = mailbox['unread'].pop(index)
-                mailbox['read'].insert(0, mail)
+                mail = mailbox[index]
+                mail.unread = False
+                yield from send_message(connection, "From {} on {}: \n{}"
+                                        .format(mail.author.alias,
+                                                mail.time.strftime("%d %b "
+                                                                   "%H:%M"),
+                                                mail.message))
             except ValueError:
                 yield from send_message(connection, "Specify a valid number.")
             except IndexError:
-                index -= len(mailbox['unread'])
-                try:
-                    mail = mailbox['read'][index]
-                except IndexError:
-                    yield from send_message(connection, "No mail with that "
-                                                        "number.")
-                    return
-            yield from send_message(connection, "From {} on {}: \n{}"
-                                    .format(mail.author.alias,
-                                            mail.time.strftime("%d %b %H:%M"),
-                                            mail.message))
+                yield from send_message(connection, "No mail with that "
+                                                    "number.")
         else:
-            if mailbox['unread']:
-                for mail in mailbox['unread']:
-                    mailbox['read'].insert(0, mail)
+            unread_mail = False
+            for mail in mailbox:
+                if mail.unread:
+                    unread_mail = True
+                    mail.unread = False
                     yield from send_message(connection, "From {} on {}: \n{}"
                                             .format(mail.author.alias,
                                                     mail.time
                                                     .strftime("%d %b %H:%M"),
                                                     mail.message))
-                mailbox['unread'] = []
-            else:
+            if not unread_mail:
                 yield from send_message(connection, "No unread mail to "
                                                     "display.")
 
@@ -141,33 +137,35 @@ class MailPlugin(StorageCommandPlugin):
              doc="List all mail, optionally in a specified category.",
              syntax="[category]")
     def _listmail(self, data, connection):
-        try:
-            mailbox = self.storage['mail'][connection.player.uuid]
-        except KeyError:
-            self.storage['mail'][connection.player.uuid] = {"unread": [],
-                                                            "read": []}
-            mailbox = self.storage['mail'][connection.player.uuid]
+        if connection.player.uuid not in self.storage['mail']:
+            self.storage['mail'][connection.player.uuid] = []
+        mailbox = self.storage['mail'][connection.player.uuid]
         if data:
             if data[0] == "unread":
                 count = 1
-                for mail in mailbox['unread']:
-                    yield from send_message(connection, "* {}: From {} on {}"
-                                            .format(count, mail.author.alias,
-                                                    mail.time.strftime(
-                                                        "%d %b %H:%M")))
-                    count += 1
+                for mail in mailbox:
+                        if mail.unread:
+                            yield from send_message(connection, "* {}: From "
+                                                                "{} on {}"
+                                                    .format(count,
+                                                            mail.author.alias,
+                                                            mail.time.strftime(
+                                                                "%d %b ""%H:%M")))
+                            count += 1
                 if count == 1:
                     yield from send_message(connection, "No unread mail in "
                                                         "mailbox.")
             elif data[0] == "read":
-                count = len(mailbox['unread']) + 1
-                for mail in mailbox['read']:
-                    yield from send_message(connection, "{}: From {} on {}"
-                                            .format(count, mail.author.alias,
-                                                    mail.time.strftime(
-                                                        "%d %b %H:%M")))
+                count = 1
+                for mail in mailbox:
+                    if not mail.unread:
+                        yield from send_message(connection, "{}: From {} on {}"
+                                                .format(count,
+                                                        mail.author.alias,
+                                                        mail.time.strftime(
+                                                            "%d %b %H:%M")))
                     count += 1
-                if count == len(mailbox['unread']) + 1:
+                if count == 1:
                     yield from send_message(connection, "No read mail in "
                                                         "mailbox.")
             else:
@@ -175,17 +173,13 @@ class MailPlugin(StorageCommandPlugin):
                                     "\"read\" and \"unread\".")
         else:
             count = 1
-            for mail in mailbox['unread']:
-                yield from send_message(connection, "* {}: From {} on {}"
-                                        .format(count, mail.author.alias,
-                                                mail.time.strftime(
-                                                    "%d %b %H:%M")))
-                count += 1
-            for mail in mailbox['read']:
-                yield from send_message(connection, "{}: From {} on {}"
-                                        .format(count, mail.author.alias,
-                                                mail.time.strftime("%d %b "
-                                                                   "%H:%M")))
+            for mail in mailbox:
+                msg = "{}: From {} on {}".format(count, mail.author.alias,
+                                                        mail.time.strftime(
+                                                            "%d %b %H:%M"))
+                if mail.unread:
+                    msg = "* {}".format(msg)
+                yield from send_message(connection, msg)
                 count += 1
             if count == 1:
                 yield from send_message(connection, "No mail in mailbox.")
@@ -196,25 +190,27 @@ class MailPlugin(StorageCommandPlugin):
              syntax="(index or category)")
     def _delmail(self, data, connection):
         uid = connection.player.uuid
-        try:
-            mailbox = self.storage['mail'][uid]
-        except KeyError:
-            self.storage['mail'][uid] = {"unread": [], "read": []}
-            mailbox = self.storage['mail'][uid]
+        if uid not in self.storage['mail']:
+            self.storage['mail'][uid] = []
+        mailbox = self.storage['mail'][uid]
         if data:
             if data[0] == "all":
-                self.storage['mail'][uid] = {"unread": [], "read": []}
+                self.storage['mail'][uid] = []
                 yield from send_message(connection, "Deleted all mail.")
             elif data[0] == "unread":
-                self.storage['mail'][uid]['unread'] = []
+                for mail in mailbox:
+                    if mail.unread:
+                        self.storage['mail'][uid].remove(mail)
                 yield from send_message(connection, "Deleted all unread mail.")
             elif data[0] == "read":
-                self.storage['mail'][uid]['read'] = []
+                for mail in mailbox:
+                    if not mail.unread:
+                        self.storage['mail'][uid].remove(mail)
                 yield from send_message(connection, "Deleted all read mail.")
             else:
                 try:
                     index = int(data[0]) - 1
-                    self.storage['mail'][uid]['unread'].pop(index)
+                    self.storage['mail'][uid].pop(index)
                     yield from send_message(connection, "Deleted mail {}."
                                             .format(data[0]))
                 except ValueError:
@@ -222,14 +218,7 @@ class MailPlugin(StorageCommandPlugin):
                                         "number. Valid categories: \"read\","
                                         " \"unread\", \"all\"")
                 except IndexError:
-                    # noinspection PyUnboundLocalVariable
-                    index -= len(mailbox['unread'])
-                    try:
-                        self.storage['mail'][uid]['read'].pop(index)
-                        yield from send_message(connection, "Deleted mail {}."
-                                                .format(data[0]))
-                    except IndexError:
-                        yield from send_message(connection, "No message at "
-                                                            "that index.")
+                    yield from send_message(connection, "No message at "
+                                                        "that index.")
         else:
             raise SyntaxWarning("No argument provided.")
