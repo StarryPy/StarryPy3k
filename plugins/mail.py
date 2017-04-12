@@ -63,6 +63,19 @@ class MailPlugin(StorageCommandPlugin):
         if mail_count >= self.max_mail * 0.8:
             yield from send_message(connection, "Your mailbox is almost full!")
 
+    def send_mail(self, target, author, message):
+        """
+        A convenience method for sending mail so other plugins can use the
+        mail system easily.
+
+        :param target: Player: The recipient of the message.
+        :param author: Player: The author of the message.
+        :param message: String: The message to be sent.
+        :return: None.
+        """
+        mail = Mail(message, author)
+        self.storage['mail'][target.uuid].insert(0, mail)
+
     @Command("sendmail",
              perm="mail.sendmail",
              doc="Send mail to a player, to be read later.",

@@ -325,7 +325,6 @@ class PlayerManager(SimpleCommandPlugin):
             self.check_species(player)
         except (NameError, ValueError) as e:
             yield from connection.raw_write(self.build_rejection(str(e)))
-            self._set_offline(connection)
             connection.die()
             return False
         player.ip = connection.client_ip
