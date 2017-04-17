@@ -382,7 +382,9 @@ class IRCPlugin(BasePlugin):
             if command in ('who', 'help', 'uptime'):
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
-                        "[IRC] <**{}**> .{}".format(user, " ".join(split))))
+                        "[IRC] <**{}**> {}{}".format(user,
+                                                     self.command_prefix,
+                                                     " ".join(split))))
                 yield from self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)
