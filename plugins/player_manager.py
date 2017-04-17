@@ -147,6 +147,9 @@ class Player:
         if highest_rank:
             self.priority = ranks[highest_rank]['priority']
             self.chat_prefix = ranks[highest_rank]['prefix']
+        else:
+            self.priority = 0
+            self.chat_prefix = ""
 
     def perm_check(self, perm):
         if not perm:
