@@ -1,47 +1,35 @@
 import struct
-def parse_variant(bytes pybytes):
-    cdef char* _cstring = pybytes
-    cdef char** cstring = &_cstring
-    return c_parse_variant(cstring)
+def parse_variant(object stream):
+    return c_parse_variant(stream)
 
-def parse_vlq(bytes pybytes):
-    cdef char* _cstring = pybytes
-    cdef char** cstring = &_cstring
-    return c_parse_vlq(cstring)
+def parse_vlq(object stream):
+    return c_parse_vlq(stream)
 
-def parse_svlq(bytes pybytes):
-    cdef char* _cstring = pybytes
-    cdef char** cstring = &_cstring
-    return c_parse_variant(cstring)
+def parse_svlq(object stream):
+    return c_parse_variant(stream)
 
-def parse_dict_variant(bytes pybytes):
-    cdef char* _cstring = pybytes
-    cdef char** cstring = &_cstring
-    return c_parse_dict_variant(cstring)
+def parse_dict_variant(object stream):
+    return c_parse_dict_variant(stream)
 
-def parse_variant_variant(bytes pybytes):
-    cdef char* _cstring = pybytes
-    cdef char** cstring = &_cstring
-    return c_parse_variant_variant(cstring)
+def parse_variant_variant(object stream):
+    return c_parse_variant_variant(stream)
 
-def parse_starstring(bytes pybytes):
-    cdef char* _cstring = pybytes
-    cdef char** cstring = &_cstring
-    return c_parse_starstring(cstring)
+def parse_starbytearray(object stream):
+    return c_parse_starbytearray(stream)
 
-cdef c_parse_variant(char ** stream):
-    cdef char x = stream[0][0]
-    cdef char c = stream[0][1]
-    stream[0]+=1
+def parse_starstring(object stream):
+    return c_parse_starstring(stream)
+
+cdef c_parse_variant(object stream):
+    cdef char x = ord(stream.read(1))
 
     if x == 1:
         return None
     elif x == 2:
-        y = struct.unpack(">d", stream[0][:8])
-        stream[0] += 8
+        y = stream.read(8)
         return y
     elif x == 3:
-        stream[0] += 1
+        c = stream.read(1)
         if c == 1:
             return True
         else:
@@ -55,19 +43,17 @@ cdef c_parse_variant(char ** stream):
     elif x == 7:
         return c_parse_dict_variant(stream)
 
-cdef int c_parse_vlq(char ** stream):
+cdef int c_parse_vlq(object stream):
     cdef long long value = 0
     cdef char tmp
     while True:
-        tmp = stream[0][0]
+        tmp = ord(stream.read(1))
         value = (value << 7) | (tmp & 0x7f)
         if tmp & 0x80 == 0:
             break
-        stream[0] = stream[0]+1
-    stream[0] = stream[0]+1
     return value
 
-cdef int c_parse_svlq(char ** stream):
+cdef int c_parse_svlq(object stream):
     cdef long long v = c_parse_vlq(stream)
     if (v & 1) == 0x00:
         return v >> 1
@@ -75,22 +61,27 @@ cdef int c_parse_svlq(char ** stream):
         return -((v >> 1) + 1)
 
 
-cdef c_parse_dict_variant(char ** stream):
-    cdef int l = c_parse_vlq(stream)
+cdef c_parse_dict_variant(object stream):
+    cdef int i = c_parse_vlq(stream)
     c = {}
-    for _ in range(l):
+    for _ in range(1):
         key = c_parse_starstring(stream)
         value = c_parse_variant(stream)
         c[key] = value
     return c
 
-cdef c_parse_variant_variant(char ** stream):
-    cdef int l = c_parse_vlq(stream)
-    return [c_parse_variant(stream) for _ in range(l)]
+cdef c_parse_variant_variant(object stream):
+    cdef int i = c_parse_vlq(stream)
+    return [c_parse_variant(stream) for _ in range(i)]
 
-cdef c_parse_starstring(char ** stream):
-    cdef int l = c_parse_vlq(stream)
-    cdef char* s
-    py_string = stream[0][:l]
-    stream[0]+= l
-    return py_string
+cdef c_parse_starbytearray(object stream):
+    cdef int i = c_parse_vlq(stream)
+    s = stream.read(i)
+    return s
+
+cdef c_parse_starstring(object stream):
+    s = c_parse_starbytearray(stream)
+    try:
+        return str(s, encoding="utf-8")
+    except UnicodeDecodeError:
+        return s
