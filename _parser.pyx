@@ -64,7 +64,7 @@ cdef int c_parse_svlq(object stream):
 cdef c_parse_dict_variant(object stream):
     cdef int i = c_parse_vlq(stream)
     c = {}
-    for _ in range(1):
+    for _ in range(i):
         key = c_parse_starstring(stream)
         value = c_parse_variant(stream)
         c[key] = value
