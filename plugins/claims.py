@@ -284,8 +284,23 @@ class Claims(StorageCommandPlugin):
                     send_message(connection, "The target player has reached "
                                              "the maximum number of claims!")
                     return
+
+                try:
+                    self.storage["owners"][uuid].remove(str(location))
+                # If the command executor's UUID cannot be removed, they
+                # probably have the planet_protect.bypass permission and are
+                # changing the owner of a planet they do not own.
+                # In that case, we need to run through the list of owners and
+                # remove whoever owns the target planet.
+                except:
+                    for u in self.storage["owners"]:
+                        if str(location) in self.storage["owners"][u]:
+                            self.storage["owners"][u].remove(str(location))
+                            # Currently, this will check all UUIDs in case a
+                            # bug caused multiple owners. Break if undesired.
+                            #break
                 self.storage["owners"][target.uuid].append(str(location))
-                self.storage["owners"][uuid].remove(str(location))
+
                 if len(self.storage["owners"][uuid]) == 0:
                     self.storage["owners"].pop(uuid)
                 self.planet_protect.add_protection(location, target)
