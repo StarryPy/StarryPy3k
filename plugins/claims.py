@@ -273,7 +273,7 @@ class Claims(StorageCommandPlugin):
             elif location.locationtype() is "ShipWorld":
                 send_message(connection, "Can't transfer ownership of your "
                                          "ship!")
-            elif target.perm_check("claims.claim"):
+            elif not target.perm_check("claims.claim"):
                 send_message(connection, "Target is not high enough rank to "
                                          "own a planet!")
             else:
