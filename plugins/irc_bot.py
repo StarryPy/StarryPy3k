@@ -255,9 +255,9 @@ class IRCPlugin(BasePlugin):
         if self.config.get_plugin_config(self.name)["announce_join_leave"]:
             nick = mask.split("!")[0]
             if event == "JOIN":
-                move = "joined"
+                move = "has joined"
             else:
-                move = "left"
+                move = "has left"
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("{} has {} the channel.".format(nick, move))
             if self.discord_active:
@@ -330,7 +330,7 @@ class IRCPlugin(BasePlugin):
         """
         yield from asyncio.sleep(1)
         yield from self.bot_write(
-            "{} joined the server.".format(_color(_bold(
+            "{} has joined the server.".format(_color(_bold(
                 connection.player.alias), "10")))
 
     @asyncio.coroutine
