@@ -65,6 +65,8 @@ class MockConnection:
     @asyncio.coroutine
     def send_message(self, *messages):
         for message in messages:
+            color_strip = re.compile("\^(.*?);")
+            message = color_strip.sub("", message)
             if self.owner.irc_bot_exists:
                 asyncio.ensure_future(self.owner.irc.bot_write(
                     message))
