@@ -48,7 +48,8 @@ class ProtectedLocation:
         self.allowed_builders.add(builder.uuid)
 
     def del_builder(self, builder):
-        self.allowed_builders.remove(builder.uuid)
+        if builder.uuid in self.allowed_builders:
+            self.allowed_builders.remove(builder.uuid)
 
     def check_builder(self, builder):
         return builder.uuid in self.allowed_builders
