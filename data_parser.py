@@ -8,10 +8,8 @@ from io import BytesIO
 try:
     import c_parser
     use_c_parser = True
-    print("Using Cython parser")
 except ImportError:
     use_c_parser = False
-    print("Falling back to Python parser")
 
 from utilities import DotDict, WarpType, WarpWorldType
 
