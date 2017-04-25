@@ -810,6 +810,14 @@ class EntityInteract(Struct):
     target_y = BFloat32
     request_id = UUID
 
+class EntityCreate(Struct):
+    """packet type: 45"""
+    entity_type = Byte
+    store_data = StarByteArray
+    first_net_state = StarByteArray
+    entity_id = SBInt32
+    # Incomplete implementation
+
 
 class EntityMessage(Struct):
     """packet type: 51"""

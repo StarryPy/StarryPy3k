@@ -57,15 +57,3 @@ packets = BiDict({
     'update_world_properties': 53,
     'step_update': 54})
 
-entity_type = BiDict({
-    'end': -1,
-    'player': 0,
-    'monster': 1,
-    'object': 2,
-    'itemdrop': 3,
-    'projectile': 4,
-    'plant': 5,
-    'plantdrop': 6,
-    'effect': 7,
-    'npc': 8})
-
