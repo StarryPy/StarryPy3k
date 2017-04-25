@@ -3,5 +3,5 @@ from Cython.Build import cythonize
 
 setup(
     name = "StarryPy Packet Parser",
-    ext_modules = cythonize('_parser.pyx')
+    ext_modules = cythonize('c_parser.pyx')
 )
