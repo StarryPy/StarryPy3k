@@ -197,10 +197,9 @@ class ChatEnhancements(StorageCommandPlugin):
                                          " ".join(data))))
             if link_plugin_if_available(self, "discord_bot"):
                 discord = self.plugins['discord_bot']
-                asyncio.ensure_future(discord.bot.send_message(
-                    discord.bot.get_channel(discord.channel),
-                    "**<{}>** {}".format(connection.player.alias, " ".join(
-                        data))))
+                asyncio.ensure_future(discord.bot_write("**<{}>** {}"
+                                                        .format(
+                    connection.player.alias, " ".join(data))))
             return True
 
     @Command("p",
