@@ -443,5 +443,16 @@ class Claims(StorageCommandPlugin):
                     send_message(connection, "Argument not recognized. "
                                              "Usage: /planet_access [name] "
                                              "add/remove")
-
-
+    @Command("purge_claims",
+             perm="claims.purge_claims",
+             doc="Purge the claims of the target player, if something "
+                 "breaks.",
+             syntax="(target)")
+    def _purge_claims(self, data, connection):
+        target = self.plugins.player_manager.find_player(" ".join(data))
+        if target.uuid in self.storage['owners']:
+            self.storage['owners'][target.uuid] = []
+            yield from send_message(connection, "Purged claims of {}"
+                                    .format(target.alias))
+        else:
+            yield from send_message(connection, "Target has no claims.")

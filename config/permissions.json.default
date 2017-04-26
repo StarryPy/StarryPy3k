@@ -90,7 +90,9 @@
       "poi.poi",
       "privileged_chatter.report",
       "spawn.spawn",
-      "spawn.show_spawn"
+      "spawn.show_spawn",
+      "mail.sendmail",
+      "mail.readmail"
     ]
   }
 }

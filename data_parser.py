@@ -5,8 +5,14 @@ import io
 import struct
 from collections import OrderedDict
 from io import BytesIO
+try:
+    import c_parser
+    use_c_parser = True
+except ImportError:
+    use_c_parser = False
 
 from utilities import DotDict, WarpType, WarpWorldType
+
 
 
 #
@@ -168,18 +174,23 @@ class Struct(metaclass=MetaStruct):
 
 
 class VLQ(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict) -> int:
-        value = 0
-        while True:
-            try:
-                tmp = ord(stream.read(1))
-                value = (value << 7) | (tmp & 0x7f)
-                if tmp & 0x80 == 0:
+    if use_c_parser:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict) -> int:
+            return c_parser.parse_vlq(stream)
+    else:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict) -> int:
+            value = 0
+            while True:
+                try:
+                    tmp = ord(stream.read(1))
+                    value = (value << 7) | (tmp & 0x7f)
+                    if tmp & 0x80 == 0:
+                        break
+                except TypeError:  # If the stream is empty.
                     break
-            except TypeError:  # If the stream is empty.
-                break
-        return value
+            return value
 
     @classmethod
     def _build(cls, obj, ctx):
@@ -201,13 +212,18 @@ class VLQ(Struct):
 
 
 class SignedVLQ(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        v = VLQ.parse(stream, ctx)
-        if (v & 1) == 0x00:
-            return v >> 1
-        else:
-            return -((v >> 1) + 1)
+    if use_c_parser:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            return c_parser.parse_svlq(stream)
+    else:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            v = VLQ.parse(stream, ctx)
+            if (v & 1) == 0x00:
+                return v >> 1
+            else:
+                return -((v >> 1) + 1)
 
     @classmethod
     def _build(cls, obj, ctx):
@@ -287,10 +303,15 @@ class BFloat32(Struct):
 
 
 class StarByteArray(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        length = VLQ.parse(stream, ctx)
-        return stream.read(length)
+    if use_c_parser:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            return c_parser.parse_starbytearray(stream)
+    else:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            length = VLQ.parse(stream, ctx)
+            return stream.read(length)
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -298,13 +319,18 @@ class StarByteArray(Struct):
 
 
 class StarString(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        data = StarByteArray.parse(stream, ctx)
-        try:
-            return data.decode("utf-8")
-        except UnicodeDecodeError:
-            return data
+    if use_c_parser:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            return c_parser.parse_starstring(stream)
+    else:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            data = StarByteArray.parse(stream, ctx)
+            try:
+                return data.decode("utf-8")
+            except UnicodeDecodeError:
+                return data
 
     @classmethod
     def _build(cls, obj, ctx: OrderedDotDict):
@@ -354,47 +380,62 @@ class UUID(Struct):
 
 
 class VariantVariant(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        l = VLQ.parse(stream, ctx)
-        return [Variant.parse(stream, ctx) for _ in range(l)]
+    if use_c_parser:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            return c_parser.parse_variant_variant(stream)
+    else:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            l = VLQ.parse(stream, ctx)
+            return [Variant.parse(stream, ctx) for _ in range(l)]
 
 
 class DictVariant(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        l = VLQ.parse(stream, ctx)
-        c = {}
-        for _ in range(l):
-            key = StarString.parse(stream, ctx)
-            value = Variant.parse(stream, ctx)
-            if isinstance(value, bytes):
-                try:
-                    value = value.decode('utf-8')
-                except UnicodeDecodeError:
-                    pass
-            c[key] = value
-        return c
+    if use_c_parser:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            return c_parser.parse_dict_variant(stream)
+    else:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            l = VLQ.parse(stream, ctx)
+            c = {}
+            for _ in range(l):
+                key = StarString.parse(stream, ctx)
+                value = Variant.parse(stream, ctx)
+                if isinstance(value, bytes):
+                    try:
+                        value = value.decode('utf-8')
+                    except UnicodeDecodeError:
+                        pass
+                c[key] = value
+            return c
 
 
 class Variant(Struct):
-    @classmethod
-    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
-        x = Byte.parse(stream, ctx)
-        if x == 1:
-            return None
-        elif x == 2:
-            return BDouble.parse(stream, ctx)
-        elif x == 3:
-            return Flag.parse(stream, ctx)
-        elif x == 4:
-            return SignedVLQ.parse(stream, ctx)
-        elif x == 5:
-            return StarString.parse(stream, ctx)
-        elif x == 6:
-            return VariantVariant.parse(stream, ctx)
-        elif x == 7:
-            return DictVariant.parse(stream, ctx)
+    if use_c_parser:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            return c_parser.parse_variant(stream)
+    else:
+        @classmethod
+        def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+            x = Byte.parse(stream, ctx)
+            if x == 1:
+                return None
+            elif x == 2:
+                return BDouble.parse(stream, ctx)
+            elif x == 3:
+                return Flag.parse(stream, ctx)
+            elif x == 4:
+                return SignedVLQ.parse(stream, ctx)
+            elif x == 5:
+                return StarString.parse(stream, ctx)
+            elif x == 6:
+                return VariantVariant.parse(stream, ctx)
+            elif x == 7:
+                return DictVariant.parse(stream, ctx)
 
 
 class StringSet(Struct):
@@ -768,6 +809,14 @@ class EntityInteract(Struct):
     target_x = BFloat32
     target_y = BFloat32
     request_id = UUID
+
+class EntityCreate(Struct):
+    """packet type: 45"""
+    entity_type = Byte
+    store_data = StarByteArray
+    first_net_state = StarByteArray
+    entity_id = SBInt32
+    # Incomplete implementation
 
 
 class EntityMessage(Struct):

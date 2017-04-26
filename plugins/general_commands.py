@@ -126,10 +126,12 @@ class GeneralCommands(SimpleCommandPlugin):
             target = self.plugins['player_manager'].get_player_by_uuid(player)
             if connection.player.perm_check("general_commands.who_clientids"):
                 ret_list.append(
-                    "[^red;{}^reset;] {}".format(target.client_id,
-                                                 target.alias))
+                    "[^red;{}^reset;] {}{}^reset;".format(target.client_id,
+                                                          target.chat_prefix,
+                                                          target.alias))
             else:
-                ret_list.append("{}".format(target.alias))
+                ret_list.append("{}{}^reset;".format(target.chat_prefix,
+                                                     target.alias))
         send_message(connection,
                      "{} players online:\n{}".format(len(ret_list),
                                                      ", ".join(ret_list)))

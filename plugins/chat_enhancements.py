@@ -11,6 +11,7 @@ Original authors: teihoo, FZFalzar
 Updated for release: kharidiron
 """
 import asyncio
+import re
 from datetime import datetime
 
 import data_parser
@@ -64,7 +65,19 @@ class ChatEnhancements(StorageCommandPlugin):
     def on_chat_received(self, data, connection):
         sender = ""
         if data["parsed"]["name"]:
-            if data["parsed"]["name"] != "server":
+            if data["parsed"]["name"] == "server":
+                joinmsg = re.match(r"Player '(.*)' (dis)?connected",
+                                   data['parsed']['message'])
+                if joinmsg:
+                    joiner = self.plugins['player_manager'].get_player_by_name(
+                        joinmsg.group(1))
+                    type = "left" if joinmsg.group(2) is not None \
+                        else "joined"
+                    data['parsed']['message'] = "{}{}^reset; has {} the " \
+                                                "server.".format(
+                        joiner.chat_prefix, joiner.alias, type)
+                    sender = self.make_timestamp()
+            else:
                 sender = self.plugins['player_manager'].get_player_by_name(
                     data["parsed"]["name"])
                 if connection.player.uuid not in self.storage["ignores"]:
@@ -111,13 +124,7 @@ class ChatEnhancements(StorageCommandPlugin):
     # Helper functions - Used by commands
 
     def decorate_line(self, connection):
-        if self.cts:
-            now = datetime.now()
-            timestamp = "{}{}{}> <".format(self.cts_color,
-                                           now.strftime("%H:%M"),
-                                           "^reset;")
-        else:
-            timestamp = ""
+        timestamp = "{}> <".format(self.make_timestamp())
         try:
             p = connection.player
             sender = timestamp + p.chat_prefix + p.alias + "^reset;"
@@ -126,6 +133,12 @@ class ChatEnhancements(StorageCommandPlugin):
                 "AttributeError in colored_name: {}".format(str(e)))
             sender = connection.player.alias
         return sender
+
+    def make_timestamp(self):
+        if self.cts:
+            return self.cts_color + datetime.now().strftime("%H:%M")+ "^reset;"
+        else:
+            return ""
 
     @asyncio.coroutine
     def _send_to_server(self, message, mode, connection):
@@ -184,10 +197,9 @@ class ChatEnhancements(StorageCommandPlugin):
                                          " ".join(data))))
             if link_plugin_if_available(self, "discord_bot"):
                 discord = self.plugins['discord_bot']
-                asyncio.ensure_future(discord.bot.send_message(
-                    discord.bot.get_channel(discord.channel),
-                    "**<{}>** {}".format(connection.player.alias, " ".join(
-                        data))))
+                asyncio.ensure_future(discord.bot_write("**<{}>** {}"
+                                                        .format(
+                    connection.player.alias, " ".join(data))))
             return True
 
     @Command("p",

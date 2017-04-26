@@ -65,6 +65,8 @@ class MockConnection:
     @asyncio.coroutine
     def send_message(self, *messages):
         for message in messages:
+            color_strip = re.compile("\^(.*?);")
+            message = color_strip.sub("", message)
             if self.owner.discord_active:
                 asyncio.ensure_future(self.owner.discord.bot_write(message))
             yield from self.owner.bot_write(message)
@@ -382,7 +384,9 @@ class IRCPlugin(BasePlugin):
             if command in ('who', 'help', 'uptime'):
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
-                        "[IRC] <**{}**> .{}".format(user, " ".join(split))))
+                        "[IRC] <**{}**> {}{}".format(user,
+                                                     self.command_prefix,
+                                                     " ".join(split))))
                 yield from self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)

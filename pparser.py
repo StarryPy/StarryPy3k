@@ -50,7 +50,7 @@ parse_map = {
     42: None,
     43: None,
     44: None,
-    45: None,
+    45: EntityCreate,
     46: None,
     47: None,
     48: None,

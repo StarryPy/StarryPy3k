@@ -13,7 +13,8 @@ Original authors: medeor413
 
 from base_plugin import SimpleCommandPlugin
 from plugins.player_manager import Admin, Moderator
-from utilities import Command, send_message, ChatReceiveMode, broadcast
+from utilities import Command, send_message, ChatReceiveMode, broadcast,\
+    link_plugin_if_available
 
 
 class ModeratorChat(Moderator):
@@ -26,7 +27,7 @@ class Broadcast(Admin):
 
 class PrivilegedChatter(SimpleCommandPlugin):
     name = "privileged_chatter"
-    depends = ["command_dispatcher", "chat_enhancements", "player_manager"]
+    depends = ["command_dispatcher", "player_manager"]
     default_config = {"modchat_color": "^violet;",
                       "report_prefix": "^magenta;(REPORT): ",
                       "broadcast_prefix": "^red;(ADMIN): "}
@@ -36,6 +37,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
         self.modchat_color = None
         self.report_prefix = None
         self.broadcast_prefix = None
+        self.mail = None
+        self.chat_enhancements = None
 
     def activate(self):
         super().activate()
@@ -45,6 +48,10 @@ class PrivilegedChatter(SimpleCommandPlugin):
             "report_prefix"]
         self.broadcast_prefix = self.config.get_plugin_config(self.name)[
             "broadcast_prefix"]
+        if link_plugin_if_available(self, 'mail'):
+            self.mail = self.plugins.mail
+        if link_plugin_if_available(self, 'chat_enhancements'):
+            self.chat_enhancements = self.plugins.chat_enhancements
 
     # Commands - In-game actions that can be performed
 
@@ -62,8 +69,10 @@ class PrivilegedChatter(SimpleCommandPlugin):
         """
         if data:
             message = " ".join(data)
-            sender = self.plugins['chat_enhancements'].decorate_line(
-                connection)
+            if self.chat_enhancements:
+                sender = self.chat_enhancements.decorate_line(connection)
+            else:
+                sender = connection.player.name
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             for p in self.factory.connections:
@@ -90,13 +99,23 @@ class PrivilegedChatter(SimpleCommandPlugin):
         """
         if data:
             message = " ".join(data)
-            sender = self.plugins['chat_enhancements'].decorate_line(
-                connection)
+            if self.chat_enhancements:
+                sender = self.chat_enhancements.decorate_line(connection)
+            else:
+                sender = connection.player.name
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
+            mods_online = False
+            yield from send_message(connection.player,
+                                    "{}{}^reset;".format(
+                                        self.report_prefix, message),
+                                    client_id=connection.player.client_id,
+                                    name=sender,
+                                    mode=send_mode,
+                                    channel=channel)
             for p in self.factory.connections:
-                if p.player.perm_check("privileged_chatter.modchat") \
-                        or p == connection:
+                if p.player.perm_check("privileged_chatter.modchat"):
+                    mods_online = True
                     yield from send_message(p,
                                             "{}{}^reset;".format(
                                                 self.report_prefix, message),
@@ -104,6 +123,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
                                             name=sender,
                                             mode=send_mode,
                                             channel=channel)
+            # if not mods_online and self.report_mail:
+            #     self.mail.send_mail()
 
     @Command("broadcast",
              perm="privileged_chatter.broadcast",

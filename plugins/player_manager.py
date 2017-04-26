@@ -147,6 +147,9 @@ class Player:
         if highest_rank:
             self.priority = ranks[highest_rank]['priority']
             self.chat_prefix = ranks[highest_rank]['prefix']
+        else:
+            self.priority = 0
+            self.chat_prefix = ""
 
     def perm_check(self, perm):
         if not perm:
@@ -325,7 +328,6 @@ class PlayerManager(SimpleCommandPlugin):
             self.check_species(player)
         except (NameError, ValueError) as e:
             yield from connection.raw_write(self.build_rejection(str(e)))
-            self._set_offline(connection)
             connection.die()
             return False
         player.ip = connection.client_ip
@@ -759,20 +761,31 @@ class PlayerManager(SimpleCommandPlugin):
                 if not check_logged_in or player.logged_in:
                     return player
 
-    def get_player_by_client_id(self, uid) -> Player:
+    def get_player_by_client_id(self, id) -> Player:
         """
         Grab a hook to a player by their client id. Returns player object.
 
-        :param uid: Integer: Client Id of the player to check.
+        :param id: Integer: Client Id of the player to check.
         :return: Player object.
         """
-        try:
-            iid = int(uid)
-        except ValueError:
-            return
         for player in self.shelf["players"].values():
-            if player.client_id == iid and player.logged_in:
+            if player.client_id == id and player.logged_in:
                 return player
+
+    def get_player_by_ip(self, ip, check_logged_in=False) -> Player:
+        """
+        Grab a hook to a player by their IP. Returns boolean if only
+        checking login status. Returns Player object otherwise.
+
+        :param ip: IP of player to check.
+        :param check_logged_in: Boolean: Whether we just want login status
+                                (true), or the player's server object (false)
+        :return: Mixed: Boolean on logged_in check, player object otherwise.
+        """
+        for player in self.shelf["players"].values():
+            if player.ip == ip:
+                if not check_logged_in or player.logged_in:
+                    return player
 
     def find_player(self, search, check_logged_in=False):
         """
@@ -789,7 +802,18 @@ class PlayerManager(SimpleCommandPlugin):
         player = self.get_player_by_name(search, check_logged_in)
         if player is not None:
             return player
-        player = self.get_player_by_client_id(search)
+        try:
+            search = int(search)
+            player = self.get_player_by_client_id(search)
+            if player is not None:
+                return player
+        except ValueError:
+            pass
+        if len(search) == 32:
+            player = self.get_player_by_uuid(search)
+            if player is not None:
+                return player
+        player = self.get_player_by_ip(search, check_logged_in)
         if player is not None:
             return player
 
@@ -844,7 +868,7 @@ class PlayerManager(SimpleCommandPlugin):
             p.update_ranks(self.ranks)
             return p
         else:
-            if self.get_player_by_name(alias) is not None:
+            if self.get_player_by_alias(alias) is not None:
                 raise NameError("A user with that name already exists.")
             self.logger.info("Adding new player to database: {} (UUID:{})"
                              "".format(alias, uuid))
