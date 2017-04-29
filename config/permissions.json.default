@@ -68,8 +68,6 @@
     ],
     "permissions": [
       "claims.claim",
-      "claims.manage_claims",
-      "claims.planet_access",
       "general_commands.nick"
     ]
   },
@@ -78,6 +76,8 @@
     "prefix": "^yellow;",
     "inherits": [],
     "permissions": [
+      "claims.manage_claims",
+      "claims.planet_access",
       "chat_enhancements.whisper",
       "chat_enhancements.ignore",
       "emotes.emote",

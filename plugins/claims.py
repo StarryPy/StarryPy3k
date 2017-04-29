@@ -19,7 +19,7 @@ from utilities import Command, send_message, link_plugin_if_available
 class Claims(StorageCommandPlugin):
     name = "claims"
     depends = ["player_manager", "command_dispatcher", "planet_protect"]
-    default_config = {"max_claims_per_person": 5}
+    default_config = {"max_claims_per_person": 6}
 
     def __init__(self):
         super().__init__()
