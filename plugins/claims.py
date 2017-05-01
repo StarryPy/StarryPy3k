@@ -290,15 +290,22 @@ class Claims(StorageCommandPlugin):
                 # If the command executor's UUID cannot be removed, they
                 # probably have the planet_protect.bypass permission and are
                 # changing the owner of a planet they do not own.
-                # In that case, we need to run through the list of owners and
-                # remove whoever owns the target planet.
+                # In that case, we need to verify this and run through the list
+                # of owners and remove whoever owns the target planet.
                 except:
-                    for u in self.storage["owners"]:
-                        if str(location) in self.storage["owners"][u]:
-                            self.storage["owners"][u].remove(str(location))
-                            # Currently, this will check all UUIDs in case a
-                            # bug caused multiple owners. Break if undesired.
-                            #break
+                    # Better safe than sorry.
+                    if connection.player.perm_check("planet_protect.bypass"):
+                        for u in self.storage["owners"]:
+                            if str(location) in self.storage["owners"][u]:
+                                self.storage["owners"][u].remove(str(location))
+                                # Currently, this will check all UUIDs in case a
+                                # bug caused multiple owners. Break if undesired.
+                                #break
+                    else:
+                        send_message(connection, "Something went wrong. "
+                                                 "Cannot change ownership "
+                                                 "without reqired permissions!")
+                        return
                 self.storage["owners"][target.uuid].append(str(location))
 
                 if len(self.storage["owners"][uuid]) == 0:
