@@ -1134,6 +1134,12 @@ class PlayerManager(SimpleCommandPlugin):
                     target.revoked_perms.discard(data[2].lower())
                     target.granted_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection,
+                                                "You were granted permission "
+                                                "{} by {}."
+                                                .format(data[2].lower(),
+                                                        connection.player.alias))
                     yield from send_message(connection, "Granted permission "
                                                         "{} to {}."
                                             .format(data[2], target.alias))
@@ -1160,6 +1166,12 @@ class PlayerManager(SimpleCommandPlugin):
                     target.granted_perms.discard(data[2].lower())
                     target.revoked_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection,
+                                                "{} removed permission {} "
+                                                "from you."
+                                                .format(connection.player.alias,
+                                                        data[2].lower()))
                     yield from send_message(connection, "Removed permission "
                                                         "{} from {}."
                                             .format(data[2], target.alias))
@@ -1187,6 +1199,11 @@ class PlayerManager(SimpleCommandPlugin):
                 else:
                     target.ranks.add(data[2])
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection,
+                                                "You were granted rank {} by {}."
+                                                .format(data[2],
+                                                        connection.player.alias))
                     yield from send_message(connection, "Granted rank "
                                                         "{} to {}."
                                             .format(data[2], target.alias))
@@ -1203,7 +1220,6 @@ class PlayerManager(SimpleCommandPlugin):
                     send_message(connection, "Rank {} does not exist."
                                  .format(data[2]))
                     return
-                rank = self.ranks[data[2]]
                 if target.priority >= connection.player.priority:
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
@@ -1214,6 +1230,12 @@ class PlayerManager(SimpleCommandPlugin):
                 else:
                     target.ranks.remove(data[2])
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection, "{} removed"
+                                                                   " rank {} "
+                                                                   "from you."
+                                                .format(connection.player.alias,
+                                                        data[2]))
                     yield from send_message(connection, "Removed rank "
                                                         "{} from {}."
                                             .format(data[2], target.alias))
