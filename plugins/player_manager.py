@@ -18,54 +18,12 @@ import shelve
 import json
 from operator import attrgetter
 
-from base_plugin import Role, SimpleCommandPlugin
+from base_plugin import SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
 from utilities import Command, DotDict, State, broadcast, send_message, \
     WarpType, WarpWorldType, WarpAliasType
 from packets import packets
-
-
-# Roles
-
-class Owner(Role):
-    is_meta = True
-
-
-class SuperAdmin(Owner):
-    is_meta = True
-
-
-class Admin(SuperAdmin):
-    is_meta = True
-
-
-class Moderator(Admin):
-    is_meta = True
-
-
-class Registered(Moderator):
-    is_meta = True
-
-
-class Guest(Registered):
-    is_meta = True
-
-
-class Ban(Moderator):
-    pass
-
-
-class Kick(Moderator):
-    pass
-
-
-class Whois(Admin):
-    pass
-
-
-class Grant(Admin):
-    pass
 
 
 class Player:
@@ -217,10 +175,6 @@ class IPBan:
         self.banned_at = datetime.datetime.now()
 
 
-class DeletePlayer(SuperAdmin):
-    pass
-
-
 ###
 
 class PlayerManager(SimpleCommandPlugin):
@@ -254,21 +208,6 @@ class PlayerManager(SimpleCommandPlugin):
             raise SystemExit
         self.ranks = self._rebuild_ranks(self.rank_config)
         asyncio.ensure_future(self._reap())
-        if not self.shelf.get("converted", False):
-            self.logger.info("Converting roles to ranks...")
-            for player in self.shelf["players"].values():
-                if not hasattr(player, "ranks"):
-                    player.ranks = set()
-                    player.granted_perms = set()
-                    player.revoked_perms = set()
-                for role in player.roles:
-                    if role in self.ranks:
-                        player.ranks.add(role)
-                player.roles = None
-                if not player.ranks:
-                    player.ranks.add("Guest")
-                player.update_ranks(self.ranks)
-            self.shelf["converted"] = True
 
     # Packet hooks - look for these packets and act on them
 

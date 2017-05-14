@@ -16,31 +16,7 @@ import packets
 import pparser
 import data_parser
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import SuperAdmin, Admin, Moderator, Registered,\
-    Guest
 from utilities import send_message, Command, broadcast
-
-
-# Roles
-
-class Whois(Admin):
-    pass
-
-
-class GiveItem(Admin):
-    pass
-
-
-class Nick(Registered):
-    pass
-
-
-class Whoami(Guest):
-    pass
-
-
-class Shutdown(SuperAdmin):
-    pass
 
 
 ###

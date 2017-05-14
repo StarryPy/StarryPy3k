@@ -9,14 +9,7 @@ Ported by: kharidiron
 import asyncio
 
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import Moderator
 from utilities import Command, send_message
-
-
-# Roles
-
-class SetMOTD(Moderator):
-    pass
 
 
 ###

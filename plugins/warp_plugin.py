@@ -10,23 +10,10 @@ Updated for 1.0 by medeor413
 import asyncio
 
 import packets
-from plugins.player_manager import Moderator
 from base_plugin import SimpleCommandPlugin
 from data_parser import PlayerWarp
 from pparser import build_packet
 from utilities import Command, send_message
-
-
-class Warp(Moderator):
-    pass
-
-
-class WarpPlayer(Warp):
-    pass
-
-
-class WarpShip(Warp):
-    pass
 
 
 class WarpPlugin(SimpleCommandPlugin):

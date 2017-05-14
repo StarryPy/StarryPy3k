@@ -14,14 +14,7 @@ import asyncio
 import irc3
 
 from base_plugin import BasePlugin
-from plugins.player_manager import Owner, Guest
 from utilities import ChatSendMode, ChatReceiveMode, link_plugin_if_available
-
-
-# Roles
-
-class IRCBot(Guest):
-    is_meta = True
 
 
 # Mock Objects

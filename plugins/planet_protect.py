@@ -16,15 +16,8 @@ import packets
 import pparser
 from base_plugin import StorageCommandPlugin
 from data_parser import GiveItem
-from plugins.player_manager import Admin
 from utilities import Direction, Command, send_message, \
     EntityInteractionType, EntitySpawnType
-
-
-# Roles
-
-class Protect(Admin):
-    pass
 
 
 ###

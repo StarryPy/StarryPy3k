@@ -12,17 +12,8 @@ Original authors: medeor413
 """
 
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import Admin, Moderator
 from utilities import Command, send_message, ChatReceiveMode, broadcast,\
     link_plugin_if_available
-
-
-class ModeratorChat(Moderator):
-    pass
-
-
-class Broadcast(Admin):
-    pass
 
 
 class PrivilegedChatter(SimpleCommandPlugin):

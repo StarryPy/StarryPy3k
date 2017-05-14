@@ -13,14 +13,7 @@ import asyncio
 import discord
 
 from base_plugin import BasePlugin
-from plugins.player_manager import Owner, Guest
 from utilities import ChatSendMode, ChatReceiveMode, link_plugin_if_available
-
-
-# Roles
-
-class DiscordBot(Guest):
-    is_meta = True
 
 
 # Mock Objects
