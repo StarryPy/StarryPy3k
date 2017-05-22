@@ -66,12 +66,13 @@ class PrivilegedChatter(SimpleCommandPlugin):
                 sender = connection.player.name
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
-            for p in self.factory.connections:
-                if p.player.perm_check("privileged_chatter.modchat"):
-                    yield from send_message(p,
+            for uuid in self.plugins["player_manager"].players_online:
+                p = self.plugins["player_manager"].get_player_by_uuid(uuid)
+                if p.perm_check("privileged_chatter.modchat"):
+                    yield from send_message(p.connection,
                                             "{}{}^reset;".format(
                                                 self.modchat_color, message),
-                                            client_id=p.player.client_id,
+                                            client_id=p.client_id,
                                             name=sender,
                                             mode=send_mode,
                                             channel=channel)
@@ -97,20 +98,21 @@ class PrivilegedChatter(SimpleCommandPlugin):
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             mods_online = False
-            yield from send_message(connection.player,
+            yield from send_message(connection,
                                     "{}{}^reset;".format(
                                         self.report_prefix, message),
                                     client_id=connection.player.client_id,
                                     name=sender,
                                     mode=send_mode,
                                     channel=channel)
-            for p in self.factory.connections:
-                if p.player.perm_check("privileged_chatter.modchat"):
+            for uuid in self.plugins["player_manager"].players_online:
+                p = self.plugins["player_manager"].get_player_by_uuid(uuid)
+                if p.perm_check("privileged_chatter.modchat"):
                     mods_online = True
-                    yield from send_message(p,
+                    yield from send_message(p.connection,
                                             "{}{}^reset;".format(
                                                 self.report_prefix, message),
-                                            client_id=p.player.client_id,
+                                            client_id=p.client_id,
                                             name=sender,
                                             mode=send_mode,
                                             channel=channel)

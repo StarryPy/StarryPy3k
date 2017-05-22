@@ -71,7 +71,8 @@ class Claims(StorageCommandPlugin):
         :param connection: Connection of player to have ship protected.
         :return: Null.
         """
-        yield from asyncio.sleep(3)
+        if not hasattr(connection, "player"):
+            return
         try:
             if connection.player.location.locationtype() is "ShipWorld":
                 ship = connection.player.location
