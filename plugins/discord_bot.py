@@ -58,12 +58,9 @@ class MockConnection:
     @asyncio.coroutine
     def send_message(self, *messages):
         for message in messages:
-            color_strip = re.compile("\^(.*?);")
-            message = color_strip.sub("", message)
-            if self.owner.irc_bot_exists:
-                asyncio.ensure_future(self.owner.irc.bot_write(
-                    message))
-            yield from self.owner.bot_write(message)
+            message = self.owner.color_strip.sub("", message)
+            yield from self.owner.bot_write(message,
+                                            target=self.owner.command_target)
         return None
 
 
@@ -74,6 +71,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         "token": "-- token --",
         "client_id": "-- client_id --",
         "channel": "-- channel id --",
+        "staff_channel": "-- channel id --",
         "strip_colors": True,
         "log_discord": False,
         "command_prefix": "!"
@@ -84,6 +82,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         discord.Client.__init__(self)
         self.token = None
         self.channel = None
+        self.staff_channel = None
         self.token = None
         self.client_id = None
         self.mock_connection = None
@@ -91,6 +90,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.command_prefix = None
         self.dispatcher = None
         self.color_strip = re.compile("\^(.*?);")
+        self.command_target = None
         self.sc = None
         self.irc_bot_exists = False
         self.irc = None
@@ -109,6 +109,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.token = self.config.get_plugin_config(self.name)["token"]
         self.client_id = self.config.get_plugin_config(self.name)["client_id"]
         self.channel = self.config.get_plugin_config(self.name)["channel"]
+        self.staff_channel = self.config.get_plugin_config(self.name)[
+            "staff_channel"]
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
         asyncio.ensure_future(self.start_bot())
         self.update_id(self.client_id)
@@ -186,6 +188,17 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.client_id = client_id
 
     @asyncio.coroutine
+    def on_ready(self):
+        self.channel = self.get_channel(self.channel)
+        self.staff_channel = self.get_channel(self.staff_channel)
+        if not self.channel:
+            self.logger.error("Couldn't get channel! Messages can't be "
+                              "sent! Ensure the channel ID is correct.")
+        if not self.staff_channel:
+            self.logger.warning("Couldn't get staff channel! Reports "
+                                "will be sent to the main channel.")
+
+    @asyncio.coroutine
     def on_message(self, message):
         yield from self.send_to_game(message)
 
@@ -203,9 +216,10 @@ class DiscordPlugin(BasePlugin, discord.Client):
         server = message.server
         if message.author.id != self.client_id:
             if message.content[0] == self.command_prefix:
+                self.command_target = message.channel
                 asyncio.ensure_future(self.handle_command(message.content[
                                                           1:], nick))
-            else:
+            elif message.channel == self.channel:
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,
                                                           emote.id),
@@ -242,19 +256,20 @@ class DiscordPlugin(BasePlugin, discord.Client):
         if command in self.dispatcher.commands:
             # Only handle commands that work from Discord
             if command in ('who', 'help', 'uptime'):
-                if self.irc_bot_exists:
-                    asyncio.ensure_future(self.irc.bot_write(
-                        "[DC] <{}> {}{}".format(user, self.command_prefix,
-                                                " ".join(split))
-                    ))
                 yield from self.dispatcher.run_command(command,
                                                        self.mock_connection,
                                                        to_parse)
+            else:
+                yield from self.bot_write("Command not handled by Discord.",
+                                          target=self.command_target)
         else:
-            yield from self.bot_write("Command not found.")
+            yield from self.bot_write("Command not found.",
+                                      target=self.command_target)
 
     @asyncio.coroutine
     def bot_write(self, msg, target=None):
         if target is None:
-            target = self.get_channel(self.channel)
+            target = self.channel
+        if target is None:
+            return
         asyncio.ensure_future(self.send_message(target, msg))

@@ -29,6 +29,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
         self.report_prefix = None
         self.broadcast_prefix = None
         self.mail = None
+        self.discord = None
         self.chat_enhancements = None
 
     def activate(self):
@@ -41,6 +42,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
             "broadcast_prefix"]
         if link_plugin_if_available(self, 'mail'):
             self.mail = self.plugins.mail
+        if link_plugin_if_available(self, 'discord_bot'):
+            self.discord = self.plugins.discord_bot
         if link_plugin_if_available(self, 'chat_enhancements'):
             self.chat_enhancements = self.plugins.chat_enhancements
 
@@ -116,6 +119,10 @@ class PrivilegedChatter(SimpleCommandPlugin):
                                             name=sender,
                                             mode=send_mode,
                                             channel=channel)
+            if self.discord:
+                yield from self.discord.bot_write("**Report by {}:** {}".format(
+                    connection.player.alias, message),
+                    target=self.discord.staff_channel)
             # if not mods_online and self.report_mail:
             #     self.mail.send_mail()
 
