@@ -74,7 +74,10 @@ class DiscordPlugin(BasePlugin, discord.Client):
         "staff_channel": "-- channel id --",
         "strip_colors": True,
         "log_discord": False,
-        "command_prefix": "!"
+        "command_prefix": "!",
+        "rank_roles": {
+            "A Discord Rank": "A StarryPy Rank"
+        }
     }
 
     def __init__(self):
@@ -95,6 +98,12 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.irc_bot_exists = False
         self.irc = None
         self.chat_manager = None
+        self.rank_roles = None
+        self.allowed_commands = ('who', 'help', 'uptime', 'motd', 'show_spawn',
+                                 'ban', 'unban', 'kick', 'list_bans', 'mute',
+                                 'unmute', 'set_motd', 'whois', 'broadcast',
+                                 'user', 'del_player', 'maintenance_mode',
+                                 'shutdown')
 
     def activate(self):
         BasePlugin.activate(self)
@@ -115,6 +124,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         asyncio.ensure_future(self.start_bot())
         self.update_id(self.client_id)
         self.mock_connection = MockConnection(self)
+        self.rank_roles = self.config.get_plugin_config(self.name)[
+            "rank_roles"]
         if link_plugin_if_available(self, "chat_manager"):
             self.chat_manager = self.plugins['chat_manager']
 
@@ -218,7 +229,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
             if message.content[0] == self.command_prefix:
                 self.command_target = message.channel
                 asyncio.ensure_future(self.handle_command(message.content[
-                                                          1:], nick))
+                                                          1:], message.author))
             elif message.channel == self.channel:
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,
@@ -251,11 +262,19 @@ class DiscordPlugin(BasePlugin, discord.Client):
         split = data.split()
         command = split[0]
         to_parse = split[1:]
+        roles = sorted(user.roles, reverse=True)
+        role = "Guest"
+        for x in roles:
+            if x.name in self.rank_roles:
+                role = self.rank_roles[x.name]
+                break
         self.mock_connection.player.permissions = \
-            self.plugins.player_manager.ranks["Guest"]["permissions"]
+            self.plugins.player_manager.ranks[role]["permissions"]
+        self.mock_connection.player.priority = \
+            self.plugins.player_manager.ranks[role]["priority"]
         if command in self.dispatcher.commands:
             # Only handle commands that work from Discord
-            if command in ('who', 'help', 'uptime'):
+            if command in self.allowed_commands:
                 yield from self.dispatcher.run_command(command,
                                                        self.mock_connection,
                                                        to_parse)

@@ -133,7 +133,11 @@ class IRCPlugin(BasePlugin):
         self.discord_active = False
         self.discord = None
         self.chat_manager = None
-
+        self.allowed_commands = ('who', 'help', 'uptime', 'motd', 'show_spawn',
+                                 'ban', 'unban', 'kick', 'list_bans', 'mute',
+                                 'unmute', 'set_motd', 'whois', 'broadcast',
+                                 'user', 'del_player', 'maintenance_mode',
+                                 'shutdown')
     def activate(self):
         super().activate()
         self.dispatcher = self.plugins.command_dispatcher
@@ -374,7 +378,7 @@ class IRCPlugin(BasePlugin):
                 self.plugins.player_manager.ranks["Admin"]["permissions"]
         if command in self.dispatcher.commands:
             # Only handle commands that work from IRC
-            if command in ('who', 'help', 'uptime'):
+            if command in self.allowed_commands:
                 yield from self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)
