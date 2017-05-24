@@ -6,7 +6,7 @@ def parse_vlq(object stream):
     return c_parse_vlq(stream)
 
 def parse_svlq(object stream):
-    return c_parse_variant(stream)
+    return c_parse_svlq(stream)
 
 def parse_dict_variant(object stream):
     return c_parse_dict_variant(stream)
