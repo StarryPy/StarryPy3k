@@ -44,7 +44,8 @@
       "privileged_chatter.broadcast",
       "warp.tp_player",
       "warp.tp_ship",
-      "emsg_blocker.bypass"
+      "emsg_blocker.bypass",
+      "chat_enhancements.socialspy"
     ]
   },
   "Moderator": {
