@@ -258,10 +258,13 @@ class GeneralCommands(SimpleCommandPlugin):
                 if connection.player.perm_check(
                         "general_commands.who_clientids"):
                     ret_list.append(
-                        "[^red;{}^reset;] {}".format(p.player.client_id,
-                                                     p.player.alias))
+                        "[^red;{}^reset;] {}{}^reset;"
+                            .format(p.player.chat_prefix,
+                                    p.player.client_id,
+                                    p.player.alias))
                 else:
-                    ret_list.append("{}".format(p.player.alias))
+                    ret_list.append("{}{}^reset;".format(
+                        p.player.chat_prefix, p.player.alias))
         send_message(connection,
                      "{} players on planet:\n{}".format(len(ret_list),
                                                         ", ".join(ret_list)))
