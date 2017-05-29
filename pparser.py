@@ -55,7 +55,7 @@ parse_map = {
     47: None,
     48: None,
     49: None,
-    50: None,
+    50: DamageNotification,
     51: EntityMessage,
     52: EntityMessageResponse,
     53: DictVariant,
