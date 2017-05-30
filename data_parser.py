@@ -810,6 +810,7 @@ class EntityInteract(Struct):
     target_y = BFloat32
     request_id = UUID
 
+
 class EntityCreate(Struct):
     """packet type: 45"""
     entity_type = Byte
@@ -817,6 +818,20 @@ class EntityCreate(Struct):
     first_net_state = StarByteArray
     entity_id = SBInt32
     # Incomplete implementation
+
+
+class DamageNotification(Struct):
+    unk_1 = SBInt16 # -4 if source is player, 0 otherwise
+    unk_2 = SBInt16 # Matches source ID if source is monster?
+    source_id = SignedVLQ
+    target_id = SignedVLQ
+    target_x = SignedVLQ
+    target_y = SignedVLQ
+    damage = BFloat32
+    health_lost = BFloat32
+    hit_type = UBInt32 # This is a DamageHitType
+    damage_source_kind = StarString
+    target_material_kind = StarString
 
 
 class EntityMessage(Struct):

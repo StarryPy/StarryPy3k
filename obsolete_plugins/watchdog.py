@@ -4,11 +4,6 @@ import sys
 import pathlib
 
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import SuperAdmin
-
-
-class ServerRestart(SuperAdmin):
-    """Role to restart the underlying Starbound server."""
 
 
 class StarboundWatchdog(SimpleCommandPlugin):

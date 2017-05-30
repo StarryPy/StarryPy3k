@@ -73,6 +73,13 @@ class ChatReceiveMode(IntEnum):
     WORLD = 6
 
 
+class DamageHitType(IntEnum):
+    NORMAL = 0
+    STRONG = 1
+    WEAK = 2
+    SHIELD = 3
+    KILL = 4
+
 class EntityInteractionType(IntEnum):
     NOMINAL = 0
     OPEN_COCKPIT_UI = 1

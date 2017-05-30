@@ -19,7 +19,8 @@ from utilities import Command, send_message, link_plugin_if_available
 class Claims(StorageCommandPlugin):
     name = "claims"
     depends = ["player_manager", "command_dispatcher", "planet_protect"]
-    default_config = {"max_claims_per_person": 5}
+    default_config = {"max_claims_per_person": 6,
+                      "auto_claim_ships": True}
 
     def __init__(self):
         super().__init__()
@@ -57,7 +58,8 @@ class Claims(StorageCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
-        asyncio.ensure_future(self._protect_ship(connection))
+        if self.config.get_plugin_config(self.name)["auto_claim_ships"]:
+            asyncio.ensure_future(self._protect_ship(connection))
         asyncio.ensure_future(self._access_check(connection))
         return True
 
@@ -69,7 +71,8 @@ class Claims(StorageCommandPlugin):
         :param connection: Connection of player to have ship protected.
         :return: Null.
         """
-        yield from asyncio.sleep(3)
+        if not hasattr(connection, "player"):
+            return
         try:
             if connection.player.location.locationtype() is "ShipWorld":
                 ship = connection.player.location

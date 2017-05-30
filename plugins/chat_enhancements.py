@@ -37,6 +37,7 @@ class ChatEnhancements(StorageCommandPlugin):
         self.cts = None
         self.cts_color = None
         self.last_whisper = {}
+        self.social_spies = set()
 
     def activate(self):
         super().activate()
@@ -45,6 +46,7 @@ class ChatEnhancements(StorageCommandPlugin):
         self.cts_color = self.config.get_plugin_config(self.name)[
             "timestamp_color"]
         self.last_whisper = {}
+        self.social_spies = set()
         link_plugin_if_available(self, "irc_bot")
         if "ignores" not in self.storage:
             self.storage["ignores"] = {}
@@ -119,6 +121,16 @@ class ChatEnhancements(StorageCommandPlugin):
         if self.plugins['chat_manager'].mute_check(connection.player):
             return False
 
+        sender = self.decorate_line(connection)
+        msg = "[SS]: " + data["parsed"]["message"]
+        for p in self.social_spies:
+            if data["parsed"]["send_mode"] in [ChatSendMode.LOCAL,
+                                               ChatSendMode.PARTY]:
+                yield from send_message(p.connection,
+                                        msg,
+                                        mode=ChatReceiveMode.BROADCAST,
+                                        name=sender)
+
         return True
 
     # Helper functions - Used by commands
@@ -166,6 +178,13 @@ class ChatEnhancements(StorageCommandPlugin):
             send_message(connection, "You are muted and cannot chat.")
             return False
         if data:
+            msg = "[SS]: " + " ".join(data)
+            sender = self.decorate_line(connection)
+            for p in self.social_spies:
+                yield from send_message(p.connection,
+                                        msg,
+                                        mode=ChatReceiveMode.BROADCAST,
+                                        name=sender)
             yield from self._send_to_server(data,
                                             ChatSendMode.LOCAL,
                                             connection)
@@ -216,6 +235,13 @@ class ChatEnhancements(StorageCommandPlugin):
             send_message(connection, "You are muted and cannot chat.")
             return False
         if data:
+            msg = "[SS]: " + " ".join(data)
+            sender = self.decorate_line(connection)
+            for p in self.social_spies:
+                yield from send_message(p.connection,
+                                        msg,
+                                        mode=ChatReceiveMode.BROADCAST,
+                                        name=sender)
             yield from self._send_to_server(data,
                                             ChatSendMode.PARTY,
                                             connection)
@@ -275,6 +301,15 @@ class ChatEnhancements(StorageCommandPlugin):
                                     name=sender,
                                     mode=send_mode,
                                     channel=channel)
+            sssender = "{} -> {}{}^reset;".format(sender,
+                                                  recipient.chat_prefix,
+                                                  recipient.alias)
+            ssmsg = "[SS]: " + message
+            for p in self.social_spies:
+                yield from send_message(p.connection,
+                                        ssmsg,
+                                        name=sssender,
+                                        mode=ChatReceiveMode.BROADCAST)
         else:
             yield from send_message(connection,
                                     "Couldn't find a player with name {}"
@@ -332,6 +367,15 @@ class ChatEnhancements(StorageCommandPlugin):
                                     name=sender,
                                     mode=send_mode,
                                     channel=channel)
+            sssender = "{} -> {}{}^reset;".format(sender,
+                                                  recipient.chat_prefix,
+                                                  recipient.alias)
+            ssmsg = "[SS]: " + message
+            for p in self.social_spies:
+                yield from send_message(p.connection,
+                                        ssmsg,
+                                        name=sssender,
+                                        mode=ChatReceiveMode.BROADCAST)
         else:
             yield from send_message(connection,
                                     "You haven't been messaged by anyone.")
@@ -361,3 +405,15 @@ class ChatEnhancements(StorageCommandPlugin):
                 self.storage["ignores"][user].append(target.uuid)
                 yield from send_message(connection, "User {} added to ignores "
                                         "list.".format(target.alias))
+
+    @Command("socialspy",
+             perm="chat_enhancements.socialspy",
+             doc="Allows staff to read local, party, and whisper "
+                 "communications.")
+    def _socialspy(self, data, connection):
+        if connection.player in self.social_spies:
+            self.social_spies.remove(connection.player)
+            yield from send_message(connection, "Social spy disabled.")
+        else:
+            self.social_spies.add(connection.player)
+            yield from send_message(connection, "Social spy enabled.")

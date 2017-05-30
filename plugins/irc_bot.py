@@ -14,14 +14,7 @@ import asyncio
 import irc3
 
 from base_plugin import BasePlugin
-from plugins.player_manager import Owner, Guest
 from utilities import ChatSendMode, ChatReceiveMode, link_plugin_if_available
-
-
-# Roles
-
-class IRCBot(Guest):
-    is_meta = True
 
 
 # Mock Objects
@@ -140,7 +133,11 @@ class IRCPlugin(BasePlugin):
         self.discord_active = False
         self.discord = None
         self.chat_manager = None
-
+        self.allowed_commands = ('who', 'help', 'uptime', 'motd', 'show_spawn',
+                                 'ban', 'unban', 'kick', 'list_bans', 'mute',
+                                 'unmute', 'set_motd', 'whois', 'broadcast',
+                                 'user', 'del_player', 'maintenance_mode',
+                                 'shutdown')
     def activate(self):
         super().activate()
         self.dispatcher = self.plugins.command_dispatcher
@@ -381,17 +378,14 @@ class IRCPlugin(BasePlugin):
                 self.plugins.player_manager.ranks["Admin"]["permissions"]
         if command in self.dispatcher.commands:
             # Only handle commands that work from IRC
-            if command in ('who', 'help', 'uptime'):
-                if self.discord_active:
-                    asyncio.ensure_future(self.discord.bot_write(
-                        "[IRC] <**{}**> {}{}".format(user,
-                                                     self.command_prefix,
-                                                     " ".join(split))))
+            if command in self.allowed_commands:
                 yield from self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)
+            else:
+                yield from self.bot_write("Command not handled by IRC.")
         else:
-            yield from self.bot_write(target, "Command not found.")
+            yield from self.bot_write("Command not found.")
 
     @asyncio.coroutine
     def update_ops(self):

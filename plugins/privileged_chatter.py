@@ -12,17 +12,8 @@ Original authors: medeor413
 """
 
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import Admin, Moderator
 from utilities import Command, send_message, ChatReceiveMode, broadcast,\
     link_plugin_if_available
-
-
-class ModeratorChat(Moderator):
-    pass
-
-
-class Broadcast(Admin):
-    pass
 
 
 class PrivilegedChatter(SimpleCommandPlugin):
@@ -38,6 +29,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
         self.report_prefix = None
         self.broadcast_prefix = None
         self.mail = None
+        self.discord = None
         self.chat_enhancements = None
 
     def activate(self):
@@ -50,6 +42,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
             "broadcast_prefix"]
         if link_plugin_if_available(self, 'mail'):
             self.mail = self.plugins.mail
+        if link_plugin_if_available(self, 'discord_bot'):
+            self.discord = self.plugins.discord_bot
         if link_plugin_if_available(self, 'chat_enhancements'):
             self.chat_enhancements = self.plugins.chat_enhancements
 
@@ -75,12 +69,13 @@ class PrivilegedChatter(SimpleCommandPlugin):
                 sender = connection.player.name
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
-            for p in self.factory.connections:
-                if p.player.perm_check("privileged_chatter.modchat"):
-                    yield from send_message(p,
+            for uuid in self.plugins["player_manager"].players_online:
+                p = self.plugins["player_manager"].get_player_by_uuid(uuid)
+                if p.perm_check("privileged_chatter.modchat"):
+                    yield from send_message(p.connection,
                                             "{}{}^reset;".format(
                                                 self.modchat_color, message),
-                                            client_id=p.player.client_id,
+                                            client_id=p.client_id,
                                             name=sender,
                                             mode=send_mode,
                                             channel=channel)
@@ -106,23 +101,28 @@ class PrivilegedChatter(SimpleCommandPlugin):
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             mods_online = False
-            yield from send_message(connection.player,
+            yield from send_message(connection,
                                     "{}{}^reset;".format(
                                         self.report_prefix, message),
                                     client_id=connection.player.client_id,
                                     name=sender,
                                     mode=send_mode,
                                     channel=channel)
-            for p in self.factory.connections:
-                if p.player.perm_check("privileged_chatter.modchat"):
+            for uuid in self.plugins["player_manager"].players_online:
+                p = self.plugins["player_manager"].get_player_by_uuid(uuid)
+                if p.perm_check("privileged_chatter.modchat"):
                     mods_online = True
-                    yield from send_message(p,
+                    yield from send_message(p.connection,
                                             "{}{}^reset;".format(
                                                 self.report_prefix, message),
-                                            client_id=p.player.client_id,
+                                            client_id=p.client_id,
                                             name=sender,
                                             mode=send_mode,
                                             channel=channel)
+            if self.discord:
+                yield from self.discord.bot_write("**Report by {}:** {}".format(
+                    connection.player.alias, message),
+                    target=self.discord.staff_channel)
             # if not mods_online and self.report_mail:
             #     self.mail.send_mail()
 

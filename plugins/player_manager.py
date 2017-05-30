@@ -18,54 +18,12 @@ import shelve
 import json
 from operator import attrgetter
 
-from base_plugin import Role, SimpleCommandPlugin
+from base_plugin import SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
 from utilities import Command, DotDict, State, broadcast, send_message, \
     WarpType, WarpWorldType, WarpAliasType
 from packets import packets
-
-
-# Roles
-
-class Owner(Role):
-    is_meta = True
-
-
-class SuperAdmin(Owner):
-    is_meta = True
-
-
-class Admin(SuperAdmin):
-    is_meta = True
-
-
-class Moderator(Admin):
-    is_meta = True
-
-
-class Registered(Moderator):
-    is_meta = True
-
-
-class Guest(Registered):
-    is_meta = True
-
-
-class Ban(Moderator):
-    pass
-
-
-class Kick(Moderator):
-    pass
-
-
-class Whois(Admin):
-    pass
-
-
-class Grant(Admin):
-    pass
 
 
 class Player:
@@ -217,10 +175,6 @@ class IPBan:
         self.banned_at = datetime.datetime.now()
 
 
-class DeletePlayer(SuperAdmin):
-    pass
-
-
 ###
 
 class PlayerManager(SimpleCommandPlugin):
@@ -254,21 +208,6 @@ class PlayerManager(SimpleCommandPlugin):
             raise SystemExit
         self.ranks = self._rebuild_ranks(self.rank_config)
         asyncio.ensure_future(self._reap())
-        if not self.shelf.get("converted", False):
-            self.logger.info("Converting roles to ranks...")
-            for player in self.shelf["players"].values():
-                if not hasattr(player, "ranks"):
-                    player.ranks = set()
-                    player.granted_perms = set()
-                    player.revoked_perms = set()
-                for role in player.roles:
-                    if role in self.ranks:
-                        player.ranks.add(role)
-                player.roles = None
-                if not player.ranks:
-                    player.ranks.add("Guest")
-                player.update_ranks(self.ranks)
-            self.shelf["converted"] = True
 
     # Packet hooks - look for these packets and act on them
 
@@ -862,9 +801,10 @@ class PlayerManager(SimpleCommandPlugin):
                 p.species = species
             if p.name != name:
                 p.name = name
-                p.alias = self.clean_name(name)
-                if p.alias is None:
-                    p.alias = uuid[0:4]
+                alias = self.clean_name(name)
+                if self.get_player_by_alias(alias) or alias is None:
+                    alias = uuid[0:4]
+                p.alias = alias
             p.update_ranks(self.ranks)
             return p
         else:
@@ -1134,6 +1074,12 @@ class PlayerManager(SimpleCommandPlugin):
                     target.revoked_perms.discard(data[2].lower())
                     target.granted_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection,
+                                                "You were granted permission "
+                                                "{} by {}."
+                                                .format(data[2].lower(),
+                                                        connection.player.alias))
                     yield from send_message(connection, "Granted permission "
                                                         "{} to {}."
                                             .format(data[2], target.alias))
@@ -1160,6 +1106,12 @@ class PlayerManager(SimpleCommandPlugin):
                     target.granted_perms.discard(data[2].lower())
                     target.revoked_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection,
+                                                "{} removed permission {} "
+                                                "from you."
+                                                .format(connection.player.alias,
+                                                        data[2].lower()))
                     yield from send_message(connection, "Removed permission "
                                                         "{} from {}."
                                             .format(data[2], target.alias))
@@ -1187,6 +1139,11 @@ class PlayerManager(SimpleCommandPlugin):
                 else:
                     target.ranks.add(data[2])
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection,
+                                                "You were granted rank {} by {}."
+                                                .format(data[2],
+                                                        connection.player.alias))
                     yield from send_message(connection, "Granted rank "
                                                         "{} to {}."
                                             .format(data[2], target.alias))
@@ -1203,7 +1160,6 @@ class PlayerManager(SimpleCommandPlugin):
                     send_message(connection, "Rank {} does not exist."
                                  .format(data[2]))
                     return
-                rank = self.ranks[data[2]]
                 if target.priority >= connection.player.priority:
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
@@ -1214,6 +1170,12 @@ class PlayerManager(SimpleCommandPlugin):
                 else:
                     target.ranks.remove(data[2])
                     target.update_ranks(self.ranks)
+                    if target.logged_in:
+                        yield from send_message(target.connection, "{} removed"
+                                                                   " rank {} "
+                                                                   "from you."
+                                                .format(connection.player.alias,
+                                                        data[2]))
                     yield from send_message(connection, "Removed rank "
                                                         "{} from {}."
                                             .format(data[2], target.alias))

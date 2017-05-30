@@ -16,31 +16,7 @@ import packets
 import pparser
 import data_parser
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import SuperAdmin, Admin, Moderator, Registered,\
-    Guest
 from utilities import send_message, Command, broadcast
-
-
-# Roles
-
-class Whois(Admin):
-    pass
-
-
-class GiveItem(Admin):
-    pass
-
-
-class Nick(Registered):
-    pass
-
-
-class Whoami(Guest):
-    pass
-
-
-class Shutdown(SuperAdmin):
-    pass
 
 
 ###
@@ -282,10 +258,13 @@ class GeneralCommands(SimpleCommandPlugin):
                 if connection.player.perm_check(
                         "general_commands.who_clientids"):
                     ret_list.append(
-                        "[^red;{}^reset;] {}".format(p.player.client_id,
-                                                     p.player.alias))
+                        "[^red;{}^reset;] {}{}^reset;"
+                            .format(p.player.chat_prefix,
+                                    p.player.client_id,
+                                    p.player.alias))
                 else:
-                    ret_list.append("{}".format(p.player.alias))
+                    ret_list.append("{}{}^reset;".format(
+                        p.player.chat_prefix, p.player.alias))
         send_message(connection,
                      "{} players on planet:\n{}".format(len(ret_list),
                                                         ", ".join(ret_list)))

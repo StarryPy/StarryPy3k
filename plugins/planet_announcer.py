@@ -40,10 +40,11 @@ class PlanetAnnouncer(StorageCommandPlugin):
         """
         yield from asyncio.sleep(.5)
         location = str(connection.player.location)
-        for p in self.factory.connections:
-            if str(p.player.location) == location and p != connection:
-                send_message(p, "{} has beamed down to the planet!".format(
-                    connection.player.alias))
+        for uuid in self.plugins["player_manager"].players_online:
+            p = self.plugins["player_manager"].get_player_by_uuid(uuid)
+            if str(p.location) == location and p.connection != connection:
+                send_message(p.connection, "{} has beamed down to the planet!"
+                             .format(connection.player.alias))
         if location in self.storage["greetings"]:
             send_message(connection, self.storage["greetings"][location])
 

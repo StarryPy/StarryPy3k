@@ -9,26 +9,7 @@ Updated for release: kharidiron
 """
 
 from base_plugin import SimpleCommandPlugin
-from plugins.player_manager import Moderator
 from utilities import Command, send_message
-
-
-# Roles
-
-class Mute(Moderator):
-    pass
-
-
-class Unmuteable(Moderator):
-    pass
-
-
-class MutePlayer(Mute):
-    pass
-
-
-class UnmutePlayer(Mute):
-    pass
 
 
 ###

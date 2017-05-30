@@ -12,15 +12,8 @@ import asyncio
 import data_parser
 import pparser
 import packets
-from plugins.player_manager import Admin
 from base_plugin import StorageCommandPlugin
 from utilities import Command, send_message
-
-
-# Roles
-
-class POIControl(Admin):
-    pass
 
 
 ###

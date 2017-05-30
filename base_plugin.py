@@ -302,28 +302,6 @@ class SimpleCommandPlugin(BasePlugin):
                     self.plugins['command_dispatcher'].register(attr, alias)
 
 
-class MetaRole(type):
-    roles = {}
-
-    def __new__(mcs, name, bases, clsdict):
-        if name in mcs.roles:
-            return mcs.roles[name]
-        clsdict['roles'] = set()
-        clsdict['superroles'] = set()
-        c = type.__new__(mcs, name, bases, clsdict)
-        if name != "Role":
-            for b in c.mro()[1:]:
-                if issubclass(b, Role) and b is not Role:
-                    b.roles.add(c)
-                    c.superroles.add(b)
-        mcs.roles[name] = c
-        return c
-
-
-class Role(metaclass=MetaRole):
-    is_meta = False
-
-
 class StoragePlugin(BasePlugin):
     name = "storage_plugin"
     depends = ['player_manager']
