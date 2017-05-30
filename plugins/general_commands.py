@@ -259,8 +259,8 @@ class GeneralCommands(SimpleCommandPlugin):
                         "general_commands.who_clientids"):
                     ret_list.append(
                         "[^red;{}^reset;] {}{}^reset;"
-                            .format(p.player.chat_prefix,
-                                    p.player.client_id,
+                            .format(p.player.client_id,
+                                    p.player.chat_prefix,
                                     p.player.alias))
                 else:
                     ret_list.append("{}{}^reset;".format(
