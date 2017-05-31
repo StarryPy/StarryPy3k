@@ -11,7 +11,7 @@ try:
 except ImportError:
     use_c_parser = False
 
-from utilities import DotDict, WarpType, WarpWorldType
+from utilities import DotDict, WarpType, WarpWorldType, SystemLocationType
 
 
 
@@ -468,6 +468,62 @@ class CelestialCoordinates(Struct):
                 "planet": world_planet,
                 "satellite": world_satellite}
 
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        res += SBInt32.build(obj["world_x"], ctx)
+        res += SBInt32.build(obj["world_y"], ctx)
+        res += SBInt32.build(obj["world_z"], ctx)
+        res += SBInt32.build(obj["world_planet"], ctx)
+        res += SBInt32.build(obj["world_satellite"], ctx)
+        return res
+
+
+class SystemLocation(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        type = Byte.parse(stream, ctx)
+        if type == SystemLocationType.SYSTEM:
+            d = {"type": type}
+        elif type == SystemLocationType.COORDINATE:
+            d = CelestialCoordinates.parse(stream, ctx)
+            d["type"] = type
+        elif type == SystemLocationType.ORBIT:
+            d = CelestialCoordinates.parse(stream, ctx)
+            d["type"] = type
+            d["direction"] = SBInt32.parse(stream, ctx)
+            d["enter_time"] = BDouble.parse(stream, ctx)
+            x = BFloat32.parse(stream, ctx)
+            y = BFloat32.parse(stream, ctx)
+            d["enter_position"] = [x, y]
+        elif type == SystemLocationType.UUID:
+            id = UUID.parse(stream, ctx)
+            d = {"type": type, "uuid": id}
+        elif type == SystemLocationType.LOCATION:
+            x = BFloat32.parse(stream, ctx)
+            y = BFloat32.parse(stream, ctx)
+            d = {"type": type, "location": [x, y]}
+        return d
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDict):
+        res = b''
+        res += Byte.build(obj["type"], ctx)
+        if obj["type"] == SystemLocationType.COORDINATE:
+            res += CelestialCoordinates.build(obj, ctx)
+        elif obj["type"] == SystemLocationType.ORBIT:
+            res += CelestialCoordinates.build(obj, ctx)
+            res += SBInt32.build(obj["direction"], ctx)
+            res += BDouble.build(obj["enter_time"], ctx)
+            res += BFloat32.build(obj["enter_position"][0], ctx)
+            res += BFloat32.build(obj["enter_position"][1], ctx)
+        elif obj["type"] == SystemLocationType.UUID:
+            res += UUID.build(obj["uuid"])
+        elif obj["type"] == SystemLocationType.LOCATION:
+            res += BFloat32.build(obj["location"][0], ctx)
+            res += BFloat32.build(obj["location"][1], ctx)
+        return res
+
 
 class WarpAction(Struct):
     @classmethod
@@ -733,8 +789,7 @@ class FlyShip(Struct):
     world_x = SBInt32
     world_y = SBInt32
     world_z = SBInt32
-    world_planet = SBInt32
-    world_satellite = SBInt32
+    location = SystemLocation
 
 
 class ChatSent(Struct):

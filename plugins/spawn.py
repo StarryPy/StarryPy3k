@@ -12,7 +12,7 @@ import data_parser
 import pparser
 import packets
 from base_plugin import StorageCommandPlugin
-from utilities import Command, send_message
+from utilities import Command, send_message, SystemLocationType
 
 
 # Roles
@@ -51,8 +51,14 @@ class Spawn(StorageCommandPlugin):
                 world_x=spawn_location.x,
                 world_y=spawn_location.y,
                 world_z=spawn_location.z,
-                world_planet=spawn_location.planet,
-                world_satellite=spawn_location.satellite
+                location=dict(
+                    type=SystemLocationType.COORDINATE,
+                    world_x=spawn_location.x,
+                    world_y=spawn_location.y,
+                    world_z=spawn_location.z,
+                    world_planet=spawn_location.planet,
+                    world_satellite=spawn_location.satellite
+                )
             ))
             flyship_packet = pparser.build_packet(packets.packets["fly_ship"],
                                                   destination)
