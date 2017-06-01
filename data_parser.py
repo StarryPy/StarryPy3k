@@ -767,11 +767,12 @@ class ClientConnect(Struct):
     ship_level = UBInt32
     max_fuel = UBInt32
     crew_size = UBInt32
-    # Junk means, I don't know what this value represents... <_<
+    # # Junk means, I don't know what this value represents... <_<
+    junk1 = UBInt32
     junk2 = UBInt32
     ship_upgrades = StringSet
-    # account really does appear to be a StringSet despite always being a single string.
-    account = StringSet
+    intro_complete = Flag
+    account = StarString
 
 
 class ClientDisconnectRequest(Struct):
@@ -812,7 +813,9 @@ class WorldStart(Struct):
     spawn = SpawnCoordinates
     respawn = SpawnCoordinates
     respawn_in_world = Flag
-    #dungeonid = StarString
+    dungeon_id_gravity = Byte
+    dungeon_id_breathable = Byte
+    protected_dungeon_ids = Byte
     world_properties = Variant
     client_id = UBInt16
     local_interpolation = Flag
