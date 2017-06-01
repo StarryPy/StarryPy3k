@@ -768,9 +768,9 @@ class ClientConnect(Struct):
     max_fuel = UBInt32
     crew_size = UBInt32
     # # Junk means, I don't know what this value represents... <_<
-    junk1 = UBInt32
-    junk2 = UBInt32
-    ship_upgrades = StringSet
+    fuel_efficiency = BFloat32
+    ship_speed = BFloat32
+    ship_capabilities = StringSet
     intro_complete = Flag
     account = StarString
 
