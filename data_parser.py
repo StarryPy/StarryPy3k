@@ -754,6 +754,7 @@ class PlayerWarpResult(Struct):
     """packet type: 9 """
     warp_success = Flag
     warp_action = WarpAction
+    warp_action_invalid = Flag
 
 
 class ClientConnect(Struct):
@@ -783,6 +784,7 @@ class ClientDisconnectRequest(Struct):
 class PlayerWarp(Struct):
     """packet type: 14 """
     warp_action = WarpAction
+    deploy = Flag
 
 
 class FlyShip(Struct):
