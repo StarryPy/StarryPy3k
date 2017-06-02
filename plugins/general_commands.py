@@ -253,18 +253,19 @@ class GeneralCommands(SimpleCommandPlugin):
         """
         ret_list = []
         location = str(connection.player.location)
-        for p in self.factory.connections:
-            if str(p.player.location) == location:
+        for uid in self.plugins.player_manager.players_online:
+            p = self.plugins.player_manager.get_player_by_uuid(uid)
+            if str(p.location) == location:
                 if connection.player.perm_check(
                         "general_commands.who_clientids"):
                     ret_list.append(
                         "[^red;{}^reset;] {}{}^reset;"
-                            .format(p.player.client_id,
-                                    p.player.chat_prefix,
-                                    p.player.alias))
+                            .format(p.client_id,
+                                    p.chat_prefix,
+                                    p.alias))
                 else:
                     ret_list.append("{}{}^reset;".format(
-                        p.player.chat_prefix, p.player.alias))
+                        p.chat_prefix, p.alias))
         send_message(connection,
                      "{} players on planet:\n{}".format(len(ret_list),
                                                         ", ".join(ret_list)))
