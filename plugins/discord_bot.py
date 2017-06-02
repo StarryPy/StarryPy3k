@@ -33,6 +33,9 @@ class MockPlayer:
         self.granted_perms = set()
         self.revoked_perms = set()
         self.permissions = set()
+        self.priority = 0
+        self.name = "MockPlayer"
+        self.alias = "MockPlayer"
 
     def perm_check(self, perm):
         if not perm:
@@ -272,6 +275,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
             self.plugins.player_manager.ranks[role]["permissions"]
         self.mock_connection.player.priority = \
             self.plugins.player_manager.ranks[role]["priority"]
+        self.mock_connection.player.alias = user.display_name
+        self.mock_connection.player.name = user.display_name
         if command in self.dispatcher.commands:
             # Only handle commands that work from Discord
             if command in self.allowed_commands:

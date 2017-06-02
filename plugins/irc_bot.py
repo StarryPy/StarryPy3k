@@ -34,6 +34,9 @@ class MockPlayer:
         self.granted_perms = set()
         self.revoked_perms = set()
         self.permissions = set()
+        self.priority = 0
+        self.name = "MockPlayer"
+        self.alias = "MockPlayer"
 
     def perm_check(self, perm):
         if not perm:
@@ -373,9 +376,15 @@ class IRCPlugin(BasePlugin):
         user = mask.split("!")[0]
         self.connection.player.permissions = \
             self.plugins.player_manager.ranks["Guest"]["permissions"]
+        self.connection.player.priority = self.plugins.player_manager.ranks[
+            "Guest"]["priority"]
         if user in self.ops:
             self.connection.player.permissions = \
                 self.plugins.player_manager.ranks["Admin"]["permissions"]
+            self.connection.player.priority = \
+                self.plugins.player_manager.ranks["Admin"]["priority"]
+        self.connection.player.alias = user
+        self.connection.player.name = user
         if command in self.dispatcher.commands:
             # Only handle commands that work from IRC
             if command in self.allowed_commands:
