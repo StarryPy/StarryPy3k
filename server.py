@@ -186,7 +186,7 @@ class StarryPyServer:
     def __del__(self):
         try:
             self.die()
-        except:
+        except Exception:
             logger.error("An error occurred while a player was disconnecting.")
 
 
