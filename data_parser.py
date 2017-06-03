@@ -876,8 +876,7 @@ class EntityCreate(Struct):
     entity_type = Byte
     store_data = StarByteArray
     first_net_state = StarByteArray
-    entity_id = SBInt32
-    # Incomplete implementation
+    entity_id = SignedVLQ
 
 
 class DamageNotification(Struct):
@@ -907,7 +906,8 @@ class EntityMessage(Struct):
         res['message_name'] = StarString.parse(stream, ctx)
         res['message_args'] = VariantVariant.parse(stream, ctx)
         res['message_uuid'] = UUID.parse(stream, ctx)
-        res['unknown'] = UBInt16.parse(stream, ctx) # Appears to always be 0
+        res['client_id'] = UBInt16.parse(stream, ctx) # 0 when message is
+        # sent to or from server, client id of sender when sent to other client
         return res
 
     def _build(cls, obj, ctx=None):
@@ -920,14 +920,32 @@ class EntityMessage(Struct):
         res += StarString.build(obj['message_name'])
         res += VariantVariant.build(obj['message_args'])
         res += UUID.build(obj['message_uuid'])
-        res += UBInt16.build(obj['unknown'])
+        res += UBInt16.build(obj['connection_id'])
         return res
 
 
 class EntityMessageResponse(Struct):
-    success_level = Byte # 1 is a failure, 2 is a success
-    response = Variant
-    message_uuid = UUID
+    @classmethod
+    def _parse(cls, stream, ctx=None):
+        res = {}
+        res['success_level'] = Byte.parse(stream, ctx) # 1 is a failure, 2 is a success
+        if res['success_level'] == 1:
+            res['error'] = StarString.parse(stream, ctx)
+        else:
+            res['result'] = Variant.parse(stream, ctx)
+        res['message_uuid'] = UUID.parse(stream, ctx)
+        return res
+
+    @classmethod
+    def _build(cls, obj, ctx=None):
+        res = b''
+        res += Byte.build(obj['success_level'])
+        if obj['success_level'] == 1:
+            res += StarString.build(obj['error'])
+        else:
+            res += Variant.build(obj['result'])
+        res += obj['message_uuid']
+        return res
 
 class StepUpdate(Struct):
     """packet type: 54"""
