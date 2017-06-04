@@ -673,6 +673,38 @@ class WorldChunks(Struct):
         return d
 
 
+class StatusEffectList(Struct):
+    @classmethod
+    def _parse(cls, stream, ctx=None):
+        len = VLQ.parse(stream, ctx)
+        res = []
+        for i in range(len):
+            effect = StarString.parse(stream, ctx)
+            type = Byte.parse(stream, ctx)
+            if type == 0:
+                res.append(effect)
+            elif type == 1:
+                duration = BFloat32.parse(stream, ctx)
+                res.append({"effect": effect, "duration": duration})
+        return res
+
+    @classmethod
+    def _build(cls, obj, ctx=None):
+        res = b''
+        len = len(obj)
+        res += VLQ.build(len, ctx)
+        for status in obj:
+            if isinstance(status, dict):
+                res += StarString.build(status["effect"], ctx)
+                res += Byte.build(1, ctx)
+                res += BFloat32.build(status["duration"], ctx)
+            else:
+                res += StarString.build(status)
+                res += Byte.build(0, ctx)
+        return res
+
+
+
 class GreedyArray(Struct):
     @classmethod
     def parse_stream(cls, stream, ctx=None):
@@ -877,6 +909,19 @@ class EntityCreate(Struct):
     store_data = StarByteArray
     first_net_state = StarByteArray
     entity_id = SignedVLQ
+
+
+class DamageRequest(Struct):
+    source_id = SBInt32
+    target_id = SBInt32
+    hit_type = UBInt32 # This is a DamageHitType
+    damage_type = Byte # This is a DamageType
+    damage = BFloat32
+    knockback_x = BFloat32
+    knockback_y = BFloat32
+    junk = SBInt32 # The source ID, again...
+    damage_source_kind = StarString
+    status_effects = StatusEffectList
 
 
 class DamageNotification(Struct):

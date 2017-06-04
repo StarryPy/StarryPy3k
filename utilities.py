@@ -81,6 +81,14 @@ class SystemLocationType(IntEnum):
     LOCATION = 4
 
 
+class DamageType(IntEnum):
+    NO_DAMAGE = 0 # Assumed
+    DAMAGE = 1
+    IGNORES_DEF = 2
+    KNOCKBACK = 3
+    ENVIRONMENT = 4
+
+
 class DamageHitType(IntEnum):
     NORMAL = 0
     STRONG = 1

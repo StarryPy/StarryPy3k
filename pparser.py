@@ -57,7 +57,7 @@ parse_map = {
     49: EntityInteract,
     50: EntityInteractResult,
     51: None,
-    52: None,
+    52: DamageRequest,
     53: DamageNotification,
     54: EntityMessage,
     55: EntityMessageResponse,
