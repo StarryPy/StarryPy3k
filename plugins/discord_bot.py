@@ -8,6 +8,7 @@ Original authors: kharidiron
 """
 
 import re
+import logging
 import asyncio
 
 import discord
@@ -102,6 +103,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.irc = None
         self.chat_manager = None
         self.rank_roles = None
+        self.discord_logger = None
         self.allowed_commands = ('who', 'help', 'uptime', 'motd', 'show_spawn',
                                  'ban', 'unban', 'kick', 'list_bans', 'mute',
                                  'unmute', 'set_motd', 'whois', 'broadcast',
@@ -131,6 +133,13 @@ class DiscordPlugin(BasePlugin, discord.Client):
             "rank_roles"]
         if link_plugin_if_available(self, "chat_manager"):
             self.chat_manager = self.plugins['chat_manager']
+        self.discord_logger = logging.getLogger("discord")
+        self.discord_logger.setLevel(logging.INFO)
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - '
+                                          '%(name)s # %(message)s',
+                                          datefmt='%Y-%m-%d %H:%M:%S'))
+        self.discord_logger.addHandler(ch)
 
     # Packet hooks - look for these packets and act on them
 
