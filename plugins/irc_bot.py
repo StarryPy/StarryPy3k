@@ -63,8 +63,6 @@ class MockConnection:
         for message in messages:
             color_strip = re.compile("\^(.*?);")
             message = color_strip.sub("", message)
-            if self.owner.discord_active:
-                asyncio.ensure_future(self.owner.discord.bot_write(message))
             yield from self.owner.bot_write(message)
         return None
 

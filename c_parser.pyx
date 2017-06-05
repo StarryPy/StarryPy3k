@@ -1,4 +1,6 @@
 import struct
+from libc.string cimport memcpy
+
 def parse_variant(object stream):
     return c_parse_variant(stream)
 
@@ -22,12 +24,17 @@ def parse_starstring(object stream):
 
 cdef c_parse_variant(object stream):
     cdef char x = ord(stream.read(1))
+    cdef char * y
+    cdef double z
 
     if x == 1:
         return None
     elif x == 2:
-        y = struct.unpack(">d", stream.read(8))[0]
-        return y
+        bytes = stream.read(8)
+        y = bytes
+        y = byte_swap(&y)
+        memcpy(&z, y, sizeof(z))
+        return z
     elif x == 3:
         c = stream.read(1)
         if c == 1:
@@ -88,3 +95,15 @@ cdef c_parse_starstring(object stream):
         return str(s, encoding="utf-8")
     except UnicodeDecodeError:
         return s
+
+cdef byte_swap(void * input):
+    cdef char * bytes = <char *>input
+    cdef int len = sizeof(bytes)
+    cdef char tmp
+    for i in range(len-1):
+        if i > len-i-1:
+            break
+        tmp=bytes[i]
+        bytes[i] = bytes[len-i-1]
+        bytes[len-i-1] = tmp
+    return bytes
