@@ -24,13 +24,11 @@ def parse_starstring(object stream):
 
 cdef c_parse_variant(object stream):
     cdef char x = ord(stream.read(1))
-    cdef char * y
-    cdef double z
 
     if x == 1:
         return None
     elif x == 2:
-        y = struct.unpack(">d", stream.read(8))
+        y = struct.unpack(">d", stream.read(8))[0]
         return y
     elif x == 3:
         c = stream.read(1)
