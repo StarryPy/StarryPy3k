@@ -73,6 +73,22 @@ class ChatReceiveMode(IntEnum):
     WORLD = 6
 
 
+class SystemLocationType(IntEnum):
+    SYSTEM = 0
+    COORDINATE = 1
+    ORBIT = 2
+    UUID = 3
+    LOCATION = 4
+
+
+class DamageType(IntEnum):
+    NO_DAMAGE = 0 # Assumed
+    DAMAGE = 1
+    IGNORES_DEF = 2
+    KNOCKBACK = 3
+    ENVIRONMENT = 4
+
+
 class DamageHitType(IntEnum):
     NORMAL = 0
     STRONG = 1

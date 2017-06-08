@@ -47,7 +47,7 @@ class PluginManager:
                 return send_flag
             else:
                 return True
-        except:
+        except Exception:
             self.logger.exception("Exception encountered in plugin on action: "
                                   "%s", action, exc_info=True)
             return True

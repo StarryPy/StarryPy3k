@@ -50,7 +50,7 @@ staff can join the server. Look for the lines below:
   },
 ```
 
-And add some accounts (preferrably one per staff member) using the format below.
+And add some accounts (preferably one per staff member) using the format below.
 Note: you do **not** need to set "admin" to "false". Set it to "true" if you
 would like this account to have administrator privileges on the underlying
 Starbound dedicated server.
@@ -158,7 +158,7 @@ Once you have finished editing `config.json`, copy the `permissions.json.default
 Starting StarryPy is as simple as issueing the command `python3 ./server.py`
 once you have finised editing `config/config.json` and `config/permissions
 .json`.  To terminate the proxy, either press `^C` in an interactive 
-terminal session, or send it a `TERM` signal.
+terminal session, or send it an `INT` signal.
 
 
 ## Contributing

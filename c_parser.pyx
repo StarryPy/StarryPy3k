@@ -1,4 +1,6 @@
 import struct
+from libc.string cimport memcpy
+
 def parse_variant(object stream):
     return c_parse_variant(stream)
 
@@ -26,7 +28,7 @@ cdef c_parse_variant(object stream):
     if x == 1:
         return None
     elif x == 2:
-        y = stream.read(8)
+        y = struct.unpack(">d", stream.read(8))[0]
         return y
     elif x == 3:
         c = stream.read(1)
@@ -47,9 +49,12 @@ cdef int c_parse_vlq(object stream):
     cdef long long value = 0
     cdef char tmp
     while True:
-        tmp = ord(stream.read(1))
-        value = (value << 7) | (tmp & 0x7f)
-        if tmp & 0x80 == 0:
+        try:
+            tmp = ord(stream.read(1))
+            value = (value << 7) | (tmp & 0x7f)
+            if tmp & 0x80 == 0:
+                break
+        except TypeError:
             break
     return value
 

@@ -11,7 +11,7 @@ try:
 except ImportError:
     use_c_parser = False
 
-from utilities import DotDict, WarpType, WarpWorldType
+from utilities import DotDict, WarpType, WarpWorldType, SystemLocationType
 
 
 
@@ -468,6 +468,62 @@ class CelestialCoordinates(Struct):
                 "planet": world_planet,
                 "satellite": world_satellite}
 
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        res = b''
+        res += SBInt32.build(obj["world_x"], ctx)
+        res += SBInt32.build(obj["world_y"], ctx)
+        res += SBInt32.build(obj["world_z"], ctx)
+        res += SBInt32.build(obj["world_planet"], ctx)
+        res += SBInt32.build(obj["world_satellite"], ctx)
+        return res
+
+
+class SystemLocation(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+        type = Byte.parse(stream, ctx)
+        if type == SystemLocationType.SYSTEM:
+            d = {"type": type}
+        elif type == SystemLocationType.COORDINATE:
+            d = CelestialCoordinates.parse(stream, ctx)
+            d["type"] = type
+        elif type == SystemLocationType.ORBIT:
+            d = CelestialCoordinates.parse(stream, ctx)
+            d["type"] = type
+            d["direction"] = SBInt32.parse(stream, ctx)
+            d["enter_time"] = BDouble.parse(stream, ctx)
+            x = BFloat32.parse(stream, ctx)
+            y = BFloat32.parse(stream, ctx)
+            d["enter_position"] = [x, y]
+        elif type == SystemLocationType.UUID:
+            id = UUID.parse(stream, ctx)
+            d = {"type": type, "uuid": id}
+        elif type == SystemLocationType.LOCATION:
+            x = BFloat32.parse(stream, ctx)
+            y = BFloat32.parse(stream, ctx)
+            d = {"type": type, "location": [x, y]}
+        return d
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDict):
+        res = b''
+        res += Byte.build(obj["type"], ctx)
+        if obj["type"] == SystemLocationType.COORDINATE:
+            res += CelestialCoordinates.build(obj, ctx)
+        elif obj["type"] == SystemLocationType.ORBIT:
+            res += CelestialCoordinates.build(obj, ctx)
+            res += SBInt32.build(obj["direction"], ctx)
+            res += BDouble.build(obj["enter_time"], ctx)
+            res += BFloat32.build(obj["enter_position"][0], ctx)
+            res += BFloat32.build(obj["enter_position"][1], ctx)
+        elif obj["type"] == SystemLocationType.UUID:
+            res += UUID.build(obj["uuid"])
+        elif obj["type"] == SystemLocationType.LOCATION:
+            res += BFloat32.build(obj["location"][0], ctx)
+            res += BFloat32.build(obj["location"][1], ctx)
+        return res
+
 
 class WarpAction(Struct):
     @classmethod
@@ -617,6 +673,38 @@ class WorldChunks(Struct):
         return d
 
 
+class StatusEffectList(Struct):
+    @classmethod
+    def _parse(cls, stream, ctx=None):
+        len = VLQ.parse(stream, ctx)
+        res = []
+        for i in range(len):
+            effect = StarString.parse(stream, ctx)
+            type = Byte.parse(stream, ctx)
+            if type == 0:
+                res.append(effect)
+            elif type == 1:
+                duration = BFloat32.parse(stream, ctx)
+                res.append({"effect": effect, "duration": duration})
+        return res
+
+    @classmethod
+    def _build(cls, obj, ctx=None):
+        res = b''
+        len = len(obj)
+        res += VLQ.build(len, ctx)
+        for status in obj:
+            if isinstance(status, dict):
+                res += StarString.build(status["effect"], ctx)
+                res += Byte.build(1, ctx)
+                res += BFloat32.build(status["duration"], ctx)
+            else:
+                res += StarString.build(status)
+                res += Byte.build(0, ctx)
+        return res
+
+
+
 class GreedyArray(Struct):
     @classmethod
     def parse_stream(cls, stream, ctx=None):
@@ -698,6 +786,7 @@ class PlayerWarpResult(Struct):
     """packet type: 9 """
     warp_success = Flag
     warp_action = WarpAction
+    warp_action_invalid = Flag
 
 
 class ClientConnect(Struct):
@@ -711,11 +800,12 @@ class ClientConnect(Struct):
     ship_level = UBInt32
     max_fuel = UBInt32
     crew_size = UBInt32
-    # Junk means, I don't know what this value represents... <_<
-    junk2 = UBInt32
-    ship_upgrades = StringSet
-    # account really does appear to be a StringSet despite always being a single string.
-    account = StringSet
+    # # Junk means, I don't know what this value represents... <_<
+    fuel_efficiency = BFloat32
+    ship_speed = BFloat32
+    ship_capabilities = StringSet
+    intro_complete = Flag
+    account = StarString
 
 
 class ClientDisconnectRequest(Struct):
@@ -726,6 +816,7 @@ class ClientDisconnectRequest(Struct):
 class PlayerWarp(Struct):
     """packet type: 14 """
     warp_action = WarpAction
+    deploy = Flag
 
 
 class FlyShip(Struct):
@@ -733,8 +824,7 @@ class FlyShip(Struct):
     world_x = SBInt32
     world_y = SBInt32
     world_z = SBInt32
-    world_planet = SBInt32
-    world_satellite = SBInt32
+    location = SystemLocation
 
 
 class ChatSent(Struct):
@@ -757,7 +847,9 @@ class WorldStart(Struct):
     spawn = SpawnCoordinates
     respawn = SpawnCoordinates
     respawn_in_world = Flag
-    #dungeonid = StarString
+    dungeon_id_gravity = Byte
+    dungeon_id_breathable = Byte
+    protected_dungeon_ids = Byte
     world_properties = Variant
     client_id = UBInt16
     local_interpolation = Flag
@@ -816,8 +908,20 @@ class EntityCreate(Struct):
     entity_type = Byte
     store_data = StarByteArray
     first_net_state = StarByteArray
-    entity_id = SBInt32
-    # Incomplete implementation
+    entity_id = SignedVLQ
+
+
+class DamageRequest(Struct):
+    source_id = SBInt32
+    target_id = SBInt32
+    hit_type = UBInt32 # This is a DamageHitType
+    damage_type = Byte # This is a DamageType
+    damage = BFloat32
+    knockback_x = BFloat32
+    knockback_y = BFloat32
+    junk = SBInt32 # The source ID, again...
+    damage_source_kind = StarString
+    status_effects = StatusEffectList
 
 
 class DamageNotification(Struct):
@@ -847,7 +951,8 @@ class EntityMessage(Struct):
         res['message_name'] = StarString.parse(stream, ctx)
         res['message_args'] = VariantVariant.parse(stream, ctx)
         res['message_uuid'] = UUID.parse(stream, ctx)
-        res['unknown'] = UBInt16.parse(stream, ctx) # Appears to always be 0
+        res['client_id'] = UBInt16.parse(stream, ctx) # 0 when message is
+        # sent to or from server, client id of sender when sent to other client
         return res
 
     def _build(cls, obj, ctx=None):
@@ -860,14 +965,32 @@ class EntityMessage(Struct):
         res += StarString.build(obj['message_name'])
         res += VariantVariant.build(obj['message_args'])
         res += UUID.build(obj['message_uuid'])
-        res += UBInt16.build(obj['unknown'])
+        res += UBInt16.build(obj['connection_id'])
         return res
 
 
 class EntityMessageResponse(Struct):
-    success_level = Byte # 1 is a failure, 2 is a success
-    response = Variant
-    message_uuid = UUID
+    @classmethod
+    def _parse(cls, stream, ctx=None):
+        res = {}
+        res['success_level'] = Byte.parse(stream, ctx) # 1 is a failure, 2 is a success
+        if res['success_level'] == 1:
+            res['error'] = StarString.parse(stream, ctx)
+        else:
+            res['result'] = Variant.parse(stream, ctx)
+        res['message_uuid'] = UUID.parse(stream, ctx)
+        return res
+
+    @classmethod
+    def _build(cls, obj, ctx=None):
+        res = b''
+        res += Byte.build(obj['success_level'])
+        if obj['success_level'] == 1:
+            res += StarString.build(obj['error'])
+        else:
+            res += Variant.build(obj['result'])
+        res += obj['message_uuid']
+        return res
 
 class StepUpdate(Struct):
     """packet type: 54"""

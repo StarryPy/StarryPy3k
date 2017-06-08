@@ -13,7 +13,7 @@ import data_parser
 import pparser
 import packets
 from base_plugin import StorageCommandPlugin
-from utilities import Command, send_message
+from utilities import Command, send_message, SystemLocationType
 
 
 ###
@@ -51,8 +51,14 @@ class POI(StorageCommandPlugin):
                 world_x=location.x,
                 world_y=location.y,
                 world_z=location.z,
-                world_planet=location.planet,
-                world_satellite=location.satellite
+                location=dict(
+                    type=SystemLocationType.COORDINATE,
+                    world_x=location.x,
+                    world_y=location.y,
+                    world_z=location.z,
+                    world_planet=location.planet,
+                    world_satellite=location.satellite
+                )
             ))
             flyship_packet = pparser.build_packet(packets.packets["fly_ship"],
                                                   destination)

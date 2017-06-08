@@ -295,7 +295,7 @@ class Claims(StorageCommandPlugin):
                 # changing the owner of a planet they do not own.
                 # In that case, we need to verify this and run through the list
                 # of owners and remove whoever owns the target planet.
-                except:
+                except Exception:
                     # Better safe than sorry.
                     if connection.player.perm_check("planet_protect.bypass"):
                         for u in self.storage["owners"]:
