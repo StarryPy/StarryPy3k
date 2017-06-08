@@ -30,11 +30,8 @@ cdef c_parse_variant(object stream):
     if x == 1:
         return None
     elif x == 2:
-        bytes = stream.read(8)
-        y = bytes
-        y = byte_swap(&y)
-        memcpy(&z, y, sizeof(z))
-        return z
+        y = struct.unpack(">d", stream.read(8))
+        return y
     elif x == 3:
         c = stream.read(1)
         if c == 1:
@@ -95,15 +92,3 @@ cdef c_parse_starstring(object stream):
         return str(s, encoding="utf-8")
     except UnicodeDecodeError:
         return s
-
-cdef byte_swap(void * input):
-    cdef char * bytes = <char *>input
-    cdef int len = sizeof(bytes)
-    cdef char tmp
-    for i in range(len-1):
-        if i > len-i-1:
-            break
-        tmp=bytes[i]
-        bytes[i] = bytes[len-i-1]
-        bytes[len-i-1] = tmp
-    return bytes
