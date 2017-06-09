@@ -127,7 +127,7 @@ class StarryPyServer:
                                                  channel=channel)
                 return
 
-            if self.state >= State.CONNECTED:
+            if self.state is not None and self.state >= State.CONNECTED:
                 chat_packet = ChatReceived.build({"message": message,
                                                   "name": name,
                                                   "junk": 0,
