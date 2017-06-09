@@ -885,7 +885,7 @@ class PlayerManager(SimpleCommandPlugin):
         """
         instance_string = list("InstanceWorld:")
         instance_string.append("{}".format(data["world_name"]))
-        if data["instance_flag"]:
+        if data["is_instance"]:
             instance_string.append(":{}".format(data["instance_id"].decode(
                 "utf-8")))
         else:

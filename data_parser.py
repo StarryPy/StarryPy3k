@@ -540,8 +540,8 @@ class WarpAction(Struct):
                 # world_id 1
                 d["celestial_coordinates"] = CelestialCoordinates.parse(stream,
                                                                         ctx)
-                flag = Byte.parse(stream, ctx)
-                if flag == 1:
+                d["is_teleporter"] = Byte.parse(stream, ctx)
+                if d["is_teleporter"] == 1:
                     d["teleporter"] = StarString.parse(stream, ctx)
             elif world_id == WarpWorldType.PLAYER_WORLD:
                 # world_id 2
@@ -553,10 +553,15 @@ class WarpAction(Struct):
             elif world_id == WarpWorldType.UNIQUE_WORLD:
                 # world_id 3
                 d["world_name"] = StarString.parse(stream, ctx)
-                d["instance_flag"] = Byte.parse(stream, ctx)
-                d["instance_id"] = UUID.parse(stream, ctx)
-                d["teleporter_flag"] = Byte.parse(stream, ctx)
-                d["teleporter"] = StarString.parse(stream, ctx)
+                d["is_instance"] = Byte.parse(stream, ctx)
+                if d["is_instance"] == 1:
+                    d["instance_id"] = UUID.parse(stream, ctx)
+                d["is_something"] = Byte.parse(stream, ctx)
+                if d["is_something"] == 1:
+                    d["something"] = BFloat32.parse(stream, ctx)
+                d["is_teleporter"] = Byte.parse(stream, ctx)
+                if d["is_teleporter"] == 1:
+                    d["teleporter"] = StarString.parse(stream, ctx)
             elif world_id == WarpWorldType.MISSION_WORLD:
                 # world_id 4
                 d["world_name"] = StarString.parse(stream, ctx)
@@ -592,10 +597,15 @@ class WarpAction(Struct):
                 res += Byte.build(0)
             elif obj["world_id"] == WarpWorldType.UNIQUE_WORLD:
                 res += StarString.build(obj["world_name"])
-                res += Byte.build(obj["instance_flag"])
-                res += UUID.build(binascii.unhexlify(obj["instance_id"]))
-                res += Byte.build(obj["teleporter_flag"])
-                res += StarString.build(obj["teleporter"])
+                res += Byte.build(obj["is_instance"])
+                if obj["is_instance"] == 1:
+                    res += UUID.build(binascii.unhexlify(obj["instance_id"]))
+                res += Byte.build(obj["is_something"])
+                if obj["is_something"] == 1:
+                    res += BFloat32.build(obj["something"])
+                res += Byte.build(obj["is_teleporter"])
+                if obj["is_teleporter"] == 1:
+                    res += StarString.build(obj["teleporter"])
                 res += Byte.build(0)
             elif obj["world_id"] == WarpWorldType.MISSION_WORLD:
                 res += StarString.build(obj["world_name"])
