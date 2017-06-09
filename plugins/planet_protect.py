@@ -135,7 +135,6 @@ class PlanetProtect(StorageCommandPlugin):
             if action in [EntityInteractionType.OPEN_CREW_UI,
                           EntityInteractionType.OPEN_SPECIAL_UI,
                           EntityInteractionType.OPEN_SCRIPTED_UI,
-                          EntityInteractionType.OPEN_COCKPIT_UI,
                           EntityInteractionType.OPEN_CRAFTING_UI,
                           EntityInteractionType.OPEN_NPC_UI,
                           EntityInteractionType.OPEN_SAIL_UI,
