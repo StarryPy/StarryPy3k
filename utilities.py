@@ -98,16 +98,15 @@ class DamageHitType(IntEnum):
 
 class EntityInteractionType(IntEnum):
     NOMINAL = 0
-    OPEN_COCKPIT_UI = 1
-    OPEN_CONTAINER_UI = 2
-    GO_PRONE = 3
-    OPEN_CRAFTING_UI = 4
-    OPEN_NPC_UI = 7
-    OPEN_SAIL_UI = 8
-    OPEN_TELEPORTER_UI = 9
-    OPEN_SCRIPTED_UI = 11
-    OPEN_SPECIAL_UI = 12
-    OPEN_CREW_UI = 13
+    OPEN_CONTAINER_UI = 1
+    GO_PRONE = 2
+    OPEN_CRAFTING_UI = 3
+    OPEN_NPC_UI = 6
+    OPEN_SAIL_UI = 7
+    OPEN_TELEPORTER_UI = 8
+    OPEN_SCRIPTED_UI = 10
+    OPEN_SPECIAL_UI = 11
+    OPEN_CREW_UI = 12
 
 
 class EntitySpawnType(IntEnum):

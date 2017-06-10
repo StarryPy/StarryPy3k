@@ -15,28 +15,26 @@
         },
         "chat_enhancements": {
             "chat_timestamps": true,
-            "colors": {
-                "Admin": "^#C443F7;",
-                "Moderator": "^#4385F7;",
-                "Owner": "^#F7434C;",
-                "Registered": "^#A0F743;",
-                "SuperAdmin": "^#E23800;",
-                "default": "^yellow;"
-            },
             "timestamp_color": "^gray;"
         },
         "chat_logger": {},
         "chat_manager": {},
         "claims": {
-            "max_claims_per_person": 5
+            "auto_claim_ship": true,
+            "max_claims_per_person": 6
         },
         "command_dispatcher": {
             "command_prefix": "/"
         },
         "discord_bot": {
             "channel": "-- channel id --",
+            "staff_channel": "-- channel id --",
             "client_id": "-- client_id --",
+            "command_prefix": "!",
             "log_discord": false,
+            "rank_roles": {
+                "A Discord Rank": "A StarryPy Rank"
+            },
             "strip_colors": true,
             "token": "-- token --"
         },
@@ -47,10 +45,14 @@
         "irc_bot": {
             "announce_join_leave": true,
             "channel": "#YourChannel",
+            "command_prefix": "!",
             "log_irc": false,
             "server": "irc.example.com",
             "strip_colors": true,
             "username": "Replace With Valid IRC Nick"
+        },
+        "mail": {
+            "max_mail_storage": 25
         },
         "motd": {
             "message": "Insert your MOTD message here. ^red;Note^reset; color codes work."
@@ -71,6 +73,12 @@
                 "hylotl",
                 "penguin",
                 "novakid"
+            ],
+            "new_user_ranks": [
+                "Guest"
+            ],
+            "owner_ranks": [
+                "Owner"
             ],
             "owner_uuid": "!--REPLACE WITH YOUR UUID--!",
             "player_db": "config/player"
