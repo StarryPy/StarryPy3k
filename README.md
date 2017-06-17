@@ -177,8 +177,7 @@ development, please join #StarryPy on irc.freenode.net, or chat with us on
 [gitter](https://gitter.im/StarryPy).
 
 ## History
-StarryPy3k was originally developed by [CarrotsAreMediocre](https://github
-.com/CarrotsAreMediocre), who set all the groundwork for AsyncIO and packet
+StarryPy3k was originally developed by [CarrotsAreMediocre](https://github.com/CarrotsAreMediocre), who set all the groundwork for AsyncIO and packet
 interpreting. Due to personal circumstances, Carrots stepped away from the
 project.
 
