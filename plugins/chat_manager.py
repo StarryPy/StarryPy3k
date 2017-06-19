@@ -88,14 +88,16 @@ class ChatManager(SimpleCommandPlugin):
             return
         elif player.priority >= connection.player.priority:
             send_message(connection,
-                         "{} is unmuteable.".format(player.alias))
+                         "Can't mute {}, they are equal or higher "
+                         "than your rank!".format(player.alias))
             return
         else:
             self.storage.mutes.add(player)
             send_message(connection,
                          "{} has been muted.".format(player.alias))
-            send_message(player.connection,
-                         "{} has muted you.".format(connection.player.alias))
+            if player.logged_in:
+                send_message(player.connection,
+                             "{} has muted you.".format(connection.player.alias))
 
     @Command("unmute",
              perm="chat_manager.mute",
@@ -123,5 +125,6 @@ class ChatManager(SimpleCommandPlugin):
             self.storage.mutes.remove(player)
             send_message(connection,
                          "{} has been unmuted.".format(player.alias))
-            send_message(player.connection,
-                         "{} has unmuted you.".format(connection.player.alias))
+            if player.logged_in:
+                send_message(player.connection,
+                             "{} has unmuted you.".format(connection.player.alias))
