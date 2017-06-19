@@ -255,8 +255,12 @@ class Claims(StorageCommandPlugin):
         else:
             protection = self.planet_protect.get_protection(location)
             uuids = protection.get_builders()
-            players = ", ".join([self.plugins['player_manager']
-                                .get_player_by_uuid(x).alias for x in uuids])
+            aliases = []
+            for uid in uuids:
+                plr = self.plugins["player_manager"].get_player_by_uuid(uid)
+                if plr:
+                    aliases.append(plr.alias)
+            aliases = ", ".join(aliases)
             send_message(connection,
                          "Players allowed to build at location '{}': {}"
                          "".format(connection.player.location, players))
