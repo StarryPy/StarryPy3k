@@ -263,7 +263,7 @@ class Claims(StorageCommandPlugin):
             aliases = ", ".join(aliases)
             send_message(connection,
                          "Players allowed to build at location '{}': {}"
-                         "".format(connection.player.location, players))
+                         "".format(connection.player.location, aliases))
 
     @Command("change_owner",
              perm="claims.manage_claims",
