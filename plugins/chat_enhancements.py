@@ -125,7 +125,8 @@ class ChatEnhancements(StorageCommandPlugin):
         msg = "[SS]: " + data["parsed"]["message"]
         for p in self.social_spies:
             if data["parsed"]["send_mode"] in [ChatSendMode.LOCAL,
-                                               ChatSendMode.PARTY]:
+                                               ChatSendMode.PARTY] and \
+                    p.logged_in:
                 yield from send_message(p.connection,
                                         msg,
                                         mode=ChatReceiveMode.BROADCAST,
@@ -181,10 +182,11 @@ class ChatEnhancements(StorageCommandPlugin):
             msg = "[SS]: " + " ".join(data)
             sender = self.decorate_line(connection)
             for p in self.social_spies:
-                yield from send_message(p.connection,
-                                        msg,
-                                        mode=ChatReceiveMode.BROADCAST,
-                                        name=sender)
+                if p.logged_in:
+                    yield from send_message(p.connection,
+                                            msg,
+                                            mode=ChatReceiveMode.BROADCAST,
+                                            name=sender)
             yield from self._send_to_server(data,
                                             ChatSendMode.LOCAL,
                                             connection)
@@ -238,10 +240,11 @@ class ChatEnhancements(StorageCommandPlugin):
             msg = "[SS]: " + " ".join(data)
             sender = self.decorate_line(connection)
             for p in self.social_spies:
-                yield from send_message(p.connection,
-                                        msg,
-                                        mode=ChatReceiveMode.BROADCAST,
-                                        name=sender)
+                if p.logged_in:
+                    yield from send_message(p.connection,
+                                            msg,
+                                            mode=ChatReceiveMode.BROADCAST,
+                                            name=sender)
             yield from self._send_to_server(data,
                                             ChatSendMode.PARTY,
                                             connection)
@@ -306,10 +309,11 @@ class ChatEnhancements(StorageCommandPlugin):
                                                   recipient.alias)
             ssmsg = "[SS]: " + message
             for p in self.social_spies:
-                yield from send_message(p.connection,
-                                        ssmsg,
-                                        name=sssender,
-                                        mode=ChatReceiveMode.BROADCAST)
+                if p.logged_in:
+                    yield from send_message(p.connection,
+                                            ssmsg,
+                                            name=sssender,
+                                            mode=ChatReceiveMode.BROADCAST)
         else:
             yield from send_message(connection,
                                     "Couldn't find a player with name {}"
@@ -372,10 +376,11 @@ class ChatEnhancements(StorageCommandPlugin):
                                                   recipient.alias)
             ssmsg = "[SS]: " + message
             for p in self.social_spies:
-                yield from send_message(p.connection,
-                                        ssmsg,
-                                        name=sssender,
-                                        mode=ChatReceiveMode.BROADCAST)
+                if p.logged_in:
+                    yield from send_message(p.connection,
+                                            ssmsg,
+                                            name=sssender,
+                                            mode=ChatReceiveMode.BROADCAST)
         else:
             yield from send_message(connection,
                                     "You haven't been messaged by anyone.")

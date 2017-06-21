@@ -832,19 +832,12 @@ class PlayerManager(SimpleCommandPlugin):
         :param uuid: Target player to look up
         :return: Ship object.
         """
-        def _get_player_name(uid):
-            player = ""
-            if isinstance(uid, bytes):
-                uid = uid.decode("utf-8")
-            for p in self.factory.connections:
-                if p.player.uuid == uid:
-                    player = p.player.alias
-                    return player
 
         if uuid in self.shelf["ships"]:
             return self.shelf["ships"][uuid]
         else:
-            ship = Ship(uuid, _get_player_name(uuid))
+            name = self.get_player_by_uuid(uuid).alias
+            ship = Ship(uuid, name)
             self.shelf["ships"][uuid] = ship
             return ship
 

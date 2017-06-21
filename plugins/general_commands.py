@@ -16,7 +16,7 @@ import packets
 import pparser
 import data_parser
 from base_plugin import SimpleCommandPlugin
-from utilities import send_message, Command, broadcast
+from utilities import send_message, Command, broadcast, link_plugin_if_available
 
 
 ###
@@ -33,6 +33,7 @@ class GeneralCommands(SimpleCommandPlugin):
         self.maintenance = False
         self.rejection_message = ""
         self.start_time = None
+        self.chat_manager = None
     # Helper functions - Used by commands
 
     def activate(self):
@@ -41,6 +42,8 @@ class GeneralCommands(SimpleCommandPlugin):
         self.rejection_message = self.config.get_plugin_config(self.name)[
             "maintenance_message"]
         self.start_time = datetime.datetime.now()
+        if link_plugin_if_available(self, "chat_manager"):
+            self.chat_manager = self.plugins["chat_manager"]
 
     def generate_whois(self, target):
         """
@@ -52,9 +55,20 @@ class GeneralCommands(SimpleCommandPlugin):
         """
         logged_in = "(^green;Online^reset;)"
         last_seen = "Now"
+        ban_status = "^green;Not banned"
+        mute_line = ""
         if not target.logged_in:
             logged_in = "(^red;Offline^reset;)"
             last_seen = target.last_seen
+        if target.ip in self.plugins["player_manager"].shelf["bans"]:
+            ban = self.plugins["player_manager"].shelf["bans"][target.ip]
+            ban_status = "^red;Banned by {} on {}\nBan Reason: ^red;{}".format(
+                ban.banned_by, ban.banned_at, ban.reason)
+        if self.chat_manager:
+            if self.chat_manager.mute_check(target):
+                mute_line = "Mute Status: ^red;Muted^green;"
+            else:
+                mute_line = "Mute Status: ^green;Unmuted"
         return ("Name: {} {}\n"
                 "Raw Name: {}\n"
                 "Ranks: ^yellow;{}^green;\n"
@@ -62,7 +76,9 @@ class GeneralCommands(SimpleCommandPlugin):
                 "IP address: ^cyan;{}^green;\n"
                 "Team ID: ^cyan;{}^green;\n"
                 "Current location: ^yellow;{}^green;\n"
-                "Last seen: ^yellow;{}^green;".format(
+                "Last seen: ^yellow;{}^green;\n"
+                "Ban status: {}^green;\n"
+                "{}".format(
                     target.alias, logged_in,
                     target.name,
                     ", ".join(target.ranks),
@@ -70,7 +86,9 @@ class GeneralCommands(SimpleCommandPlugin):
                     target.ip,
                     target.team_id,
                     target.location,
-                    last_seen))
+                    last_seen,
+                    ban_status,
+                    mute_line))
 
     def on_connect_success(self, data, connection):
         if self.maintenance and not connection.player.perm_check(
