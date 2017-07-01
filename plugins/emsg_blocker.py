@@ -16,9 +16,11 @@ class ChatLogger(BasePlugin):
     def __init__(self):
         super().__init__()
         self.blocked_messages = []
+        self.in_transit_players = set()
 
     def activate(self):
         super().activate()
+        self.in_transit_players = set()
         self.blocked_messages = [
             "applyStatusEffect",
             "warp",
@@ -30,6 +32,15 @@ class ChatLogger(BasePlugin):
             "nonCombat",
             "invinciblePlayers"
         ]
+
+    def on_world_stop(self, data, connection):
+        self.in_transit_players.add(connection)
+        return True
+
+    def on_world_start(self, data, connection):
+        if connection in self.in_transit_players:
+            self.in_transit_players.remove(connection)
+        return True
 
     def on_entity_message(self, data, connection):
         """
@@ -51,6 +62,13 @@ class ChatLogger(BasePlugin):
                                       .format(data['parsed']['message_name'],
                                               connection.player.alias))
                     return False
+            return True
+
+    def on_entity_message_response(self, data, connection):
+        if connection in self.in_transit_players and data['direction'] == \
+                Direction.TO_CLIENT:
+            return False
+        else:
             return True
 
     def on_update_world_properties(self, data, connection):
