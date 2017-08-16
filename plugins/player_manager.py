@@ -834,7 +834,8 @@ class PlayerManager(SimpleCommandPlugin):
             if p.name != name:
                 p.name = name
                 alias = self.clean_name(name)
-                if self.get_player_by_alias(alias) or alias is None:
+                if alias != p.alias and (self.get_player_by_alias(alias)
+                                         or alias is None):
                     alias = uuid[0:4]
                 p.alias = alias
             p.update_ranks(self.ranks)
