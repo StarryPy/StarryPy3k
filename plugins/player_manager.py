@@ -694,6 +694,9 @@ class PlayerManager(SimpleCommandPlugin):
         :param uuid: String: UUID of player to check.
         :return: Mixed: Player object.
         """
+        # Sometimes UUID is given as bytes by mistake
+        if isinstance(uuid, bytes):
+            uuid = uuid.encode('utf-8')
         if uuid in self.shelf["players"]:
             return self.shelf["players"][uuid]
 
