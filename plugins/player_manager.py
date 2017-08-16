@@ -22,7 +22,7 @@ from base_plugin import SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
 from utilities import Command, DotDict, State, broadcast, send_message, \
-    WarpType, WarpWorldType, WarpAliasType
+    WarpType, WarpWorldType, WarpAliasType, Cupboard
 from packets import packets
 
 
@@ -85,6 +85,21 @@ class Player:
         :return: Pretty-printed dictionary of Player object.
         """
         return pprint.pformat(self.__dict__)
+
+    def __getstate__(self):
+        """
+        Strip unpicklable attributes when called for pickling.
+        :return: The object's __dict__ with connection-related attributes
+        removed.
+        """
+        res = self.__dict__.copy()
+        if "connection" in res:
+            del res["connection"]
+        if res["logged_in"]:
+            res["logged_in"] = False
+            res["location"] = None
+            res["last_seen"] = datetime.datetime.now()
+        return res
 
     def update_ranks(self, ranks):
         """
@@ -187,9 +202,10 @@ class PlayerManager(SimpleCommandPlugin):
                                                    "floran", "human", "hylotl",
                                                    "penguin", "novakid"],
                                "owner_ranks": ["Owner"],
-                               "new_user_ranks": ["Guest"]}
+                               "new_user_ranks": ["Guest"],
+                               "db_save_interval": 900}
         super().__init__()
-        self.shelf = shelve.open(self.plugin_config.player_db, writeback=True)
+        self.shelf = Cupboard(self.plugin_config.player_db)
         self.sync()
         self.players = self.shelf["players"]
         self.planets = self.shelf["planets"]
@@ -208,6 +224,7 @@ class PlayerManager(SimpleCommandPlugin):
             raise SystemExit
         self.ranks = self._rebuild_ranks(self.rank_config)
         asyncio.ensure_future(self._reap())
+        asyncio.ensure_future(self._save_shelf())
 
     # Packet hooks - look for these packets and act on them
 
@@ -454,6 +471,16 @@ class PlayerManager(SimpleCommandPlugin):
                     target.location = None
                     self.players_online.remove(target.uuid)
 
+    def _save_shelf(self):
+        """
+        Saves the player DB on a timer to prevent data loss.
+
+        :return: Null.
+        """
+        while True:
+            yield from asyncio.sleep(self.plugin_config.db_save_interval)
+            self.sync()
+
     def _set_offline(self, connection):
         """
         Convenience function to set all the players variables to off.
@@ -512,6 +539,7 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf["bans"] = {}
         if "ships" not in self.shelf:
             self.shelf["ships"] = {}
+        self.logger.debug("Saved the player database.")
         self.shelf.sync()
 
     def deactivate(self):
@@ -523,6 +551,7 @@ class PlayerManager(SimpleCommandPlugin):
         for player in self.shelf["players"].values():
             player.connection = None
             player.logged_in = False
+        self.sync()
         self.shelf.close()
         self.logger.debug("Closed the shelf")
 
@@ -778,7 +807,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param planet: Current planet character is on/near
         :param muted: Boolean: Is the player currently muted
         :param kwargs: any other keyword arguments
-        :return: Player object.
+        :return: Player: Player object retrieved or created.
         """
 
         if isinstance(uuid, bytes):
@@ -1269,3 +1298,10 @@ class PlayerManager(SimpleCommandPlugin):
         self.players.pop(player.uuid)
         del player
         send_message(connection, "Player {} has been deleted.".format(alias))
+
+    @Command("save",
+             perm="player_manager.save",
+             doc="Saves the player database to disk.")
+    def _save(self, data, connection):
+        self.shelf.sync()
+        send_message(connection, "Player database saved successfully.")
