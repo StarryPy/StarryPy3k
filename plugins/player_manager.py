@@ -109,6 +109,7 @@ class Player:
         """
         self.permissions = set()
         highest_rank = None
+        self.ranks = {x.lower() for x in self.ranks}
         for r in self.ranks:
             if not highest_rank:
                 highest_rank = r
@@ -576,7 +577,7 @@ class PlayerManager(SimpleCommandPlugin):
             config['permissions'] = set(config['permissions'])
             if 'inherits' in config:
                 config['permissions'] |= build_inherits(config['inherits'])
-            final[rank] = config
+            final[rank.lower()] = config
 
         return final
 
@@ -1147,64 +1148,66 @@ class PlayerManager(SimpleCommandPlugin):
         elif data[0].lower() == "addrank":
             target = self.find_player(data[1])
             if target:
-                if not data[2]:
+                search = data[2].lower()
+                if not search:
                     send_message(connection, "No rank specified.")
                     return
-                if data[2] not in self.ranks:
+                if search not in self.ranks:
                     send_message(connection, "Rank {} does not exist."
                                  .format(data[2]))
                     return
-                rank = self.ranks[data[2]]
+                rank = self.ranks[search]
                 if rank["priority"] >= connection.player.priority:
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
-                elif data[2] in target.ranks:
+                elif search in target.ranks:
                     yield from send_message(connection, "Player {} already "
                                                         "has rank {}."
-                                            .format(target.alias, data[2]))
+                                            .format(target.alias, search))
                 else:
-                    target.ranks.add(data[2])
+                    target.ranks.add(search)
                     target.update_ranks(self.ranks)
                     if target.logged_in:
                         yield from send_message(target.connection,
                                                 "You were granted rank {} by {}."
-                                                .format(data[2],
+                                                .format(search,
                                                         connection.player.alias))
                     yield from send_message(connection, "Granted rank "
                                                         "{} to {}."
-                                            .format(data[2], target.alias))
+                                            .format(search, target.alias))
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         elif data[0].lower() == "rmrank":
             target = self.find_player(data[1])
             if target:
-                if not data[2]:
+                search = data[2].lower()
+                if not search:
                     send_message(connection, "No rank specified.")
                     return
-                if data[2] not in self.ranks:
+                if search not in self.ranks:
                     send_message(connection, "Rank {} does not exist."
                                  .format(data[2]))
                     return
                 if target.priority >= connection.player.priority:
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
-                elif data[2] not in target.ranks:
+                elif search not in target.ranks:
                     yield from send_message(connection, "Player {} does not "
                                                         "have rank {}."
-                                            .format(target.alias, data[2]))
+                                            .format(target.alias, search))
                 else:
-                    target.ranks.remove(data[2])
+                    target.ranks.remove(search)
                     target.update_ranks(self.ranks)
                     if target.logged_in:
                         yield from send_message(target.connection, "{} removed"
                                                                    " rank {} "
                                                                    "from you."
                                                 .format(connection.player.alias,
-                                                        data[2]))
+                                                        search))
                     yield from send_message(connection, "Removed rank "
                                                         "{} from {}."
-                                            .format(data[2], target.alias))
+                                            .format(search, target.alias))
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
@@ -1221,7 +1224,7 @@ class PlayerManager(SimpleCommandPlugin):
         elif data[0].lower() == "listranks":
             target = self.find_player(data[1])
             if target:
-                ranks = ", ".join(target.ranks)
+                ranks = ", ".join((x.capitalize() for x in target.ranks))
                 yield from send_message(connection, "Ranks for user {}:"
                                                     "\n{}"
                                         .format(target.alias, ranks))
