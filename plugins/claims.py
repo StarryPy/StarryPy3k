@@ -432,46 +432,40 @@ class Claims(StorageCommandPlugin):
                 send_message(connection, "Lists players on the access list.")
                 send_message(connection, "/planet_access help")
                 send_message(connection, "Displays this help.")
-            else:
-                target = self.plugins.player_manager.find_player(" ".join(data[0:-1]))
-                if not target:
-                    send_message(connection, "Argument not recognized. "
-                                             "See /planet_access help "
-                                             "for usage.")
-                if data[-1] == "add":
-                    if target.uuid not in access["list"]:
-                        if not access["whitelist"] and target == \
-                                connection.player:
-                            send_message(connection, "Can't add yourself to "
-                                                     "the blacklist!")
-                        else:
-                            access["list"].append(target.uuid)
-                            send_message(connection, "{} is now {} access to "
-                                                     "this planet"
-                                         .format(target.alias, allow))
+            elif data[0].lower() == "add":
+                target = self.plugins.player_manager.find_player(" ".join(data[1:]))
+                if target.uuid not in access["list"]:
+                    if not access["whitelist"] and target == \
+                            connection.player:
+                        send_message(connection, "Can't add yourself to "
+                                                 "the blacklist!")
                     else:
-                        send_message(connection, "{} is already {} access to "
-                                                 "this planet."
-                                     .format(target.alias, allow))
-                elif data[-1] == "remove":
-                    if target.uuid in access["list"]:
-                        if access["whitelist"] and target == connection.player:
-                            send_message(connection, "Can't remove yourself "
-                                                     "from the whitelist!")
-                        else:
-                            access["list"].remove(target.uuid)
-                            send_message(connection, "{} has been removed "
-                                                     "from the {} list"
-                                                     " for this planet."
-                                         .format(target.alias, allow))
-                    else:
-                        send_message(connection, "{} is not on the {} list "
-                                                 "for this planet."
+                        access["list"].append(target.uuid)
+                        send_message(connection, "{} is now {} access to "
+                                                 "this planet"
                                      .format(target.alias, allow))
                 else:
-                    send_message(connection, "Argument not recognized. "
-                                             "Usage: /planet_access [name] "
-                                             "add/remove")
+                    send_message(connection, "{} is already {} access to "
+                                             "this planet."
+                                 .format(target.alias, allow))
+            elif data[0].lower() == "remove":
+                target = self.plugins.player_manager.find_player(" ".join(data[1:]))
+                if target.uuid in access["list"]:
+                    if access["whitelist"] and target == connection.player:
+                        send_message(connection, "Can't remove yourself from "
+                                                 "the whitelist!")
+                    else:
+                        access["list"].remove(target.uuid)
+                        send_message(connection, "{} has been removed from "
+                                                 "the {} list for this planet."
+                                     .format(target.alias, allow))
+                else:
+                    send_message(connection, "{} is not on the {} list for "
+                                             "this planet."
+                                 .format(target.alias, allow))
+            else:
+                send_message(connection, "Argument not recognized. See "
+                                         "/planet_access help for usage.")
     @Command("purge_claims",
              perm="claims.purge_claims",
              doc="Purge the claims of the target player, if something "
