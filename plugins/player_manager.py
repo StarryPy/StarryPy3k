@@ -581,6 +581,27 @@ class PlayerManager(SimpleCommandPlugin):
 
         return final
 
+    def kick_player(self, player, reason=""):
+        if player.client_id == -1 or player.connection is None:
+            player.connection = None
+            player.logged_in = False
+            player.location = None
+            player.last_seen = datetime.datetime.now()
+            self.players_online.remove(player.uuid)
+            return
+        try:
+            kick_packet = build_packet(packets["server_disconnect"],
+                                       ServerDisconnect.build(
+                                           dict(reason=reason)))
+            asyncio.ensure_future(player.connection.raw_write(kick_packet))
+        except AttributeError as e:  # Ignore errors in sending the packet.
+            self.logger.debug("Error occurred while kicking user. {}".format(e))
+        player.connection = None
+        player.logged_in = False
+        player.location = None
+        player.last_seen = datetime.datetime.now()
+        self.players_online.remove(player.uuid)
+
     def ban_by_ip(self, ip, reason, connection):
         """
         Ban a player based on their IP address. Should be compatible with both
@@ -591,10 +612,14 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection: Connection of target player to be banned.
         :return: Null
         """
+        banned_plr = self.get_player_by_ip(ip, check_logged_in=True)
+        if banned_plr:
+            kickstr = "You were kicked.\nReason: {}".format(reason)
+            self.kick_player(banned_plr, kickstr)
         ban = IPBan(ip, reason, connection.player.alias)
         self.shelf["bans"][ip] = ban
-        send_message(connection,
-                     "Banned IP: {} with reason: {}".format(ip, reason))
+        send_message(connection, "Banned IP: {} with reason: {}"
+                     .format(ip, reason))
 
     def unban_by_ip(self, ip, connection):
         """
@@ -697,7 +722,7 @@ class PlayerManager(SimpleCommandPlugin):
         """
         # Sometimes UUID is given as bytes by mistake
         if isinstance(uuid, bytes):
-            uuid = uuid.encode('utf-8')
+            uuid = uuid.decode('utf-8')
         if uuid in self.shelf["players"]:
             return self.shelf["players"][uuid]
 
@@ -947,7 +972,7 @@ class PlayerManager(SimpleCommandPlugin):
             reason = " ".join(data[1:])
         except IndexError:
             reason = "No reason given."
-
+        reason = "You were kicked.\nReason: {}".format(reason)
         p = self.find_player(alias)
         if p is None:
             send_message(connection,
@@ -961,21 +986,7 @@ class PlayerManager(SimpleCommandPlugin):
             send_message(connection,
                          "Player {} is not currently logged in.".format(alias))
             return
-        if p.client_id == -1 or p.connection is None:
-            p.connection = None
-            p.logged_in = False
-            p.location = None
-            self.players_online.remove(p.uuid)
-            return
-        kick_string = "You were kicked.\n Reason: {}".format(reason)
-        kick_packet = build_packet(packets["server_disconnect"],
-                                   ServerDisconnect.build(
-                                       dict(reason=kick_string)))
-        yield from p.connection.raw_write(kick_packet)
-        p.connection = None
-        p.logged_in = False
-        p.location = None
-        self.players_online.remove(p.uuid)
+        self.kick_player(p, reason)
         broadcast(self, "^red;{} has been kicked for reason: "
                         "{}^reset;".format(alias, reason))
 
@@ -1005,6 +1016,8 @@ class PlayerManager(SimpleCommandPlugin):
                                          "higher than your rank!"
                              .format(target))
                 return
+            if not reason:
+                reason = "No reason given."
             if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target):
                 self.ban_by_ip(target, reason, connection)
             else:
