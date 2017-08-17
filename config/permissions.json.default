@@ -58,6 +58,7 @@
       "player_manager.kick",
       "player_manager.ban",
       "player_manager.user",
+      "player_manager.save",
       "privileged_chatter.modchat"
     ]
   },

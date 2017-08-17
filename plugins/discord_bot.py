@@ -108,7 +108,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
                                  'ban', 'unban', 'kick', 'list_bans', 'mute',
                                  'unmute', 'set_motd', 'whois', 'broadcast',
                                  'user', 'del_player', 'maintenance_mode',
-                                 'shutdown')
+                                 'shutdown', 'save')
 
     def activate(self):
         BasePlugin.activate(self)
@@ -240,8 +240,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         if message.author.id != self.client_id:
             if message.content[0] == self.command_prefix:
                 self.command_target = message.channel
-                asyncio.ensure_future(self.handle_command(message.content[
-                                                          1:], message.author))
+                asyncio.ensure_future(self.handle_command(message.content[1:],
+                                                          message.author))
             elif message.channel == self.channel:
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,
