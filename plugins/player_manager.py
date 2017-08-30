@@ -22,7 +22,7 @@ from base_plugin import SimpleCommandPlugin
 from data_parser import ConnectFailure, ServerDisconnect
 from pparser import build_packet
 from utilities import Command, DotDict, State, broadcast, send_message, \
-    WarpType, WarpWorldType, WarpAliasType
+    WarpType, WarpWorldType, WarpAliasType, Cupboard
 from packets import packets
 
 
@@ -86,6 +86,21 @@ class Player:
         """
         return pprint.pformat(self.__dict__)
 
+    def __getstate__(self):
+        """
+        Strip unpicklable attributes when called for pickling.
+        :return: The object's __dict__ with connection-related attributes
+        removed.
+        """
+        res = self.__dict__.copy()
+        if "connection" in res:
+            del res["connection"]
+        if res["logged_in"]:
+            res["logged_in"] = False
+            res["location"] = None
+            res["last_seen"] = datetime.datetime.now()
+        return res
+
     def update_ranks(self, ranks):
         """
         Update the player's info to match any changes made to their ranks.
@@ -94,6 +109,7 @@ class Player:
         """
         self.permissions = set()
         highest_rank = None
+        self.ranks = {x.lower() for x in self.ranks}
         for r in self.ranks:
             if not highest_rank:
                 highest_rank = r
@@ -187,9 +203,10 @@ class PlayerManager(SimpleCommandPlugin):
                                                    "floran", "human", "hylotl",
                                                    "penguin", "novakid"],
                                "owner_ranks": ["Owner"],
-                               "new_user_ranks": ["Guest"]}
+                               "new_user_ranks": ["Guest"],
+                               "db_save_interval": 900}
         super().__init__()
-        self.shelf = shelve.open(self.plugin_config.player_db, writeback=True)
+        self.shelf = Cupboard(self.plugin_config.player_db)
         self.sync()
         self.players = self.shelf["players"]
         self.planets = self.shelf["planets"]
@@ -208,6 +225,7 @@ class PlayerManager(SimpleCommandPlugin):
             raise SystemExit
         self.ranks = self._rebuild_ranks(self.rank_config)
         asyncio.ensure_future(self._reap())
+        asyncio.ensure_future(self._save_shelf())
 
     # Packet hooks - look for these packets and act on them
 
@@ -454,6 +472,16 @@ class PlayerManager(SimpleCommandPlugin):
                     target.location = None
                     self.players_online.remove(target.uuid)
 
+    def _save_shelf(self):
+        """
+        Saves the player DB on a timer to prevent data loss.
+
+        :return: Null.
+        """
+        while True:
+            yield from asyncio.sleep(self.plugin_config.db_save_interval)
+            self.sync()
+
     def _set_offline(self, connection):
         """
         Convenience function to set all the players variables to off.
@@ -512,6 +540,7 @@ class PlayerManager(SimpleCommandPlugin):
             self.shelf["bans"] = {}
         if "ships" not in self.shelf:
             self.shelf["ships"] = {}
+        self.logger.debug("Saved the player database.")
         self.shelf.sync()
 
     def deactivate(self):
@@ -523,6 +552,7 @@ class PlayerManager(SimpleCommandPlugin):
         for player in self.shelf["players"].values():
             player.connection = None
             player.logged_in = False
+        self.sync()
         self.shelf.close()
         self.logger.debug("Closed the shelf")
 
@@ -547,9 +577,30 @@ class PlayerManager(SimpleCommandPlugin):
             config['permissions'] = set(config['permissions'])
             if 'inherits' in config:
                 config['permissions'] |= build_inherits(config['inherits'])
-            final[rank] = config
+            final[rank.lower()] = config
 
         return final
+
+    def kick_player(self, player, reason=""):
+        if player.client_id == -1 or player.connection is None:
+            player.connection = None
+            player.logged_in = False
+            player.location = None
+            player.last_seen = datetime.datetime.now()
+            self.players_online.remove(player.uuid)
+            return
+        try:
+            kick_packet = build_packet(packets["server_disconnect"],
+                                       ServerDisconnect.build(
+                                           dict(reason=reason)))
+            asyncio.ensure_future(player.connection.raw_write(kick_packet))
+        except AttributeError as e:  # Ignore errors in sending the packet.
+            self.logger.debug("Error occurred while kicking user. {}".format(e))
+        player.connection = None
+        player.logged_in = False
+        player.location = None
+        player.last_seen = datetime.datetime.now()
+        self.players_online.remove(player.uuid)
 
     def ban_by_ip(self, ip, reason, connection):
         """
@@ -561,10 +612,14 @@ class PlayerManager(SimpleCommandPlugin):
         :param connection: Connection of target player to be banned.
         :return: Null
         """
+        banned_plr = self.get_player_by_ip(ip, check_logged_in=True)
+        if banned_plr:
+            kickstr = "You were kicked.\nReason: {}".format(reason)
+            self.kick_player(banned_plr, kickstr)
         ban = IPBan(ip, reason, connection.player.alias)
         self.shelf["bans"][ip] = ban
-        send_message(connection,
-                     "Banned IP: {} with reason: {}".format(ip, reason))
+        send_message(connection, "Banned IP: {} with reason: {}"
+                     .format(ip, reason))
 
     def unban_by_ip(self, ip, connection):
         """
@@ -665,6 +720,9 @@ class PlayerManager(SimpleCommandPlugin):
         :param uuid: String: UUID of player to check.
         :return: Mixed: Player object.
         """
+        # Sometimes UUID is given as bytes by mistake
+        if isinstance(uuid, bytes):
+            uuid = uuid.decode('utf-8')
         if uuid in self.shelf["players"]:
             return self.shelf["players"][uuid]
 
@@ -778,7 +836,7 @@ class PlayerManager(SimpleCommandPlugin):
         :param planet: Current planet character is on/near
         :param muted: Boolean: Is the player currently muted
         :param kwargs: any other keyword arguments
-        :return: Player object.
+        :return: Player: Player object retrieved or created.
         """
 
         if isinstance(uuid, bytes):
@@ -802,7 +860,8 @@ class PlayerManager(SimpleCommandPlugin):
             if p.name != name:
                 p.name = name
                 alias = self.clean_name(name)
-                if self.get_player_by_alias(alias) or alias is None:
+                if alias != p.alias and (self.get_player_by_alias(alias)
+                                         or alias is None):
                     alias = uuid[0:4]
                 p.alias = alias
             p.update_ranks(self.ranks)
@@ -913,7 +972,7 @@ class PlayerManager(SimpleCommandPlugin):
             reason = " ".join(data[1:])
         except IndexError:
             reason = "No reason given."
-
+        reason = "You were kicked.\nReason: {}".format(reason)
         p = self.find_player(alias)
         if p is None:
             send_message(connection,
@@ -927,21 +986,7 @@ class PlayerManager(SimpleCommandPlugin):
             send_message(connection,
                          "Player {} is not currently logged in.".format(alias))
             return
-        if p.client_id == -1 or p.connection is None:
-            p.connection = None
-            p.logged_in = False
-            p.location = None
-            self.players_online.remove(p.uuid)
-            return
-        kick_string = "You were kicked.\n Reason: {}".format(reason)
-        kick_packet = build_packet(packets["server_disconnect"],
-                                   ServerDisconnect.build(
-                                       dict(reason=kick_string)))
-        yield from p.connection.raw_write(kick_packet)
-        p.connection = None
-        p.logged_in = False
-        p.location = None
-        self.players_online.remove(p.uuid)
+        self.kick_player(p, reason)
         broadcast(self, "^red;{} has been kicked for reason: "
                         "{}^reset;".format(alias, reason))
 
@@ -971,6 +1016,8 @@ class PlayerManager(SimpleCommandPlugin):
                                          "higher than your rank!"
                              .format(target))
                 return
+            if not reason:
+                reason = "No reason given."
             if re.match(r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$", target):
                 self.ban_by_ip(target, reason, connection)
             else:
@@ -1114,64 +1161,66 @@ class PlayerManager(SimpleCommandPlugin):
         elif data[0].lower() == "addrank":
             target = self.find_player(data[1])
             if target:
-                if not data[2]:
+                search = data[2].lower()
+                if not search:
                     send_message(connection, "No rank specified.")
                     return
-                if data[2] not in self.ranks:
+                if search not in self.ranks:
                     send_message(connection, "Rank {} does not exist."
                                  .format(data[2]))
                     return
-                rank = self.ranks[data[2]]
+                rank = self.ranks[search]
                 if rank["priority"] >= connection.player.priority:
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
-                elif data[2] in target.ranks:
+                elif search in target.ranks:
                     yield from send_message(connection, "Player {} already "
                                                         "has rank {}."
-                                            .format(target.alias, data[2]))
+                                            .format(target.alias, search))
                 else:
-                    target.ranks.add(data[2])
+                    target.ranks.add(search)
                     target.update_ranks(self.ranks)
                     if target.logged_in:
                         yield from send_message(target.connection,
                                                 "You were granted rank {} by {}."
-                                                .format(data[2],
+                                                .format(search,
                                                         connection.player.alias))
                     yield from send_message(connection, "Granted rank "
                                                         "{} to {}."
-                                            .format(data[2], target.alias))
+                                            .format(search, target.alias))
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         elif data[0].lower() == "rmrank":
             target = self.find_player(data[1])
             if target:
-                if not data[2]:
+                search = data[2].lower()
+                if not search:
                     send_message(connection, "No rank specified.")
                     return
-                if data[2] not in self.ranks:
+                if search not in self.ranks:
                     send_message(connection, "Rank {} does not exist."
                                  .format(data[2]))
                     return
                 if target.priority >= connection.player.priority:
                     yield from send_message(connection, "You don't have "
                                             "permission to do that!")
-                elif data[2] not in target.ranks:
+                elif search not in target.ranks:
                     yield from send_message(connection, "Player {} does not "
                                                         "have rank {}."
-                                            .format(target.alias, data[2]))
+                                            .format(target.alias, search))
                 else:
-                    target.ranks.remove(data[2])
+                    target.ranks.remove(search)
                     target.update_ranks(self.ranks)
                     if target.logged_in:
                         yield from send_message(target.connection, "{} removed"
                                                                    " rank {} "
                                                                    "from you."
                                                 .format(connection.player.alias,
-                                                        data[2]))
+                                                        search))
                     yield from send_message(connection, "Removed rank "
                                                         "{} from {}."
-                                            .format(data[2], target.alias))
+                                            .format(search, target.alias))
             else:
                 yield from send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
@@ -1188,7 +1237,7 @@ class PlayerManager(SimpleCommandPlugin):
         elif data[0].lower() == "listranks":
             target = self.find_player(data[1])
             if target:
-                ranks = ", ".join(target.ranks)
+                ranks = ", ".join((x.capitalize() for x in target.ranks))
                 yield from send_message(connection, "Ranks for user {}:"
                                                     "\n{}"
                                         .format(target.alias, ranks))
@@ -1269,3 +1318,10 @@ class PlayerManager(SimpleCommandPlugin):
         self.players.pop(player.uuid)
         del player
         send_message(connection, "Player {} has been deleted.".format(alias))
+
+    @Command("save",
+             perm="player_manager.save",
+             doc="Saves the player database to disk.")
+    def _save(self, data, connection):
+        self.shelf.sync()
+        send_message(connection, "Player database saved successfully.")

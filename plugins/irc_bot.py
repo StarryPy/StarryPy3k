@@ -138,7 +138,7 @@ class IRCPlugin(BasePlugin):
                                  'ban', 'unban', 'kick', 'list_bans', 'mute',
                                  'unmute', 'set_motd', 'whois', 'broadcast',
                                  'user', 'del_player', 'maintenance_mode',
-                                 'shutdown')
+                                 'shutdown', 'save')
     def activate(self):
         super().activate()
         self.dispatcher = self.plugins.command_dispatcher

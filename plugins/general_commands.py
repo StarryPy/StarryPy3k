@@ -16,7 +16,7 @@ import packets
 import pparser
 import data_parser
 from base_plugin import SimpleCommandPlugin
-from utilities import send_message, Command, broadcast, link_plugin_if_available
+from utilities import send_message, Command, broadcast, link_plugin_if_available, State
 
 
 ###
@@ -318,7 +318,6 @@ class GeneralCommands(SimpleCommandPlugin):
         shutdown_time = 5
         if data:
             if data[0].isdigit():
-                self.logger.debug("We think it is an int, lets use it.")
                 shutdown_time = int(data[0])
 
         broadcast(self, "^red;(ADMIN) The server is shutting down in {} "
@@ -327,6 +326,7 @@ class GeneralCommands(SimpleCommandPlugin):
         # this is a noisy shutdown (makes a bit of errors in the logs). Not
         # sure how to make it better...
         self.logger.warning("Shutting down server now.")
+        self.plugins.player_manager.sync()
         sys.exit()
 
     @Command("maintenance_mode",

@@ -13,9 +13,12 @@ import collections
 import io
 import re
 import zlib
+import dbm
 from enum import IntEnum
 from pathlib import Path
 from types import FunctionType
+from shelve import Shelf, _ClosedDict
+from pickle import Pickler, Unpickler
 
 path = Path(__file__).parent
 
@@ -227,6 +230,51 @@ class AsyncBytesIO(io.BytesIO):
     @asyncio.coroutine
     def read(self, *args, **kwargs):
         return super().read(*args, **kwargs)
+
+
+class Cupboard(Shelf):
+    """
+    Custom Shelf implementation that only pickles values at save-time.
+    Increases save/load times, decreases get/set item times.
+    More suitable for use as a savable dictionary.
+    """
+    def __init__(self, filename, flag='c', protocol=None, keyencoding='utf-8'):
+        self.db = filename
+        self.flag = flag
+        self.dict = {}
+        with dbm.open(self.db, self.flag) as db:
+            for k in db.keys():
+                v = io.BytesIO(db[k])
+                self.dict[k] = Unpickler(v).load()
+        Shelf.__init__(self, self.dict, protocol, False, keyencoding)
+
+    def __getitem__(self, key):
+        return self.dict[key.encode(self.keyencoding)]
+
+    def __setitem__(self, key, value):
+        self.dict[key.encode(self.keyencoding)] = value
+
+    def __delitem__(self, key):
+        del self.dict[key.encode(self.keyencoding)]
+
+    def sync(self):
+        res = {}
+        with dbm.open(self.db, self.flag) as db:
+            for k, v in self.dict.items():
+                f = io.BytesIO()
+                p = Pickler(f, protocol=self._protocol)
+                p.dump(v)
+                db[k] = f.getvalue()
+            db.sync()
+
+    def close(self):
+        try:
+            self.sync()
+        finally:
+            try:
+                self.dict = _ClosedDict()
+            except:
+                self.dict = None
 
 
 @asyncio.coroutine
