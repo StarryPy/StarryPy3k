@@ -115,7 +115,9 @@ class IRCPlugin(BasePlugin):
         "strip_colors": True,
         "log_irc": False,
         "announce_join_leave": True,
-        "command_prefix": "!"
+        "command_prefix": "!",
+        "user_rank": "Guest",
+        "operator_rank": "Admin"
     }
 
     def __init__(self):
@@ -372,15 +374,18 @@ class IRCPlugin(BasePlugin):
         command = split[0]
         to_parse = split[1:]
         user = mask.split("!")[0]
+        usr_rank = self.plugin_config.user_rank
+        op_rank = self.plugin_config.operator_rank
         self.connection.player.permissions = \
-            self.plugins.player_manager.ranks["Guest"]["permissions"]
+            self.plugins.player_manager.ranks[usr_rank.lower()]["permissions"]
         self.connection.player.priority = self.plugins.player_manager.ranks[
-            "Guest"]["priority"]
+            usr_rank.lower()]["priority"]
         if user in self.ops:
             self.connection.player.permissions = \
-                self.plugins.player_manager.ranks["Admin"]["permissions"]
+                self.plugins.player_manager.ranks[op_rank.lower()][
+                    "permissions"]
             self.connection.player.priority = \
-                self.plugins.player_manager.ranks["Admin"]["priority"]
+                self.plugins.player_manager.ranks[op_rank.lower()]["priority"]
         self.connection.player.alias = user
         self.connection.player.name = user
         if command in self.dispatcher.commands:

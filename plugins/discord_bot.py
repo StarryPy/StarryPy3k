@@ -281,9 +281,9 @@ class DiscordPlugin(BasePlugin, discord.Client):
                 role = self.rank_roles[x.name]
                 break
         self.mock_connection.player.permissions = \
-            self.plugins.player_manager.ranks[role]["permissions"]
+            self.plugins.player_manager.ranks[role.lower()]["permissions"]
         self.mock_connection.player.priority = \
-            self.plugins.player_manager.ranks[role]["priority"]
+            self.plugins.player_manager.ranks[role.lower()]["priority"]
         self.mock_connection.player.alias = user.display_name
         self.mock_connection.player.name = user.display_name
         if command in self.dispatcher.commands:

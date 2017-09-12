@@ -265,7 +265,10 @@ class Cupboard(Shelf):
                 p = Pickler(f, protocol=self._protocol)
                 p.dump(v)
                 db[k] = f.getvalue()
-            db.sync()
+            try:
+                db.sync()
+            except AttributeError:
+                pass
 
     def close(self):
         try:
