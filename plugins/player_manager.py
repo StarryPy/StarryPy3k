@@ -14,7 +14,6 @@ import asyncio
 import datetime
 import pprint
 import re
-import shelve
 import json
 from operator import attrgetter
 
@@ -199,9 +198,6 @@ class PlayerManager(SimpleCommandPlugin):
     def __init__(self):
         self.default_config = {"player_db": "config/player",
                                "owner_uuid": "!--REPLACE IN CONFIG FILE--!",
-                               "allowed_species": ["apex", "avian", "glitch",
-                                                   "floran", "human", "hylotl",
-                                                   "penguin", "novakid"],
                                "owner_ranks": ["Owner"],
                                "new_user_ranks": ["Guest"],
                                "db_save_interval": 900}
@@ -282,7 +278,6 @@ class PlayerManager(SimpleCommandPlugin):
         try:
             player = yield from self._add_or_get_player(**data["parsed"])
             self.check_bans(connection)
-            self.check_species(player)
         except (NameError, ValueError) as e:
             yield from connection.raw_write(self.build_rejection(str(e)))
             connection.die()
@@ -684,21 +679,6 @@ class PlayerManager(SimpleCommandPlugin):
                 connection.client_ip))
             raise ValueError("You are banned!\nReason: {}".format(
                 self.shelf["bans"][connection.client_ip].reason))
-
-    def check_species(self, player):
-        """
-        Check if a player has an unknown species. Raise ValueError when true.
-        Context: http://community.playstarbound.com/threads/119569/
-
-        :param player: The player to check.
-        :return: Null.
-        :raise: ValueError if the player has an unknown species.
-        """
-        if player.species not in self.plugin_config.allowed_species:
-            self.logger.info("Player with unknown species ({}) tried to log in.".format(
-                player.species))
-            raise ValueError("Connection terminated!\nYour species ({}) is not allowed.".format(
-                player.species))
 
     def get_storage(self, caller):
         """
