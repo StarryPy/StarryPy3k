@@ -100,6 +100,17 @@ class Player:
             res["last_seen"] = datetime.datetime.now()
         return res
 
+    def __eq__(self, other):
+        """
+        Comparison function to check if this player object equals another.
+        :param other: The other object being compared.
+        :return: Boolean: True if the two objects are Players and their UUID is
+        identical, False otherwise.
+        """
+        if isinstance(other, Player):
+            return self.uuid == other.uuid
+        return False
+
     def update_ranks(self, ranks):
         """
         Update the player's info to match any changes made to their ranks.

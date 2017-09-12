@@ -231,7 +231,8 @@ class GeneralCommands(SimpleCommandPlugin):
             target = connection.player
         if len(data) == 0:
             alias = connection.player.name
-        if self.plugins.player_manager.get_player_by_alias(alias):
+        conflict = self.plugins.player_manager.get_player_by_alias(alias)
+        if conflict and target != conflict:
             raise ValueError("There's already a user by that name.")
         else:
             clean_alias = self.plugins['player_manager'].clean_name(alias)
