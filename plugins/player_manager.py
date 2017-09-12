@@ -111,6 +111,9 @@ class Player:
             return self.uuid == other.uuid
         return False
 
+    def __hash__(self):
+        return id(self)
+
     def update_ranks(self, ranks):
         """
         Update the player's info to match any changes made to their ranks.
