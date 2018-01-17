@@ -64,16 +64,6 @@
         "planet_backups": {},
         "planet_protect": {},
         "player_manager": {
-            "allowed_species": [
-                "apex",
-                "avian",
-                "glitch",
-                "floran",
-                "human",
-                "hylotl",
-                "penguin",
-                "novakid"
-            ],
             "new_user_ranks": [
                 "Guest"
             ],
@@ -91,6 +81,19 @@
         },
         "simple_command_plugin": {},
         "spawn": {},
+        "species_whitelist": {
+            "enabled": false,
+            "allowed_species": [
+                "apex",
+                "avian",
+                "glitch",
+                "floran",
+                "human",
+                "hylotl",
+                "penguin",
+                "novakid"
+            ]
+        },
         "storage_command_plugin": {},
         "warp_plugin": {}
     },
