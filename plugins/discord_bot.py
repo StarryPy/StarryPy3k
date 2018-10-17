@@ -308,12 +308,11 @@ class DiscordPlugin(BasePlugin, discord.Client):
             return
         asyncio.ensure_future(self.send_message(target, msg)).add_done_callback(self.error_handler)
 
-    def error_handler(future):
+    def error_handler(self, future):
         try:
             future.result()
         except Exception as e:
+            self.logger.error("Caught an unhandled exception in Discord bot.  Will restart.")
             self.logger.exception(e)
-            asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
-            
-
+            asyncio.ensure_future(self.start_bot())
             
