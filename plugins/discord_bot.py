@@ -126,7 +126,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.staff_channel = self.config.get_plugin_config(self.name)[
             "staff_channel"]
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
-        asyncio.ensure_future(self.start_bot()).add_done_callback(error_handler)
+        asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
         self.update_id(self.client_id)
         self.mock_connection = MockConnection(self)
         self.rank_roles = self.config.get_plugin_config(self.name)[
@@ -151,7 +151,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.ensure_future(self.make_announce(connection, "joined")).add_done_callback(error_handler)
+        asyncio.ensure_future(self.make_announce(connection, "joined")).add_done_callback(self.error_handler)
         return True
 
     def on_client_disconnect_request(self, data, connection):
@@ -162,7 +162,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.ensure_future(self.make_announce(connection, "left")).add_done_callback(error_handler)
+        asyncio.ensure_future(self.make_announce(connection, "left")).add_done_callback(self.error_handler)
         return True
 
     def on_chat_sent(self, data, connection):
@@ -306,14 +306,14 @@ class DiscordPlugin(BasePlugin, discord.Client):
             target = self.channel
         if target is None:
             return
-        asyncio.ensure_future(self.send_message(target, msg)).add_done_callback(error_handler)
+        asyncio.ensure_future(self.send_message(target, msg)).add_done_callback(self.error_handler)
 
     def error_handler(future):
         try:
             future.result()
         except Exception as e:
             self.logger.exception(e)
-            asyncio.ensure_future(self.start_bot()).add_done_callback(error_handler)
+            asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
             
 
             
