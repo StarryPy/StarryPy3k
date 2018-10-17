@@ -213,6 +213,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
 
     @asyncio.coroutine
     def on_ready(self):
+        self.channel = self.config.get_plugin_config(self.name)["channel"]
+        self.staff_channel = self.config.get_plugin_config(self.name)["staff_channel"]
         self.channel = self.get_channel(self.channel)
         self.staff_channel = self.get_channel(self.staff_channel)
         if not self.channel:
@@ -315,4 +317,3 @@ class DiscordPlugin(BasePlugin, discord.Client):
             self.logger.error("Caught an unhandled exception in Discord bot.  Will restart.")
             self.logger.exception(e)
             asyncio.ensure_future(self.start_bot())
-            
