@@ -257,9 +257,9 @@ class IRCPlugin(BasePlugin):
         if self.config.get_plugin_config(self.name)["announce_join_leave"]:
             nick = mask.split("!")[0]
             if event == "JOIN":
-                move = "has joined"
+                move = "joined"
             else:
-                move = "has left"
+                move = "left"
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("{} has {} the channel.".format(nick, move))
             if self.discord_active:

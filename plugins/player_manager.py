@@ -294,6 +294,8 @@ class PlayerManager(SimpleCommandPlugin):
             self.check_bans(connection)
         except (NameError, ValueError) as e:
             yield from connection.raw_write(self.build_rejection(str(e)))
+            self.logger.info("Player with IP {}'s connection was rejected. "
+                             "Reason: {}".format(connection.client_ip, str(e)))
             connection.die()
             return False
         player.ip = connection.client_ip
