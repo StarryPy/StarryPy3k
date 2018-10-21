@@ -161,6 +161,22 @@ once you have finised editing `config/config.json` and `config/permissions
 terminal session, or send it an `INT` signal.
 
 
+### Running under Docker
+StarryPy now includes a basic Docker configuration.  To run this image, 
+all you need to do is run:
+```
+  docker run -p 21025:21025 starrypy/starrypy:1.0.0
+```
+
+StarryPy exports a volume at /app/config which stores your configuration file and 
+the various databases.  You can create your own instance of this volume to persist
+your configuration and data even if you rebuild or upgrade StarryPy, or use volume 
+mount points to share a directory from your host server into the container.  
+For more information on those processes, [this page on boxboat](https://boxboat.com/2016/06/18/docker-data-containers-and-named-volumes/)
+may be useful. 
+
+Please note that this is a Linux-based docker container.
+
 ## Contributing
 Contributions are highly encouraged and always welcome. Please feel free to
 open an issue on GitHub if you are having an error, or wish to make a
