@@ -301,7 +301,7 @@ if __name__ == "__main__":
     logger = logging.getLogger('starrypy')
     logger.setLevel(loglevel)
     if DEBUG:
-        fh_d = logging.FileHandler("debug.log")
+        fh_d = logging.FileHandler("config/debug.log")
         fh_d.setLevel(loglevel)
         fh_d.setFormatter(formatter)
         aiologger.addHandler(fh_d)
