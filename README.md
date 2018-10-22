@@ -160,22 +160,45 @@ once you have finised editing `config/config.json` and `config/permissions
 .json`.  To terminate the proxy, either press `^C` in an interactive 
 terminal session, or send it an `INT` signal.
 
-
 ### Running under Docker
 StarryPy now includes a basic Docker configuration.  To run this image, 
 all you need to do is run:
-```
+
+```bash
   docker run -p 21025:21025 starrypy/starrypy:1.0.0
 ```
 
 StarryPy exports a volume at /app/config which stores your configuration file and 
-the various databases.  You can create your own instance of this volume to persist
+the various databases.  You can create your own data container for this volume to persist
 your configuration and data even if you rebuild or upgrade StarryPy, or use volume 
-mount points to share a directory from your host server into the container.  
-For more information on those processes, [this page on boxboat](https://boxboat.com/2016/06/18/docker-data-containers-and-named-volumes/)
-may be useful. 
+mount points to share a directory from your host server into the container.
 
-Please note that this is a Linux-based docker container.
+To use a storage volume, create a volume with:
+
+```bash
+docker volume create --name sb-data
+```
+
+Then provide it as part of your startup command:
+
+```bash
+docker run -p 20125:21025 -v sb-data:/app/config starrypy/starrypy:1.0.0
+```
+
+You can edit the config by mounting the volume into another container with your favorite text editor:
+```bash
+docker run --rm -v sb-data:/app/config -ti thinca/vim /app/config/config.json
+```
+
+If you'd rather map a directory on your host, just provide that as an argument to -v instead:
+
+```bash
+docker run -p 20125:21025 -v /opt/wherever/you/want/it:/app/config starrypy/starrypy:1.0.0
+```
+
+
+Please note that this is a Linux-based docker container, so it won't work properly on Docker
+for Windows in Windows Container mode.
 
 ## Contributing
 Contributions are highly encouraged and always welcome. Please feel free to

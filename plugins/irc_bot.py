@@ -109,6 +109,7 @@ class IRCPlugin(BasePlugin):
     name = "irc_bot"
     depends = ['command_dispatcher']
     default_config = {
+        "enabled": True,
         "server": "irc.freenode.net",
         "channel": "#starrypy",
         "username": "starrypy3k_bot",
@@ -122,6 +123,7 @@ class IRCPlugin(BasePlugin):
 
     def __init__(self):
         super().__init__()
+        self.enabled = True
         self.server = None
         self.channel = None
         self.username = None
@@ -142,6 +144,9 @@ class IRCPlugin(BasePlugin):
                                  'user', 'del_player', 'maintenance_mode',
                                  'shutdown', 'save')
     def activate(self):
+        self.enabled = self.config.get_plugin_config(self.name)["enabled"]
+        if not self.enabled:
+            return;
         super().activate()
         self.dispatcher = self.plugins.command_dispatcher
         self.prefix = self.config.get_plugin_config("command_dispatcher")[

@@ -5,6 +5,7 @@ RUN pip install discord irc3
 RUN mkdir /app
 COPY . /app/
 WORKDIR /app
+COPY config/permissions.json.default config/permissions.json
 
 VOLUME /app/config
 
