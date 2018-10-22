@@ -90,7 +90,9 @@ class DiscordPlugin(BasePlugin, discord.Client):
         discord.Client.__init__(self)
         self.enabled = True
         self.token = None
+        self.channel_id = None
         self.channel = None
+        self.staff_channel_id = None
         self.staff_channel = None
         self.token = None
         self.client_id = None
@@ -127,8 +129,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
         self.client_id = self.config.get_plugin_config(self.name)["client_id"]
-        self.channel = self.config.get_plugin_config(self.name)["channel"]
-        self.staff_channel = self.config.get_plugin_config(self.name)[
+        self.channel_id = self.config.get_plugin_config(self.name)["channel"]
+        self.staff_channel_id = self.config.get_plugin_config(self.name)[
             "staff_channel"]
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
         asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
@@ -218,10 +220,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
 
     @asyncio.coroutine
     def on_ready(self):
-        self.channel = self.config.get_plugin_config(self.name)["channel"]
-        self.staff_channel = self.config.get_plugin_config(self.name)["staff_channel"]
-        self.channel = self.get_channel(self.channel)
-        self.staff_channel = self.get_channel(self.staff_channel)
+        self.channel = self.get_channel(self.channel_id)
+        self.staff_channel = self.get_channel(self.staff_channel_id)
         if not self.channel:
             self.logger.error("Couldn't get channel! Messages can't be "
                               "sent! Ensure the channel ID is correct.")
