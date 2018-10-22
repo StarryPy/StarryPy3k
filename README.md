@@ -181,11 +181,16 @@ docker volume create --name sb-data
 
 Then provide it as part of your startup command:
 
-``` bash
+```bash
 docker run -p 20125:21025 -v sb-data:/app/config starrypy/starrypy:1.0.0
 ```
 
-To map a directory on your host, just provide that as an argument to -v instead:
+You can edit the config by mounting the volume into another container with your favorite text editor:
+```bash
+docker run --rm -v sb-data:/app/config -ti thinca/vim /app/config/config.json
+```
+
+If you'd rather map a directory on your host, just provide that as an argument to -v instead:
 
 ```bash
 docker run -p 20125:21025 -v /opt/wherever/you/want/it:/app/config starrypy/starrypy:1.0.0
