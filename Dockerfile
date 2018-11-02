@@ -10,4 +10,4 @@ COPY config/permissions.json.default config/permissions.json
 
 VOLUME /app/config
 
-CMD [ "docker-start.sh" ]
+CMD [ "./docker-start.sh" ]
