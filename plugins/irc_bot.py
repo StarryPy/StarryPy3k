@@ -198,6 +198,8 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return;
         asyncio.ensure_future(self.announce_join(connection))
         return True
 
@@ -209,6 +211,8 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return;
         asyncio.ensure_future(self.announce_leave(connection.player))
         return True
 
@@ -224,6 +228,8 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return;
         if not data["parsed"]["message"].startswith(self.prefix):
             msg = data["parsed"]["message"]
             if self.sc:

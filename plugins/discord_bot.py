@@ -156,6 +156,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return;
         asyncio.ensure_future(self.make_announce(connection, "joined"))
         return True
 
@@ -167,6 +169,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return;
         asyncio.ensure_future(self.make_announce(connection, "left"))
         return True
 
@@ -182,6 +186,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return;
         if not data["parsed"]["message"].startswith(self.prefix):
             msg = data["parsed"]["message"]
             if self.sc:
