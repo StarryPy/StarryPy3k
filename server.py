@@ -68,14 +68,7 @@ class StarryPyServer:
         finally:
             self.die()
 
-    @asyncio.coroutine"motd": {
-            "message": "^black;;;^orange;Welcome To Grayles Gaming Servers! - Join us on Discord at ^black;;;^orange;^blue;discord.gg/rUVQsSb ^white;If you want to help keep the ^white;server ^black;;;^white;running, become a donor ^white;at ^blue;patreon.com/GraylesGaming ^black; ^gray;Use ^black;;;^white;/help ^gray;for a list ^gray;of commands"
-        },
-        "new_player_greeters": {
-            "gifts": {},
-            "greeting": "^black;;;^orange;Welcome To Grayles Gaming Servers, new player!"
-        },
-
+    @asyncio.coroutine
     def client_loop(self):
         """
         Main client loop. Sniff packets originating from the server and bound
