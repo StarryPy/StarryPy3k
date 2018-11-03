@@ -68,7 +68,14 @@ class StarryPyServer:
         finally:
             self.die()
 
-    @asyncio.coroutine
+    @asyncio.coroutine"motd": {
+            "message": "^black;;;^orange;Welcome To Grayles Gaming Servers! - Join us on Discord at ^black;;;^orange;^blue;discord.gg/rUVQsSb ^white;If you want to help keep the ^white;server ^black;;;^white;running, become a donor ^white;at ^blue;patreon.com/GraylesGaming ^black; ^gray;Use ^black;;;^white;/help ^gray;for a list ^gray;of commands"
+        },
+        "new_player_greeters": {
+            "gifts": {},
+            "greeting": "^black;;;^orange;Welcome To Grayles Gaming Servers, new player!"
+        },
+
     def client_loop(self):
         """
         Main client loop. Sniff packets originating from the server and bound
@@ -313,6 +320,7 @@ if __name__ == "__main__":
     logger.addHandler(ch)
 
     signal.signal(signal.SIGINT, signal.default_int_handler)
+    signal.signal(signal.SIGTERM, signal.default_int_handler)
 
     loop = asyncio.get_event_loop()
     loop.set_debug(False)  # Removed in commit to avoid errors.
