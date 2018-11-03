@@ -2,11 +2,12 @@ FROM python:3.5-stretch
 
 RUN pip install discord irc3
 
-RUN mkdir /app
+RUN mkdir /app /app/defaults
 COPY . /app/
+COPY config/*.default /app/defaults/
 WORKDIR /app
 COPY config/permissions.json.default config/permissions.json
 
 VOLUME /app/config
 
-CMD [ "python3","./server.py" ]
+CMD [ "./docker-start.sh" ]

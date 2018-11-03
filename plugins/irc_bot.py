@@ -198,6 +198,8 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return True;
         asyncio.ensure_future(self.announce_join(connection))
         return True
 
@@ -209,6 +211,8 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return True;
         asyncio.ensure_future(self.announce_leave(connection.player))
         return True
 
@@ -224,6 +228,8 @@ class IRCPlugin(BasePlugin):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return True;
         if not data["parsed"]["message"].startswith(self.prefix):
             msg = data["parsed"]["message"]
             if self.sc:
@@ -312,7 +318,8 @@ class IRCPlugin(BasePlugin):
                     self.logger.info(" -*- " + nick + " " + message)
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
-                        "-*- {} {}".format(nick, message)))
+                        "-*- {} {}".format(nick,name_check
+name_check message)))
                 yield from self.factory.broadcast(
                     "< ^orange;IRC^reset; > ^green;-*- {} {}".format(nick,
                                                                      message),
@@ -360,7 +367,8 @@ class IRCPlugin(BasePlugin):
         :param msg: Message to be posted.
         :param target: Channel where message should be posted.
         :return: Null.
-        """
+        """name_check
+name_check
         if target is None:
             target = self.channel
         self.bot.privmsg(target, msg)
