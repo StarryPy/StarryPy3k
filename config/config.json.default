@@ -27,7 +27,7 @@
             "command_prefix": "/"
         },
         "discord_bot": {
-            "enabled", false,
+            "enabled": false,
             "channel": "-- channel id --",
             "staff_channel": "-- channel id --",
             "client_id": "-- client_id --",
@@ -44,7 +44,7 @@
         },
         "help_plugin": {},
         "irc_bot": {
-            "enabled", false,
+            "enabled": false,
             "announce_join_leave": true,
             "channel": "#YourChannel",
             "command_prefix": "!",
