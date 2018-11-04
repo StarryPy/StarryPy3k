@@ -146,7 +146,7 @@ class IRCPlugin(BasePlugin):
     def activate(self):
         self.enabled = self.config.get_plugin_config(self.name)["enabled"]
         if not self.enabled:
-            return;
+            return
         super().activate()
         self.dispatcher = self.plugins.command_dispatcher
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
@@ -199,7 +199,7 @@ class IRCPlugin(BasePlugin):
         :return: Boolean: True. Must be true, so packet moves on.
         """
         if not self.enabled:
-            return True;
+            return True
         asyncio.ensure_future(self.announce_join(connection))
         return True
 
@@ -212,7 +212,7 @@ class IRCPlugin(BasePlugin):
         :return: Boolean: True. Must be true, so packet moves on.
         """
         if not self.enabled:
-            return True;
+            return True
         asyncio.ensure_future(self.announce_leave(connection.player))
         return True
 
@@ -229,7 +229,7 @@ class IRCPlugin(BasePlugin):
         :return: Boolean: True. Must be true, so packet moves on.
         """
         if not self.enabled:
-            return True;
+            return True
         if not data["parsed"]["message"].startswith(self.prefix):
             msg = data["parsed"]["message"]
             if self.sc:
