@@ -318,8 +318,7 @@ class IRCPlugin(BasePlugin):
                     self.logger.info(" -*- " + nick + " " + message)
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
-                        "-*- {} {}".format(nick,name_check
-name_check message)))
+                        "-*- {} {}".format(nick, message)))
                 yield from self.factory.broadcast(
                     "< ^orange;IRC^reset; > ^green;-*- {} {}".format(nick,
                                                                      message),
@@ -367,8 +366,7 @@ name_check message)))
         :param msg: Message to be posted.
         :param target: Channel where message should be posted.
         :return: Null.
-        """name_check
-name_check
+        """
         if target is None:
             target = self.channel
         self.bot.privmsg(target, msg)
