@@ -72,6 +72,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
     name = "discord_bot"
     depends = ['command_dispatcher']
     default_config = {
+        "enabled": True,
         "token": "-- token --",
         "client_id": "-- client_id --",
         "channel": "-- channel id --",
@@ -87,6 +88,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
     def __init__(self):
         BasePlugin.__init__(self)
         discord.Client.__init__(self)
+        self.enabled = True
         self.token = None
         self.channel = None
         self.staff_channel = None
@@ -111,6 +113,9 @@ class DiscordPlugin(BasePlugin, discord.Client):
                                  'shutdown', 'save')
 
     def activate(self):
+        self.enabled = self.config.get_plugin_config(self.name)["enabled"]
+        if not self.enabled:
+            return;
         BasePlugin.activate(self)
         self.dispatcher = self.plugins.command_dispatcher
         self.irc_bot_exists = link_plugin_if_available(self, 'irc_bot')
@@ -151,6 +156,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return True;
         asyncio.ensure_future(self.make_announce(connection, "joined"))
         return True
 
@@ -162,6 +169,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return True;
         asyncio.ensure_future(self.make_announce(connection, "left"))
         return True
 
@@ -177,6 +186,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return True;
         if not data["parsed"]["message"].startswith(self.prefix):
             msg = data["parsed"]["message"]
             if self.sc:

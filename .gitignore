@@ -34,12 +34,15 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+.vscode
 
 # Project specific
 /config/player.dat
 /config/player.bak
 /config/player.dir
+/config/player
 /config/config.json
+/config/permissions.json
 *config.json
 *.db
 *.db-journal
