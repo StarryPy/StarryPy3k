@@ -72,6 +72,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
     name = "discord_bot"
     depends = ['command_dispatcher']
     default_config = {
+        "enabled": True,
         "token": "-- token --",
         "client_id": "-- client_id --",
         "channel": "-- channel id --",
@@ -87,8 +88,11 @@ class DiscordPlugin(BasePlugin, discord.Client):
     def __init__(self):
         BasePlugin.__init__(self)
         discord.Client.__init__(self)
+        self.enabled = True
         self.token = None
+        self.channel_id = None
         self.channel = None
+        self.staff_channel_id = None
         self.staff_channel = None
         self.token = None
         self.client_id = None
@@ -111,6 +115,9 @@ class DiscordPlugin(BasePlugin, discord.Client):
                                  'shutdown', 'save')
 
     def activate(self):
+        self.enabled = self.config.get_plugin_config(self.name)["enabled"]
+        if not self.enabled:
+            return;
         BasePlugin.activate(self)
         self.dispatcher = self.plugins.command_dispatcher
         self.irc_bot_exists = link_plugin_if_available(self, 'irc_bot')
@@ -122,11 +129,11 @@ class DiscordPlugin(BasePlugin, discord.Client):
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
         self.client_id = self.config.get_plugin_config(self.name)["client_id"]
-        self.channel = self.config.get_plugin_config(self.name)["channel"]
-        self.staff_channel = self.config.get_plugin_config(self.name)[
+        self.channel_id = self.config.get_plugin_config(self.name)["channel"]
+        self.staff_channel_id = self.config.get_plugin_config(self.name)[
             "staff_channel"]
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
-        asyncio.ensure_future(self.start_bot())
+        asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
         self.update_id(self.client_id)
         self.mock_connection = MockConnection(self)
         self.rank_roles = self.config.get_plugin_config(self.name)[
@@ -151,7 +158,9 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.ensure_future(self.make_announce(connection, "joined"))
+        if not self.enabled:
+            return True;
+        asyncio.ensure_future(self.make_announce(connection, "joined")).add_done_callback(self.error_handler)
         return True
 
     def on_client_disconnect_request(self, data, connection):
@@ -162,7 +171,9 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
-        asyncio.ensure_future(self.make_announce(connection, "left"))
+        if not self.enabled:
+            return True;
+        asyncio.ensure_future(self.make_announce(connection, "left")).add_done_callback(self.error_handler)
         return True
 
     def on_chat_sent(self, data, connection):
@@ -177,6 +188,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :param connection:
         :return: Boolean: True. Must be true, so packet moves on.
         """
+        if not self.enabled:
+            return True;
         if not data["parsed"]["message"].startswith(self.prefix):
             msg = data["parsed"]["message"]
             if self.sc:
@@ -207,13 +220,14 @@ class DiscordPlugin(BasePlugin, discord.Client):
         except Exception as e:
             self.logger.exception(e)
 
+
     def update_id(self, client_id):
         self.client_id = client_id
 
     @asyncio.coroutine
     def on_ready(self):
-        self.channel = self.get_channel(self.channel)
-        self.staff_channel = self.get_channel(self.staff_channel)
+        self.channel = self.get_channel(self.channel_id)
+        self.staff_channel = self.get_channel(self.staff_channel_id)
         if not self.channel:
             self.logger.error("Couldn't get channel! Messages can't be "
                               "sent! Ensure the channel ID is correct.")
@@ -305,4 +319,12 @@ class DiscordPlugin(BasePlugin, discord.Client):
             target = self.channel
         if target is None:
             return
-        asyncio.ensure_future(self.send_message(target, msg))
+        asyncio.ensure_future(self.send_message(target, msg)).add_done_callback(self.error_handler)
+
+    def error_handler(self, future):
+        try:
+            future.result()
+        except Exception as e:
+            self.logger.error("Caught an unhandled exception in Discord bot.  Will restart.")
+            self.logger.exception(e)
+            asyncio.ensure_future(self.start_bot())
