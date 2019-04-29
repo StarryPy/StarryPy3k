@@ -55,7 +55,7 @@ class StarryPyServer:
                 # if packet['type'] not in [17, 40, 41, 43, 48, 51]:
                 #    logger.debug('c->s  {}'.format(packet['type']))
 
-                if (yield from self.check_plugins(packet)):
+                if (yield from self.check_plugins(packet, Direction.TO_SERVER)):
                     yield from self.write_client(packet)
         except asyncio.IncompleteReadError:
             # Pass on these errors. These occur when a player disconnects badly
@@ -84,7 +84,7 @@ class StarryPyServer:
                 # if packet['type'] not in [7, 17, 23, 27, 31, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
 
-                send_flag = yield from self.check_plugins(packet)
+                send_flag = yield from self.check_plugins(packet, Direction.TO_CLIENT)
                 if send_flag:
                     yield from self.write(packet)
         except asyncio.IncompleteReadError:
@@ -177,11 +177,11 @@ class StarryPyServer:
             self._alive = False
 
     @asyncio.coroutine
-    def check_plugins(self, packet):
+    def check_plugins(self, packet, direction):
         return (yield from self.factory.plugin_manager.do(
             self,
             packets[packet['type']],
-            packet))
+            packet, direction))
 
     def __del__(self):
         try:

@@ -88,7 +88,7 @@ class PacketParser:
         self._reaper = self.loop.create_task(self._reap())
 
     @asyncio.coroutine
-    def parse(self, packet):
+    def parse(self, packet, direction):
         """
         Given a packet preped packet from the stream, parse it down to its
         parts. First check if the packet is one we've seen before; if it is,
@@ -108,7 +108,7 @@ class PacketParser:
                 else:
                     packet = yield from self._parse_and_cache_packet(packet)
             else:
-                packet = yield from self._parse_packet(packet)
+                packet = yield from self._parse_packet(packet, direction)
         except Exception as e:
             print("Error during parsing.")
             print(traceback.print_exc())
@@ -144,7 +144,7 @@ class PacketParser:
         return packet
 
     @asyncio.coroutine
-    def _parse_packet(self, packet):
+    def _parse_packet(self, packet, direction):
         """
         Parse the packet by giving it to the appropriate parser.
 
@@ -152,6 +152,7 @@ class PacketParser:
         :return: Fully parsed packet.
         """
         res = parse_map[packet["type"]]
+
         if res is None:
             packet["parsed"] = {}
         else:
@@ -159,7 +160,7 @@ class PacketParser:
             #    self.loop.executor, res.parse, packet["data"])
             # Removed due to issues with testers. Need to evaluate what's going
             # on.
-            packet["parsed"] = res.parse(packet["data"])
+            packet["parsed"] = res.parse(packet["data"], direction)
         return packet
 
     # def __del__(self):
