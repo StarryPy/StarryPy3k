@@ -214,6 +214,8 @@ class DiscordPlugin(BasePlugin):
             msg = data["parsed"]["message"]
             if self.sc:
                 msg = self.color_strip.sub("", msg)
+            if msg == "!killdiscord": #FOR TESTING: REMOVE ME
+                asyncio.ensure_future(self.discord_client.logout())
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
                 if self.chat_manager:
                     if not self.chat_manager.mute_check(connection.player):
