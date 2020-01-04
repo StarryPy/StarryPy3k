@@ -67,8 +67,31 @@ class MockConnection:
                                             target=self.owner.command_target)
         return None
 
+class DiscordClient(discord.Client):
 
-class DiscordPlugin(BasePlugin, discord.Client):
+    def __init__(self, plugin):
+        discord.Client.__init__(self)
+        self.starry_plugin = plugin
+        self.channel = None
+        self.staff_channel = None
+
+    @asyncio.coroutine
+    def on_ready(self):
+        self.channel = self.get_channel(self.starry_plugin.channel_id)
+        self.staff_channel = self.get_channel(self.starry_plugin.staff_channel_id)
+        if not self.channel:
+            self.starry_plugin.logger.error("Couldn't get channel! Messages can't be "
+                              "sent! Ensure the channel ID is correct.")
+        if not self.staff_channel:
+            self.starry_plugin.logger.warning("Couldn't get staff channel! Reports "
+                                "will be sent to the main channel.")
+
+    @asyncio.coroutine
+    def on_message(self, message):
+        yield from self.starry_plugin.send_to_game(message)
+
+
+class DiscordPlugin(BasePlugin):
     name = "discord_bot"
     depends = ['command_dispatcher']
     default_config = {
@@ -87,13 +110,10 @@ class DiscordPlugin(BasePlugin, discord.Client):
 
     def __init__(self):
         BasePlugin.__init__(self)
-        discord.Client.__init__(self)
         self.enabled = True
         self.token = None
         self.channel_id = None
-        self.channel = None
         self.staff_channel_id = None
-        self.staff_channel = None
         self.token = None
         self.client_id = None
         self.mock_connection = None
@@ -108,6 +128,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         self.chat_manager = None
         self.rank_roles = None
         self.discord_logger = None
+        self.discord_client = None
         self.allowed_commands = ('who', 'help', 'uptime', 'motd', 'show_spawn',
                                  'ban', 'unban', 'kick', 'list_bans', 'mute',
                                  'unmute', 'set_motd', 'whois', 'broadcast',
@@ -134,7 +155,6 @@ class DiscordPlugin(BasePlugin, discord.Client):
             "staff_channel"]
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
         asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
-        self.update_id(self.client_id)
         self.mock_connection = MockConnection(self)
         self.rank_roles = self.config.get_plugin_config(self.name)[
             "rank_roles"]
@@ -194,7 +214,6 @@ class DiscordPlugin(BasePlugin, discord.Client):
             msg = data["parsed"]["message"]
             if self.sc:
                 msg = self.color_strip.sub("", msg)
-
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
                 if self.chat_manager:
                     if not self.chat_manager.mute_check(connection.player):
@@ -215,29 +234,13 @@ class DiscordPlugin(BasePlugin, discord.Client):
         """
         self.logger.info("Starting Discord Bot")
         try:
-            yield from self.login(self.token, loop=self.loop)
-            yield from self.connect()
+            if(self.discord_client != None):
+                asyncio.ensure_future(self.discord_client.close())
+            self.discord_client = DiscordClient(self);
+            yield from self.discord_client.login(self.token)
+            yield from self.discord_client.connect()
         except Exception as e:
             self.logger.exception(e)
-
-
-    def update_id(self, client_id):
-        self.client_id = client_id
-
-    @asyncio.coroutine
-    def on_ready(self):
-        self.channel = self.get_channel(self.channel_id)
-        self.staff_channel = self.get_channel(self.staff_channel_id)
-        if not self.channel:
-            self.logger.error("Couldn't get channel! Messages can't be "
-                              "sent! Ensure the channel ID is correct.")
-        if not self.staff_channel:
-            self.logger.warning("Couldn't get staff channel! Reports "
-                                "will be sent to the main channel.")
-
-    @asyncio.coroutine
-    def on_message(self, message):
-        yield from self.send_to_game(message)
 
     @asyncio.coroutine
     def send_to_game(self, message):
@@ -256,7 +259,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
                 self.command_target = message.channel
                 asyncio.ensure_future(self.handle_command(message.content[1:],
                                                           message.author))
-            elif message.channel == self.channel:
+            elif message.channel == self.discord_client.channel:
                 for emote in server.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,
                                                           emote.id),
@@ -266,7 +269,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
                                                   mode=ChatReceiveMode.BROADCAST)
                 if self.config.get_plugin_config(self.name)["log_discord"]:
                     self.logger.info("<{}> {}".format(nick, text))
-                if self.irc_bot_exists:
+                if self.irc_bot_exists and self.irc.enabled:
                     asyncio.ensure_future(self.irc.bot_write(
                                           "[DC] <{}> {}".format(nick, text)))
 
@@ -280,8 +283,9 @@ class DiscordPlugin(BasePlugin, discord.Client):
         :return: Null.
         """
         yield from asyncio.sleep(1)
-        yield from self.bot_write("**{}** has {} the server.".format(
-            connection.player.alias, circumstance))
+        if hasattr(connection, "player"):
+            yield from self.bot_write("**{}** has {} the server.".format(
+                connection.player.alias, circumstance))
 
     @asyncio.coroutine
     def handle_command(self, data, user):
@@ -315,11 +319,13 @@ class DiscordPlugin(BasePlugin, discord.Client):
 
     @asyncio.coroutine
     def bot_write(self, msg, target=None):
+        if self.discord_client == None or self.discord_client.is_closed:
+            self.start_bot()
         if target is None:
-            target = self.channel
+            target = self.discord_client.channel
         if target is None:
             return
-        asyncio.ensure_future(self.send_message(target, msg)).add_done_callback(self.error_handler)
+        asyncio.ensure_future(self.discord_client.send_message(target, msg)).add_done_callback(self.error_handler)
 
     def error_handler(self, future):
         try:
