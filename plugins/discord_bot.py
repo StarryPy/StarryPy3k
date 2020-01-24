@@ -150,9 +150,9 @@ class DiscordPlugin(BasePlugin):
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
         self.client_id = self.config.get_plugin_config(self.name)["client_id"]
-        self.channel_id = self.config.get_plugin_config(self.name)["channel"]
-        self.staff_channel_id = self.config.get_plugin_config(self.name)[
-            "staff_channel"]
+        self.channel_id = int(self.config.get_plugin_config(self.name)["channel"])
+        self.staff_channel_id = int(self.config.get_plugin_config(self.name)[
+            "staff_channel"])
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
         asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
         self.mock_connection = MockConnection(self)
@@ -255,14 +255,14 @@ class DiscordPlugin(BasePlugin):
         """
         nick = message.author.display_name
         text = message.clean_content
-        server = message.server
+        guild = message.guild
         if message.author.id != self.client_id:
-            if message.content[0] == self.command_prefix:
+            if message.content[0] == self.command_prefix and (message.channel == self.discord_client.channel or message.channel == self.discord_client.staff_channel):
                 self.command_target = message.channel
                 asyncio.ensure_future(self.handle_command(message.content[1:],
                                                           message.author))
             elif message.channel == self.discord_client.channel:
-                for emote in server.emojis:
+                for emote in guild.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,
                                                           emote.id),
                                         ":{}:".format(emote.name))
@@ -327,7 +327,7 @@ class DiscordPlugin(BasePlugin):
             target = self.discord_client.channel
         if target is None:
             return
-        asyncio.ensure_future(self.discord_client.send_message(target, msg)).add_done_callback(self.error_handler)
+        asyncio.ensure_future(target.send(msg)).add_done_callback(self.error_handler)
 
     def error_handler(self, future):
         try:
