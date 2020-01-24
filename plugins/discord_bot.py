@@ -149,7 +149,7 @@ class DiscordPlugin(BasePlugin):
         self.command_prefix = self.config.get_plugin_config(self.name)[
             "command_prefix"]
         self.token = self.config.get_plugin_config(self.name)["token"]
-        self.client_id = self.config.get_plugin_config(self.name)["client_id"]
+        self.client_id = int(elf.config.get_plugin_config(self.name)["client_id"])
         self.channel_id = int(self.config.get_plugin_config(self.name)["channel"])
         self.staff_channel_id = int(self.config.get_plugin_config(self.name)[
             "staff_channel"])
