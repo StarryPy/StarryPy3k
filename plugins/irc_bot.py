@@ -367,9 +367,10 @@ class IRCPlugin(BasePlugin):
         :param target: Channel where message should be posted.
         :return: Null.
         """
-        if target is None:
-            target = self.channel
-        self.bot.privmsg(target, msg)
+        if self.config.get_plugin_config(self.name)["enabled"] is True:
+            if target is None:
+                target = self.channel
+            self.bot.privmsg(target, msg)
 
     @asyncio.coroutine
     def handle_command(self, target, data, mask):
