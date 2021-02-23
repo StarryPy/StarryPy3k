@@ -67,7 +67,6 @@ class MockConnection:
                                             target=self.owner.command_target)
         return None
 
-
 class DiscordPlugin(BasePlugin, discord.Client):
     name = "discord_bot"
     depends = ['command_dispatcher']
@@ -87,7 +86,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
 
     def __init__(self):
         BasePlugin.__init__(self)
-        discord.Client.__init__(self)
+        self.client = discord.Client.__init__(self)
         self.enabled = True
         self.token = None
         self.channel_id = None
@@ -215,7 +214,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
         """
         self.logger.info("Starting Discord Bot")
         try:
-            yield from self.login(self.token, loop=self.loop)
+            yield from self.login(self.token)
             yield from self.connect()
         except Exception as e:
             self.logger.exception(e)
@@ -226,8 +225,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
 
     @asyncio.coroutine
     def on_ready(self):
-        self.channel = self.get_channel(self.channel_id)
-        self.staff_channel = self.get_channel(self.staff_channel_id)
+        self.channel = self.get_channel(int(self.channel_id))
+        self.staff_channel = self.get_channel(int(self.staff_channel_id))
         if not self.channel:
             self.logger.error("Couldn't get channel! Messages can't be "
                               "sent! Ensure the channel ID is correct.")
@@ -250,8 +249,8 @@ class DiscordPlugin(BasePlugin, discord.Client):
         """
         nick = message.author.display_name
         text = message.clean_content
-        server = message.server
-        if message.author.id != self.client_id:
+        server = message.guild
+        if not message.author.bot:
             if message.content[0] == self.command_prefix:
                 self.command_target = message.channel
                 asyncio.ensure_future(self.handle_command(message.content[1:],
@@ -319,7 +318,7 @@ class DiscordPlugin(BasePlugin, discord.Client):
             target = self.channel
         if target is None:
             return
-        asyncio.ensure_future(self.send_message(target, msg)).add_done_callback(self.error_handler)
+        asyncio.ensure_future(target.send(msg)).add_done_callback(self.error_handler)
 
     def error_handler(self, future):
         try:
