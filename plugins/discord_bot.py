@@ -250,24 +250,26 @@ class DiscordPlugin(BasePlugin, discord.Client):
         nick = message.author.display_name
         text = message.clean_content
         server = message.guild
-        if not message.author.bot:
-            if message.content[0] == self.command_prefix:
-                self.command_target = message.channel
-                asyncio.ensure_future(self.handle_command(message.content[1:],
-                                                          message.author))
-            elif message.channel == self.channel:
-                for emote in server.emojis:
-                    text = text.replace("<:{}:{}>".format(emote.name,
-                                                          emote.id),
-                                        ":{}:".format(emote.name))
-                yield from self.factory.broadcast("[^orange;DC^reset;] <{}>"
-                                                  " {}".format(nick, text),
-                                                  mode=ChatReceiveMode.BROADCAST)
-                if self.config.get_plugin_config(self.name)["log_discord"]:
-                    self.logger.info("<{}> {}".format(nick, text))
-                if self.irc_bot_exists:
-                    asyncio.ensure_future(self.irc.bot_write(
-                                          "[DC] <{}> {}".format(nick, text)))
+        channel = message.channel
+        if channel == self.channel or channel == self.staff_channel:
+            if not message.author.bot:
+                if message.content[0] == self.command_prefix:
+                   self.command_target = message.channel
+                   asyncio.ensure_future(self.handle_command(message.content[1:],
+                                                            message.author))
+                elif message.channel == self.channel:
+                    for emote in server.emojis:
+                        text = text.replace("<:{}:{}>".format(emote.name,
+                                                              emote.id),
+                                            ":{}:".format(emote.name))
+                    yield from self.factory.broadcast("[^orange;DC^reset;] <{}>"
+                                                      " {}".format(nick, text),
+                                                      mode=ChatReceiveMode.BROADCAST)
+                    if self.config.get_plugin_config(self.name)["log_discord"]:
+                        self.logger.info("<{}> {}".format(nick, text))
+                    if self.irc_bot_exists:
+                        asyncio.ensure_future(self.irc.bot_write(
+                                              "[DC] <{}> {}".format(nick, text)))
 
     @asyncio.coroutine
     def make_announce(self, connection, circumstance):
