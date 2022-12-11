@@ -1,6 +1,6 @@
 FROM python:3.5-stretch
 
-RUN pip install discord irc3
+RUN pip install discord.py==1.2.5 irc3
 
 RUN mkdir /app /app/defaults
 COPY . /app/
