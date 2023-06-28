@@ -259,7 +259,6 @@ class DiscordPlugin(BasePlugin):
         nick = message.author.display_name
         text = message.clean_content
         guild = message.guild
-        self.logger.info("Sending " + str(message) + " to game")
         if message.author.id != self.client_id:
             if message.content[0] == self.command_prefix and (message.channel == self.discord_client.channel or message.channel == self.discord_client.staff_channel):
                 self.command_target = message.channel
