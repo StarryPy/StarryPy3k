@@ -44,7 +44,7 @@ class BasicAuth(SimpleCommandPlugin):
             self.logger.warning("| Consult README for enablement info.     |")
             self.logger.warning("+-----------------------------------------+")
 
-    def on_client_connect(self, data, connection):
+    async def on_client_connect(self, data, connection):
         """
         Catch when a the client updates the server with its connection
         details.

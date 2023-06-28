@@ -64,7 +64,7 @@ class ChatEnhancements(StorageCommandPlugin):
         """
         return True
 
-    def on_chat_received(self, data, connection):
+    async def on_chat_received(self, data, connection):
         sender = ""
         if data["parsed"]["name"]:
             if data["parsed"]["name"] == "server":
@@ -105,7 +105,7 @@ class ChatEnhancements(StorageCommandPlugin):
                                 name=sender,
                                 channel=data["parsed"]["header"]["channel"])
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Catch when someone sends a message. Add a timestamp to the message (if
         that feature is turned on). Colorize the player's name based on their
@@ -168,7 +168,7 @@ class ChatEnhancements(StorageCommandPlugin):
     @Command("l",
              doc="Send message only to people on same world.",
              syntax="(message)")
-    def _local(self, data, connection):
+    async def _local(self, data, connection):
         """
         Local chat. Sends a message only to characters who are on the same
         planet.
@@ -197,7 +197,7 @@ class ChatEnhancements(StorageCommandPlugin):
     @Command("u",
              doc="Send message to the entire universe.",
              syntax="(message)")
-    def _universe(self, data, connection):
+    async def _universe(self, data, connection):
         """
         Universal chat. Sends a message that everyone can see.
 
@@ -227,7 +227,7 @@ class ChatEnhancements(StorageCommandPlugin):
 
     @Command("p",
              doc="Send message to only party members.")
-    def _party(self, data, connection):
+    async def _party(self, data, connection):
         """
         Party chat. Sends a message to only members of your party.
 
@@ -255,7 +255,7 @@ class ChatEnhancements(StorageCommandPlugin):
     @Command("whisper", "w",
              perm="chat_enhancements.whisper",
              doc="Send message privately to a person.")
-    def _whisper(self, data, connection):
+    async def _whisper(self, data, connection):
         """
         Whisper. Sends a message to only one person.
 
@@ -325,7 +325,7 @@ class ChatEnhancements(StorageCommandPlugin):
              perm="chat_enhancements.whisper",
              doc="Send message privately to the last person who privately "
                  "messaged you.")
-    def _reply(self, data, connection):
+    async def _reply(self, data, connection):
         """
         Reply. Sends a message to the last person who whispered you.
 
@@ -391,7 +391,7 @@ class ChatEnhancements(StorageCommandPlugin):
              perm="chat_enhancements.ignore",
              doc="Ignores a player, preventing you from seeing their "
                  "messages. Use /ignore again to toggle.")
-    def _ignore(self, data, connection):
+    async def _ignore(self, data, connection):
         user = connection.player.uuid
         try:
             name = data[0]
@@ -417,7 +417,7 @@ class ChatEnhancements(StorageCommandPlugin):
              perm="chat_enhancements.socialspy",
              doc="Allows staff to read local, party, and whisper "
                  "communications.")
-    def _socialspy(self, data, connection):
+    async def _socialspy(self, data, connection):
         if connection.player in self.social_spies:
             self.social_spies.remove(connection.player)
             await send_message(connection, "Social spy disabled.")

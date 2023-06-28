@@ -277,7 +277,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.state = State.HANDSHAKE_RESPONSE_RECEIVED
         return True
 
-    def on_client_connect(self, data, connection):
+    async def on_client_connect(self, data, connection):
         """
         Catch when a the client updates the server with its connection
         details. This is a key step to fingerprinting the client, and
@@ -347,7 +347,7 @@ class PlayerManager(SimpleCommandPlugin):
         self._set_offline(connection)
         return True
 
-    def on_world_start(self, data, connection):
+    async def on_world_start(self, data, connection):
         """
         Hook when a new world instance is started. Use the details passed to
         determine the location of the world, and update the player's
@@ -367,7 +367,7 @@ class PlayerManager(SimpleCommandPlugin):
             connection.player.location))
         return True
 
-    def on_player_warp_result(self, data, connection):
+    async def on_player_warp_result(self, data, connection):
         """
         Hook when a player warps to a world. This action is also used when
         a player first logs in. Use the details passed to determine the
@@ -463,7 +463,7 @@ class PlayerManager(SimpleCommandPlugin):
 
     # Helper functions - Used by hooks and commands
 
-    def _reap(self):
+    async def _reap(self):
         """
         Helper function to remove players that are not marked as logged in,
         but really aren't.
@@ -483,7 +483,7 @@ class PlayerManager(SimpleCommandPlugin):
                     target.location = None
                     self.players_online.remove(target.uuid)
 
-    def _save_shelf(self):
+    async def _save_shelf(self):
         """
         Saves the player DB on a timer to prevent data loss.
 
@@ -1063,7 +1063,7 @@ class PlayerManager(SimpleCommandPlugin):
     @Command("user",
              perm="player_manager.user",
              doc="Manages user permissions; see /user help for details.")
-    def _user(self, data, connection):
+    async def _user(self, data, connection):
         if not data:
             await send_message(connection, "No arguments provided. See "
                                                 "/user help for usage info.")

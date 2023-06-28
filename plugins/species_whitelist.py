@@ -37,7 +37,7 @@ class SpeciesWhitelist(BasePlugin):
         self.allowed_species = self.config.get_plugin_config(self.name)["allowed_species"]
 
 
-    def on_client_connect(self, data, connection):
+    async def on_client_connect(self, data, connection):
         if not self.enabled:
             return True
         species = data['parsed']['species']

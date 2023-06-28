@@ -70,7 +70,7 @@ class POI(StorageCommandPlugin):
              doc="Moves a player's ship to the specified Point of Interest, "
                  "or prints the POIs if no argument given.",
              syntax="[\"][POI name][\"]")
-    def _poi(self, data, connection):
+    async def _poi(self, data, connection):
         """
         Move a players ship to the specified POI, free of fuel charge,
         no matter where they are in the universe.

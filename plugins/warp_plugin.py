@@ -41,7 +41,7 @@ class WarpPlugin(SimpleCommandPlugin):
         full = build_packet(packets.packets['player_warp'], wp)
         await from_player.connection.client_raw_write(full)
 
-    def warp_player_to_ship(self, from_player, to_player):
+    async def warp_player_to_ship(self, from_player, to_player):
         """
         Warps a player to another player's ship.
         :param from_player: Player: The player being warped.
@@ -58,7 +58,7 @@ class WarpPlugin(SimpleCommandPlugin):
              perm="warp.tp_player",
              doc="Warps a player to another player.",
              syntax=("[from player=self]", "(to player)"))
-    def warp(self, data, connection):
+    async def warp(self, data, connection):
         if len(data) == 1:
             from_player = connection.player
             to_player = self.find_player(data[0], check_logged_in=True)
@@ -84,7 +84,7 @@ class WarpPlugin(SimpleCommandPlugin):
              perm="warp.tp_ship",
              doc="Warps a player to another player's ship.",
              syntax=("[from player=self]", "(to player"))
-    def ship_warp(self, data, connection):
+    async def ship_warp(self, data, connection):
         if len(data) == 1:
             from_player = connection.player
             to_player = self.find_player(data[0], check_logged_in=True)

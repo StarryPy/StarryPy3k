@@ -73,7 +73,7 @@ class Claims(StorageCommandPlugin):
         if not hasattr(connection, "player"):
             return
         try:
-            if connection.player.location.locationtype() is "ShipWorld":
+            if connection.player.location.locationtype() == "ShipWorld":
                 ship = connection.player.location
                 uuid = connection.player.uuid
                 if ship.uuid.decode("utf-8") == uuid:
@@ -128,7 +128,7 @@ class Claims(StorageCommandPlugin):
             loc[0] = "X: " + loc[0]
             loc[1] = "Y: " + loc[1]
             loc.remove(loc[2])
-            if loc[3] is "0":
+            if loc[3] == "0":
                 loc.remove(loc[3])
             else:
                 loc[3] = chr(int(loc[3]) + ord("a"))
@@ -170,7 +170,7 @@ class Claims(StorageCommandPlugin):
             send_message(connection, "This planet is not protected.")
         elif not self.is_owner(connection, location):
             send_message(connection, "You don't own this planet!")
-        elif location.locationtype() is "ShipWorld":
+        elif location.locationtype() == "ShipWorld":
             send_message(connection, "Can't unclaim your ship!")
         else:
             self.storage["owners"][uuid].remove(str(location))
@@ -184,7 +184,7 @@ class Claims(StorageCommandPlugin):
              priority=1,
              perm="claims.manage_claims",
              doc="Add someone to the protected list of your planet.")
-    def _add_builder(self, data, connection):
+    async def _add_builder(self, data, connection):
         location = connection.player.location
         alias = connection.player.alias
         uuid = connection.player.uuid
@@ -266,7 +266,7 @@ class Claims(StorageCommandPlugin):
     @Command("change_owner",
              perm="claims.manage_claims",
              doc="Transfer ownership of the planet to another person.")
-    def _change_owner(self, data, connection):
+    async def _change_owner(self, data, connection):
         uuid = connection.player.uuid
         location = connection.player.location
         target = self.plugins.player_manager.find_player(" ".join(data))
@@ -275,7 +275,7 @@ class Claims(StorageCommandPlugin):
         if target is not None:
             if not self.is_owner(connection, location):
                 send_message(connection, "You don't own this planet!")
-            elif location.locationtype() is "ShipWorld":
+            elif location.locationtype() == "ShipWorld":
                 send_message(connection, "Can't transfer ownership of your "
                                          "ship!")
             elif not target.perm_check("claims.claim"):
@@ -348,7 +348,7 @@ class Claims(StorageCommandPlugin):
              perm="claims.manage_claims",
              doc="Sets a custom greeting message for the planet, or clears "
                  "it if unspecified.")
-    def _set_greeting(self, data, connection):
+    async def _set_greeting(self, data, connection):
         location = str(connection.player.location)
         msg = " ".join(data)
         if self.planet_announcer:
@@ -374,7 +374,7 @@ class Claims(StorageCommandPlugin):
     @Command("planet_access",
              perm="claims.planet_access",
              doc="Allows or disallows players to beam down to the planet.")
-    def _planet_access(self, data, connection):
+    async def _planet_access(self, data, connection):
         location = str(connection.player.location)
         uuid = connection.player.uuid
         if not self.planet_protect.check_protection(location):
@@ -469,7 +469,7 @@ class Claims(StorageCommandPlugin):
              doc="Purge the claims of the target player, if something "
                  "breaks.",
              syntax="(target)")
-    def _purge_claims(self, data, connection):
+    async def _purge_claims(self, data, connection):
         target = self.plugins.player_manager.find_player(" ".join(data))
         if target.uuid in self.storage['owners']:
             self.storage['owners'][target.uuid] = []

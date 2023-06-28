@@ -53,7 +53,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
              perm="privileged_chatter.modchat",
              doc="Send a message that can only be seen by other moderators.",
              syntax="(message)")
-    def _moderatorchat(self, data, connection):
+    async def _moderatorchat(self, data, connection):
         """
         Command to send private messages between moderators.
 
@@ -84,7 +84,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
              perm="privileged_chatter.report",
              doc="Privately make a report to all online moderators.",
              syntax="(message)")
-    def _report(self, data, connection):
+    async def _report(self, data, connection):
         """
         Command to send reports to moderators.
 

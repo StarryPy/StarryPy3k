@@ -68,7 +68,7 @@ class Spawn(StorageCommandPlugin):
     @Command("spawn",
              perm="spawn.spawn",
              doc="Moves a player's ship to the spawn planet.")
-    def _spawn(self, data, connection):
+    async def _spawn(self, data, connection):
         """
         Move a players ship to the spawn planet, free of fuel charge,
         no matter where they are in the universe.

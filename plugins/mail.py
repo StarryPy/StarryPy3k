@@ -50,7 +50,7 @@ class MailPlugin(StorageCommandPlugin):
         asyncio.ensure_future(self._display_unread(connection))
         return True
 
-    def _display_unread(self, connection):
+    async def _display_unread(self, connection):
         await asyncio.sleep(3)
         if connection.player.uuid not in self.storage['mail']:
             self.storage['mail'][connection.player.uuid] = []
@@ -80,7 +80,7 @@ class MailPlugin(StorageCommandPlugin):
              perm="mail.sendmail",
              doc="Send mail to a player, to be read later.",
              syntax="(user) (message)")
-    def _sendmail(self, data, connection):
+    async def _sendmail(self, data, connection):
         if data:
             target = self.find_player(data[0])
             if not target:
@@ -111,7 +111,7 @@ class MailPlugin(StorageCommandPlugin):
              doc="Read mail recieved from players. Give a number for a "
                  "specific mail, or no number for all unread mails.",
              syntax="[index]")
-    def _readmail(self, data, connection):
+    async def _readmail(self, data, connection):
         if connection.player.uuid not in self.storage['mail']:
             self.storage['mail'][connection.player.uuid] = []
         mailbox = self.storage['mail'][connection.player.uuid]
@@ -149,7 +149,7 @@ class MailPlugin(StorageCommandPlugin):
              perm="mail.readmail",
              doc="List all mail, optionally in a specified category.",
              syntax="[category]")
-    def _listmail(self, data, connection):
+    async def _listmail(self, data, connection):
         if connection.player.uuid not in self.storage['mail']:
             self.storage['mail'][connection.player.uuid] = []
         mailbox = self.storage['mail'][connection.player.uuid]
@@ -201,7 +201,7 @@ class MailPlugin(StorageCommandPlugin):
              perm="mail.readmail",
              doc="Delete unwanted mail, by index or category.",
              syntax="(index or category)")
-    def _delmail(self, data, connection):
+    async def _delmail(self, data, connection):
         uid = connection.player.uuid
         if uid not in self.storage['mail']:
             self.storage['mail'][uid] = []

@@ -51,7 +51,7 @@ class PlanetAnnouncer(StorageCommandPlugin):
              perm="planet_announcer.set_greeting",
              doc="Sets the greeting message to be displayed when a player "
                  "enters this planet, or clears it if unspecified.")
-    def _set_greeting(self, data, connection):
+    async def _set_greeting(self, data, connection):
         location = str(connection.player.location)
         msg = " ".join(data)
         if not msg:

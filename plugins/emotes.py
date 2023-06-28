@@ -72,7 +72,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
     @Command("me",
              perm="emotes.emote",
              doc="Perform emote actions.")
-    def _emote(self, data, connection):
+    async def _emote(self, data, connection):
         """
         Command to provide in-game text emotes.
 
@@ -120,7 +120,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
     @Command("mel",
              perm="emotes.emote",
              doc="Perform emote actions in local chat.")
-    def _emote_local(self, data, connection):
+    async def _emote_local(self, data, connection):
         """
         Command to provide in-game text emotes for local chat.
 

@@ -72,7 +72,7 @@ class PlanetProtect(StorageCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_spawn_entity(self, data, connection):
+    async def on_spawn_entity(self, data, connection):
         """
         Catch when a player tries spawning an object in the world.
 
@@ -109,7 +109,7 @@ class PlanetProtect(StorageCommandPlugin):
         await connection.raw_write(item_packet)
         return False
 
-    def on_entity_interact_result(self, data, connection):
+    async def on_entity_interact_result(self, data, connection):
         """
         Catch when a player interacts with an object in the world.
 
@@ -145,7 +145,7 @@ class PlanetProtect(StorageCommandPlugin):
         await self._protection_warn(data, connection)
         return False
 
-    def on_tile_update(self, data, connection):
+    async def on_tile_update(self, data, connection):
         """
         Hook for tile update packet. Use to verify if changes to tiles are
         allowed for player.
@@ -297,7 +297,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.manage_protection",
              doc="Adds a player to the current location's build list.",
              syntax="[\"](player name)[\"]")
-    def _add_builder(self, data, connection):
+    async def _add_builder(self, data, connection):
         """
         Add a builder to the builder's list for a protected location.
 

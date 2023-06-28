@@ -30,7 +30,7 @@ class CommandDispatcher(BasePlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Catch a chat packet as it goes by. If the first character in its
         string is the command_prefix, it is a command. Grab it and start

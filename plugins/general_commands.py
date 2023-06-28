@@ -90,7 +90,7 @@ class GeneralCommands(SimpleCommandPlugin):
                     ban_status,
                     mute_line))
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         if self.maintenance and not connection.player.perm_check(
                 "general_commands.maintenance_bypass"):
             fail = data_parser.ConnectFailure.build(dict(
@@ -157,7 +157,7 @@ class GeneralCommands(SimpleCommandPlugin):
              doc="Gives an item to a player. "
                  "If player name is omitted, give item(s) to self.",
              syntax=("[player=self]", "(item name)", "[count=1]"))
-    def _give_item(self, data, connection):
+    async def _give_item(self, data, connection):
         """
         Give item(s) to a player.
 
@@ -292,7 +292,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("uptime",
              perm="general_commands.uptime",
              doc="Displays the time since the server started.")
-    def _uptime(self, data, connection):
+    async def _uptime(self, data, connection):
         """
         Displays the time since the server started.
         :param data: The packet containing the command.
@@ -306,7 +306,7 @@ class GeneralCommands(SimpleCommandPlugin):
              perm="general_commands.shutdown",
              doc="Shutdown the server after N seconds (default 5).",
              syntax="[time]")
-    def _shutdown(self, data, connection):
+    async def _shutdown(self, data, connection):
         """
         Shutdown the StarryPy server, disconnecting everyone.
 
