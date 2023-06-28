@@ -51,10 +51,10 @@ class BasePlugin(metaclass=BaseMeta):
         else:
             self.plugin_config = self.default_config
 
-    async def activate(self):
+    def activate(self):
         pass
 
-    async def deactivate(self):
+    def deactivate(self):
         pass
 
     async def on_protocol_request(self, data, connection):

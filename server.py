@@ -23,7 +23,7 @@ class StarryPyServer:
         self._client_writer = None
         self.factory = factory
         self._client_loop_future = None
-        self._server_loop_future = asyncio.ensure_future(self.server_loop())
+        self._server_loop_future = asyncio.create_task(self.server_loop())
         self.state = None
         self._alive = True
         self.config = config.config
@@ -45,7 +45,7 @@ class StarryPyServer:
         (self._client_reader, self._client_writer) = \
             await asyncio.open_connection(self.config['upstream_host'],
                                                self.config['upstream_port'])
-        self._client_loop_future = asyncio.ensure_future(self.client_loop())
+        self._client_loop_future = asyncio.create_task(self.client_loop())
         try:
             while True:
                 packet = await read_packet(self._reader,

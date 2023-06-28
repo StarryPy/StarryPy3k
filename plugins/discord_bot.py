@@ -129,6 +129,7 @@ class DiscordPlugin(BasePlugin):
         self.rank_roles = None
         self.discord_logger = None
         self.discord_client = None
+        self.discord_task = None
         self.allowed_commands = ('who', 'help', 'uptime', 'motd', 'show_spawn',
                                  'ban', 'unban', 'kick', 'list_bans', 'mute',
                                  'unmute', 'set_motd', 'whois', 'broadcast',
@@ -154,7 +155,10 @@ class DiscordPlugin(BasePlugin):
         self.staff_channel_id = int(self.config.get_plugin_config(self.name)[
             "staff_channel"])
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
-        asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
+        self.discord_task = asyncio.create_task(self.start_bot())
+        self.discord_task.add_done_callback(self.error_handler)
+
+
         self.mock_connection = MockConnection(self)
         self.rank_roles = self.config.get_plugin_config(self.name)[
             "rank_roles"]
@@ -317,7 +321,7 @@ class DiscordPlugin(BasePlugin):
 
     async def bot_write(self, msg, target=None):
         if self.discord_client == None or self.discord_client.is_closed:
-            self.start_bot()
+            await self.start_bot()
         if target is None:
             target = self.discord_client.channel
         if target is None:
@@ -330,4 +334,5 @@ class DiscordPlugin(BasePlugin):
         except Exception as e:
             self.logger.error("Caught an unhandled exception in Discord bot.  Will restart.")
             self.logger.exception(e)
-            asyncio.ensure_future(self.start_bot())
+            self.discord_task = asyncio.create_task(self.start_bot())
+            self.discord_task.add_done_callback(self.error_handler)
