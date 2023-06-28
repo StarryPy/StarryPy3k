@@ -1,5 +1,6 @@
 import asyncio
 import collections
+from collections import abc
 
 from utilities import DotDict, recursive_dictionary_update
 
@@ -42,7 +43,7 @@ class BasePlugin(metaclass=BaseMeta):
     def __init__(self):
         self.loop = asyncio.get_event_loop()
         self.plugin_config = self.config.get_plugin_config(self.name)
-        if isinstance(self.default_config, collections.Mapping):
+        if isinstance(self.default_config, abc.Mapping):
             temp = recursive_dictionary_update(self.default_config,
                                                self.plugin_config)
             self.plugin_config.update(temp)
