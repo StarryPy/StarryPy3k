@@ -70,7 +70,10 @@ class MockConnection:
 class DiscordClient(discord.Client):
 
     def __init__(self, plugin):
-        discord.Client.__init__(self)
+        intents = discord.Intents.default()  
+        intents.guild_messages = True
+        #intents.message_content = True # this is not supported on our version of discord.py
+        discord.Client.__init__(self, intents = intents)
         self.starry_plugin = plugin
         self.channel = None
         self.staff_channel = None
@@ -256,6 +259,7 @@ class DiscordPlugin(BasePlugin):
         nick = message.author.display_name
         text = message.clean_content
         guild = message.guild
+        self.logger.info("Sending " + str(message) + " to game")
         if message.author.id != self.client_id:
             if message.content[0] == self.command_prefix and (message.channel == self.discord_client.channel or message.channel == self.discord_client.staff_channel):
                 self.command_target = message.channel
