@@ -71,7 +71,7 @@ class DiscordClient(discord.Client):
     def __init__(self, plugin):
         intents = discord.Intents.default()  
         intents.guild_messages = True
-        #intents.message_content = True # this is not supported on our version of discord.py
+        intents.message_content = True
         discord.Client.__init__(self, intents = intents)
         self.starry_plugin = plugin
         self.channel = None
