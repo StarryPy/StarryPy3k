@@ -59,3 +59,7 @@ nosetests.xml
 
 #python virtualenv
 virtualenv
+.venv
+
+# dev container
+.devcontainer
