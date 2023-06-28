@@ -324,7 +324,7 @@ if __name__ == "__main__":
         _factory = server_factory.result()
         _factory.kill_all()
         _factory.plugin_manager.deactivate_all()
-        _factory.configuration_manager.save_config()
+        #_factory.configuration_manager.save_config() # this causes changes to the config while the server is running to be overwritten.  Very annoying and makes quick restart cycles impossible.
         aiologger.removeHandler(fh_d)
         aiologger.removeHandler(ch)
         loop.stop()
