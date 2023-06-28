@@ -39,7 +39,7 @@ class MailPlugin(StorageCommandPlugin):
         if 'mail' not in self.storage:
             self.storage['mail'] = {}
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         """
         Catch when a player successfully connects to the server, and send them
         a new mail message.

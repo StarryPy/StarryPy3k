@@ -53,7 +53,7 @@ class ChatEnhancements(StorageCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_connect_success(self, data, connection):
+    async def connect_success(self, data, connection):
         """
         Catch when a successful connection is established. Set the player's
         chat style to be the server default.

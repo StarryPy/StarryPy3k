@@ -239,7 +239,7 @@ class PlayerManager(SimpleCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_protocol_request(self, data, connection):
+    async def on_protocol_request(self, data, connection):
         """
         Catch when a client first pings the server for a connection. Set the
         'state' variable to keep track of this.
@@ -251,7 +251,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.state = State.VERSION_SENT
         return True
 
-    def on_handshake_challenge(self, data, connection):
+    async def on_handshake_challenge(self, data, connection):
         """
         Catch when a client tries to handshake with server. Update the 'state'
         variable to keep track of this. Note: This step only occurs when a
@@ -264,7 +264,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.state = State.HANDSHAKE_CHALLENGE_SENT
         return True
 
-    def on_handshake_response(self, data, connection):
+    async def on_handshake_response(self, data, connection):
         """
         Catch when the server responds to a client's handshake. Update the
         'state' variable to keep track of this. Note: This step only occurs
@@ -302,7 +302,7 @@ class PlayerManager(SimpleCommandPlugin):
         connection.player = player
         return True
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         """
         Catch when a successful connection is established. Update the 'state'
         variable to keep track of this. Since the client successfully
@@ -322,7 +322,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.players_online.append(connection.player.uuid)
         return True
 
-    def on_client_disconnect_request(self, data, connection):
+    async def on_client_disconnect_request(self, data, connection):
         """
         Catch when a client requests a disconnect from the server. At this
         point, we need to clean up the connection information we have for the
@@ -334,7 +334,7 @@ class PlayerManager(SimpleCommandPlugin):
         """
         return True
 
-    def on_server_disconnect(self, data, connection):
+    async def on_server_disconnect(self, data, connection):
         """
         Catch when the server disconnects a client. Similar to the client
         disconnect packet, use this as a cue to perform cleanup, if it wasn't
@@ -412,7 +412,7 @@ class PlayerManager(SimpleCommandPlugin):
                     pass
         return True
 
-    # def on_client_context_update(self, data, connection):
+    # async def on_client_context_update(self, data, connection):
     #     """
     #
     #     :param data:
@@ -448,7 +448,7 @@ class PlayerManager(SimpleCommandPlugin):
     #             continue
     #     return True
 
-    def on_step_update(self, data, connection):
+    async def on_step_update(self, data, connection):
         """
         Catch when the first heartbeat packet is sent to a player. This is the
         final confirmation in the connection process. Update the 'state'

@@ -39,7 +39,7 @@ class NewPlayerGreeter(SimpleCommandPlugin):
         self.greeting = self.config.get_plugin_config(self.name)["greeting"]
         self.gifts = self.config.get_plugin_config(self.name)["gifts"]
 
-    def on_world_start(self, data, connection):
+    async def on_world_start(self, data, connection):
         """
         Client on world hook. After a client connects, when their world
         first loads, check if they are new to the server (never been seen

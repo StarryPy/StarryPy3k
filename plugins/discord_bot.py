@@ -170,7 +170,7 @@ class DiscordPlugin(BasePlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         """
         Hook on bot successfully connecting to server.
 
@@ -183,7 +183,7 @@ class DiscordPlugin(BasePlugin):
         asyncio.ensure_future(self.make_announce(connection, "joined")).add_done_callback(self.error_handler)
         return True
 
-    def on_client_disconnect_request(self, data, connection):
+    async def on_client_disconnect_request(self, data, connection):
         """
         Hook on bot disconnecting from the server.
 
@@ -196,7 +196,7 @@ class DiscordPlugin(BasePlugin):
         asyncio.ensure_future(self.make_announce(connection, "left")).add_done_callback(self.error_handler)
         return True
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Hook on message being broadcast on server. Display it in Discord.
 

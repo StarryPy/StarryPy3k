@@ -189,7 +189,7 @@ class IRCPlugin(BasePlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         """
         Hook on bot successfully connecting to server.
 
@@ -202,7 +202,7 @@ class IRCPlugin(BasePlugin):
         asyncio.ensure_future(self.announce_join(connection))
         return True
 
-    def on_client_disconnect_request(self, data, connection):
+    async def on_client_disconnect_request(self, data, connection):
         """
         Hook on bot disconnecting from the server.
 
@@ -215,7 +215,7 @@ class IRCPlugin(BasePlugin):
         asyncio.ensure_future(self.announce_leave(connection.player))
         return True
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Hook on message being broadcast on server. Display it in IRC.
 

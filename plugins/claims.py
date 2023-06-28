@@ -50,7 +50,7 @@ class Claims(StorageCommandPlugin):
         else:
             return True
 
-    def on_world_start(self, data, connection):
+    async def on_world_start(self, data, connection):
         """
         Catch when a player beams onto a world.
 

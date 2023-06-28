@@ -18,7 +18,7 @@ class ChatLogger(BasePlugin):
     def activate(self):
         super().activate()
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Catch when someone sends any form of message or command and log it.
 

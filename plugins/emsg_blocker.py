@@ -33,16 +33,16 @@ class ChatLogger(BasePlugin):
             "invinciblePlayers"
         ]
 
-    def on_world_stop(self, data, connection):
+    async def on_world_stop(self, data, connection):
         self.in_transit_players.add(connection)
         return True
 
-    def on_world_start(self, data, connection):
+    async def on_world_start(self, data, connection):
         if connection in self.in_transit_players:
             self.in_transit_players.remove(connection)
         return True
 
-    def on_entity_message(self, data, connection):
+    async def on_entity_message(self, data, connection):
         """
         Catch when an entity message is sent and block it, depending on its
         contents.
@@ -64,14 +64,14 @@ class ChatLogger(BasePlugin):
                     return False
             return True
 
-    def on_entity_message_response(self, data, connection):
+    async def on_entity_message_response(self, data, connection):
         if connection in self.in_transit_players and data['direction'] == \
                 Direction.TO_CLIENT:
             return False
         else:
             return True
 
-    def on_update_world_properties(self, data, connection):
+    async def on_update_world_properties(self, data, connection):
         """
         Catch when world properties are modified and block it, depending on
         its contents.

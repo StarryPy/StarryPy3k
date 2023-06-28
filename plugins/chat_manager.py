@@ -30,7 +30,7 @@ class ChatManager(SimpleCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Catch when someone sends a message.
 

@@ -30,7 +30,7 @@ class MOTD(SimpleCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         """
         Client successfully connected hook. If a client connects, show them the
         Message of the day. We have to wrap the display of the MOTD in a future
