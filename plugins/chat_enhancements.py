@@ -82,18 +82,21 @@ class ChatEnhancements(StorageCommandPlugin):
             else:
                 sender = self.plugins['player_manager'].get_player_by_name(
                     data["parsed"]["name"])
-                if connection.player.uuid not in self.storage["ignores"]:
-                    self.storage["ignores"][connection.player.uuid] = []
-                if sender.uuid in self.storage["ignores"][
-                        connection.player.uuid]:
-                    return False
-                try:
-                    sender = self.decorate_line(sender.connection)
-                except AttributeError:
-                    self.logger.warning("Sender {} is sending a message that "
-                                        "the wrapper isn't handling correctly"
-                                        "".format(data["parsed"]["name"]))
+                if not sender:
                     sender = data["parsed"]["name"]
+                else:
+                    if connection.player.uuid not in self.storage["ignores"]:
+                        self.storage["ignores"][connection.player.uuid] = []
+                    if sender.uuid in self.storage["ignores"][
+                            connection.player.uuid]:
+                        return False
+                    try:
+                        sender = self.decorate_line(sender.connection)
+                    except AttributeError:
+                        self.logger.warning("Sender {} is sending a message that "
+                                            "the wrapper isn't handling correctly"
+                                            "".format(data["parsed"]["name"]))
+                        sender = data["parsed"]["name"]
 
         yield from send_message(connection,
                                 data["parsed"]["message"],
