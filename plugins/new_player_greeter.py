@@ -63,29 +63,27 @@ class NewPlayerGreeter(SimpleCommandPlugin):
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _new_player_greeter(self, connection):
+    async def _new_player_greeter(self, connection):
         """
         Helper routine for greeting new players.
 
         :param connection: The connection we're showing the message to.
         :return: Null.
         """
-        yield from asyncio.sleep(1.3)
-        yield from send_message(connection,
+        await asyncio.sleep(1.3)
+        await send_message(connection,
                                 "{}".format(self.greeting),
                                 mode=ChatReceiveMode.RADIO_MESSAGE)
         return
 
-    @asyncio.coroutine
-    def _new_player_gifter(self, connection):
+    async def _new_player_gifter(self, connection):
         """
         Helper routine for giving items to new players.
 
         :param connection: The connection we're showing the message to.
         :return: Null.
         """
-        yield from asyncio.sleep(2)
+        await asyncio.sleep(2)
         for item, count in self.gifts.items():
             count = int(count)
             if count > 10000 and item != "money":
@@ -96,8 +94,8 @@ class NewPlayerGreeter(SimpleCommandPlugin):
                                             description=""))
             item_packet = pparser.build_packet(packets.packets['give_item'],
                                                item_base)
-            yield from asyncio.sleep(.1)
-            yield from connection.raw_write(item_packet)
+            await asyncio.sleep(.1)
+            await connection.raw_write(item_packet)
             send_message(connection,
                          "You have been given {} {}".format(str(count), item),
                          mode=ChatReceiveMode.COMMAND_RESULT)

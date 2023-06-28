@@ -31,18 +31,17 @@ class PluginManager:
     def list_plugins(self):
         return self._plugins
 
-    @asyncio.coroutine
-    def do(self, connection, action: str, packet: dict):
+    async def do(self, connection, action: str, packet: dict):
         """
         Calls an action on all loaded plugins.
         """
         try:
             if ("on_%s" % action) in self._overrides:
-                packet = yield from self._packet_parser.parse(packet)
+                packet = await self._packet_parser.parse(packet)
                 send_flag = True
                 for plugin in self._plugins.values():
                     p = getattr(plugin, "on_%s" % action)
-                    if not (yield from p(packet, connection)):
+                    if not (await p(packet, connection)):
                         send_flag = False
                 return send_flag
             else:
@@ -138,14 +137,13 @@ class PluginManager:
                                   "{}".format(deps))
         self._resolved = True
 
-    @asyncio.coroutine
-    def get_overrides(self):
+    async def get_overrides(self):
         if self._override_cache is self._activated_plugins:
             return self._overrides
         else:
             overrides = set()
             for plugin in self._activated_plugins:
-                override = yield from detect_overrides(BasePlugin, plugin)
+                override = await detect_overrides(BasePlugin, plugin)
                 overrides.update({x for x in override})
             self._overrides = overrides
             self._override_cache = self._activated_plugins

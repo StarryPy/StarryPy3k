@@ -97,7 +97,7 @@ class GeneralCommands(SimpleCommandPlugin):
                 reason=self.rejection_message))
             pkt = pparser.build_packet(packets.packets['connect_failure'],
                                        fail)
-            yield from connection.raw_write(pkt)
+            await connection.raw_write(pkt)
             return False
         else:
             return True
@@ -201,7 +201,7 @@ class GeneralCommands(SimpleCommandPlugin):
                                                     description=""))
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
-        yield from target.raw_write(item_packet)
+        await target.raw_write(item_packet)
         send_message(connection,
                      "Gave {} (count: {}) to {}".format(
                          item,
@@ -300,7 +300,7 @@ class GeneralCommands(SimpleCommandPlugin):
         :return: Null.
         """
         current_time = datetime.datetime.now() - self.start_time
-        yield from send_message(connection, "Uptime: {}".format(current_time))
+        await send_message(connection, "Uptime: {}".format(current_time))
 
     @Command("shutdown",
              perm="general_commands.shutdown",
@@ -323,7 +323,7 @@ class GeneralCommands(SimpleCommandPlugin):
 
         broadcast(self, "^red;(ADMIN) The server is shutting down in {} "
                         "seconds.^reset;".format(shutdown_time))
-        yield from asyncio.sleep(shutdown_time)
+        await asyncio.sleep(shutdown_time)
         # this is a noisy shutdown (makes a bit of errors in the logs). Not
         # sure how to make it better...
         self.logger.warning("Shutting down server now.")

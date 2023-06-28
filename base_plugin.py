@@ -9,7 +9,7 @@ class BaseMeta(type):
         for key, value in clsdict.items():
             if callable(value) and (value.__name__.startswith("on_") or
                                     hasattr(value, "_command")):
-                clsdict[key] = asyncio.coroutine(value)
+                clsdict[key] = value
         c = type.__new__(mcs, name, bases, clsdict)
         return c
 

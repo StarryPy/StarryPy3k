@@ -58,12 +58,11 @@ class MockConnection:
         self.owner = owner
         self.player = MockPlayer()
 
-    @asyncio.coroutine
-    def send_message(self, *messages):
+    async def send_message(self, *messages):
         for message in messages:
             color_strip = re.compile("\^(.*?);")
             message = color_strip.sub("", message)
-            yield from self.owner.bot_write(message)
+            await self.owner.bot_write(message)
         return None
 
 
@@ -263,8 +262,7 @@ class IRCPlugin(BasePlugin):
             asyncio.ensure_future(self.send_message(data, nick))
         return None
 
-    @asyncio.coroutine
-    def announce_irc_join(self, mask, event, channel, data):
+    async def announce_irc_join(self, mask, event, channel, data):
         if self.config.get_plugin_config(self.name)["announce_join_leave"]:
             nick = mask.split("!")[0]
             if event == "JOIN":
@@ -279,7 +277,7 @@ class IRCPlugin(BasePlugin):
                                                              "channel."
                                                              .format(nick,
                                                                      move)))
-            yield from self.factory.broadcast("[^orange;IRC^reset;] {} has "
+            await self.factory.broadcast("[^orange;IRC^reset;] {} has "
                                               "{} the channel.".format(nick,
                                                                        move),
                                               mode=ChatReceiveMode.BROADCAST)
@@ -296,8 +294,7 @@ class IRCPlugin(BasePlugin):
         self.ops = set(
             [nick[1:] for nick in nicknames.split() if nick[0] == "@"])
 
-    @asyncio.coroutine
-    def send_message(self, data, nick):
+    async def send_message(self, data, nick):
         """
         Broadcast a message on the server.
 
@@ -319,7 +316,7 @@ class IRCPlugin(BasePlugin):
                 if self.discord_active:
                     asyncio.ensure_future(self.discord.bot_write(
                         "-*- {} {}".format(nick, message)))
-                yield from self.factory.broadcast(
+                await self.factory.broadcast(
                     "< ^orange;IRC^reset; > ^green;-*- {} {}".format(nick,
                                                                      message),
                     mode=ChatReceiveMode.BROADCAST)
@@ -329,37 +326,34 @@ class IRCPlugin(BasePlugin):
             if self.discord_active:
                 asyncio.ensure_future(self.discord.bot_write(
                     "[IRC] **<{}>** {}".format(nick, message)))
-            yield from self.factory.broadcast("[^orange;IRC^reset;] <{}> "
+            await self.factory.broadcast("[^orange;IRC^reset;] <{}> "
                                               "{}".format(nick, message),
                                               mode=ChatReceiveMode.BROADCAST)
 
-    @asyncio.coroutine
-    def announce_join(self, connection):
+    async def announce_join(self, connection):
         """
         Send a message to IRC when someone joins the server.
 
         :param connection: Connection of connecting player on server.
         :return: Null.
         """
-        yield from asyncio.sleep(1)
-        yield from self.bot_write(
+        await asyncio.sleep(1)
+        await self.bot_write(
             "{} has joined the server.".format(_color(_bold(
                 connection.player.alias), "10")))
 
-    @asyncio.coroutine
-    def announce_leave(self, player):
+    async def announce_leave(self, player):
         """
         Send a message to IRC when someone leaves the server.
 
         :param player: Player leaving server.
         :return: Null.
         """
-        yield from self.bot_write(
+        await self.bot_write(
             "{} has left the server.".format(_color(_bold(
                 player.alias), "10")))
 
-    @asyncio.coroutine
-    def bot_write(self, msg, target=None):
+    async def bot_write(self, msg, target=None):
         """
         Method for writing messages to IRC channel.
 
@@ -371,8 +365,7 @@ class IRCPlugin(BasePlugin):
             target = self.channel
         self.bot.privmsg(target, msg)
 
-    @asyncio.coroutine
-    def handle_command(self, target, data, mask):
+    async def handle_command(self, target, data, mask):
         """
         Handle commands that have been sent in via IRC.
 
@@ -402,21 +395,20 @@ class IRCPlugin(BasePlugin):
         if command in self.dispatcher.commands:
             # Only handle commands that work from IRC
             if command in self.allowed_commands:
-                yield from self.dispatcher.run_command(command,
+                await self.dispatcher.run_command(command,
                                                        self.connection,
                                                        to_parse)
             else:
-                yield from self.bot_write("Command not handled by IRC.")
+                await self.bot_write("Command not handled by IRC.")
         else:
-            yield from self.bot_write("Command not found.")
+            await self.bot_write("Command not found.")
 
-    @asyncio.coroutine
-    def update_ops(self):
+    async def update_ops(self):
         """
         Update the list of Ops. Maybe? Really not sure...
 
         :return: Null.
         """
         while True:
-            yield from asyncio.sleep(6)
+            await asyncio.sleep(6)
             self.bot.send("NAMES {}".format(self.channel))

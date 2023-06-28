@@ -34,8 +34,7 @@ class StarryPyServer:
         self._client_write_future = None
         logger.info("Received connection from {}".format(self.client_ip))
 
-    @asyncio.coroutine
-    def server_loop(self):
+    async def server_loop(self):
         """
         Main server loop. As clients connect to the proxy, pass the
         connection on to the upstream server and bind it to a 'connection'.
@@ -44,19 +43,19 @@ class StarryPyServer:
         :return:
         """
         (self._client_reader, self._client_writer) = \
-            yield from asyncio.open_connection(self.config['upstream_host'],
+            await asyncio.open_connection(self.config['upstream_host'],
                                                self.config['upstream_port'])
         self._client_loop_future = asyncio.ensure_future(self.client_loop())
         try:
             while True:
-                packet = yield from read_packet(self._reader,
+                packet = await read_packet(self._reader,
                                                 Direction.TO_SERVER)
                 # Break in case of emergencies:
                 # if packet['type'] not in [17, 40, 41, 43, 48, 51]:
                 #    logger.debug('c->s  {}'.format(packet['type']))
 
-                if (yield from self.check_plugins(packet)):
-                    yield from self.write_client(packet)
+                if (await self.check_plugins(packet)):
+                    await self.write_client(packet)
         except asyncio.IncompleteReadError:
             # Pass on these errors. These occur when a player disconnects badly
             pass
@@ -68,8 +67,7 @@ class StarryPyServer:
         finally:
             self.die()
 
-    @asyncio.coroutine
-    def client_loop(self):
+    async def client_loop(self):
         """
         Main client loop. Sniff packets originating from the server and bound
         for the clients.
@@ -78,22 +76,21 @@ class StarryPyServer:
         """
         try:
             while True:
-                packet = yield from read_packet(self._client_reader,
+                packet = await read_packet(self._client_reader,
                                                 Direction.TO_CLIENT)
                 # Break in case of emergencies:
                 # if packet['type'] not in [7, 17, 23, 27, 31, 43, 49, 51]:
                 #     logger.debug('s->c  {}'.format(packet['type']))
 
-                send_flag = yield from self.check_plugins(packet)
+                send_flag = await self.check_plugins(packet)
                 if send_flag:
-                    yield from self.write(packet)
+                    await self.write(packet)
         except asyncio.IncompleteReadError:
             logger.error("IncompleteReadError: Connection ended abruptly.")
         finally:
             self.die()
 
-    @asyncio.coroutine
-    def send_message(self, message, *messages, mode=ChatReceiveMode.BROADCAST,
+    async def send_message(self, message, *messages, mode=ChatReceiveMode.BROADCAST,
                      client_id=0, name="", channel=""):
         """
         Convenience function to send chat messages to the client. Note that
@@ -113,14 +110,14 @@ class StarryPyServer:
         try:
             if messages:
                 for m in messages:
-                    yield from self.send_message(m,
+                    await self.send_message(m,
                                                  mode=mode,
                                                  client_id=client_id,
                                                  name=name,
                                                  channel=channel)
             if "\n" in message:
                 for m in message.splitlines():
-                    yield from self.send_message(m,
+                    await self.send_message(m,
                                                  mode=mode,
                                                  client_id=client_id,
                                                  name=name,
@@ -133,29 +130,25 @@ class StarryPyServer:
                                                   "junk": 0,
                                                   "header": header})
                 to_send = build_packet(packets['chat_received'], chat_packet)
-                yield from self.raw_write(to_send)
+                await self.raw_write(to_send)
         except Exception as err:
             logger.exception("Error while trying to send message.")
             logger.exception(err)
 
-    @asyncio.coroutine
-    def raw_write(self, data):
+    async def raw_write(self, data):
         self._writer.write(data)
-        yield from self._writer.drain()
+        await self._writer.drain()
 
-    @asyncio.coroutine
-    def client_raw_write(self, data):
+    async def client_raw_write(self, data):
         self._client_writer.write(data)
-        yield from self._client_writer.drain()
+        await self._client_writer.drain()
 
-    @asyncio.coroutine
-    def write(self, packet):
+    async def write(self, packet):
         self._writer.write(packet['original_data'])
-        yield from self._writer.drain()
+        await self._writer.drain()
 
-    @asyncio.coroutine
-    def write_client(self, packet):
-        yield from self.client_raw_write(packet['original_data'])
+    async def write_client(self, packet):
+        await self.client_raw_write(packet['original_data'])
 
     def die(self):
         """
@@ -176,9 +169,8 @@ class StarryPyServer:
             self.state = State.DISCONNECTED
             self._alive = False
 
-    @asyncio.coroutine
-    def check_plugins(self, packet):
-        return (yield from self.factory.plugin_manager.do(
+    async def check_plugins(self, packet):
+        return (await self.factory.plugin_manager.do(
             self,
             packets[packet['type']],
             packet))
@@ -211,8 +203,7 @@ class ServerFactory:
             loop.stop()
             sys.exit()
 
-    @asyncio.coroutine
-    def broadcast(self, messages, *, mode=ChatReceiveMode.RADIO_MESSAGE,
+    async def broadcast(self, messages, *, mode=ChatReceiveMode.RADIO_MESSAGE,
                   **kwargs):
         """
         Send a message to all connected clients.
@@ -223,7 +214,7 @@ class ServerFactory:
         """
         for connection in self.connections:
             try:
-                yield from connection.send_message(
+                await connection.send_message(
                     messages,
                     mode=mode
                 )
@@ -266,8 +257,7 @@ class ServerFactory:
             connection.die()
 
 
-@asyncio.coroutine
-def start_server():
+async def start_server():
     """
     Main function for kicking off the server factory.
 
@@ -276,7 +266,7 @@ def start_server():
     _server_factory = ServerFactory()
     config = _server_factory.configuration_manager.config
     try:
-        yield from asyncio.start_server(_server_factory,
+        await asyncio.start_server(_server_factory,
                                         port=config['listen_port'])
     except OSError as err:
         logger.error("Error while trying to start server.")

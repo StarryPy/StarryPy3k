@@ -60,13 +60,12 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _send_to_server(self, message, mode, connection):
+    async def _send_to_server(self, message, mode, connection):
         msg_base = data_parser.ChatSent.build(dict(message="".join(message),
                                                    send_mode=mode))
         msg_packet = pparser.build_packet(packets.packets['chat_sent'],
                                           msg_base)
-        yield from connection.client_raw_write(msg_packet)
+        await connection.client_raw_write(msg_packet)
 
     # Commands - In-game actions that can be performed
 
@@ -110,7 +109,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                 message = "^orange;{} {}".format(connection.player.alias,
                                                  emote)
                 try:
-                    yield from (
+                    await (
                         self._send_to_server(message,
                                              ChatSendMode.UNIVERSE,
                                              connection))
@@ -150,7 +149,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                 message = "^orange;{} {}".format(connection.player.alias,
                                                  emote)
                 try:
-                    yield from (
+                    await (
                         self._send_to_server(message,
                                              ChatSendMode.LOCAL,
                                              connection))

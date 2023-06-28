@@ -63,8 +63,7 @@ class Claims(StorageCommandPlugin):
         asyncio.ensure_future(self._access_check(connection))
         return True
 
-    @asyncio.coroutine
-    def _protect_ship(self, connection):
+    async def _protect_ship(self, connection):
         """
         Add protection to a ship.
 
@@ -94,9 +93,8 @@ class Claims(StorageCommandPlugin):
         except AttributeError:
             pass
 
-    @asyncio.coroutine
-    def _access_check(self, connection):
-        yield from asyncio.sleep(.5)
+    async def _access_check(self, connection):
+        await asyncio.sleep(.5)
         if str(connection.player.location) in self.storage["access"]:
             access = self.storage["access"][str(connection.player.location)]
             if connection.player.perm_check("planet_protect.bypass"):
@@ -106,13 +104,13 @@ class Claims(StorageCommandPlugin):
                 wp = PlayerWarp.build({"warp_action": {"warp_type": 3,
                                                        "alias_id": 2}})
                 full = build_packet(packets.packets['player_warp'], wp)
-                yield from connection.client_raw_write(full)
+                await connection.client_raw_write(full)
             elif connection.player.uuid not in access["list"] and \
                     access["whitelist"]:
                 wp = PlayerWarp.build({"warp_action": {"warp_type": 3,
                                                        "alias_id": 2}})
                 full = build_packet(packets.packets['player_warp'], wp)
-                yield from connection.client_raw_write(full)
+                await connection.client_raw_write(full)
 
     # noinspection PyMethodMayBeStatic
     def _pretty_world_name(self, location):
@@ -202,7 +200,7 @@ class Claims(StorageCommandPlugin):
                 try:
                     send_message(connection, "Granted build access to player"
                                              " {}.".format(target.alias))
-                    yield from send_message(target.connection, "You've been "
+                    await send_message(target.connection, "You've been "
                                                                "granted build "
                                                                "access on {}."
                                             .format(location))
@@ -321,7 +319,7 @@ class Claims(StorageCommandPlugin):
                 send_message(connection, "Transferred ownership of {} to {}."
                              .format(location, target.alias))
                 try:
-                    yield from send_message(target.connection, "You've been "
+                    await send_message(target.connection, "You've been "
                                                                "made owner of "
                                                                "{}."
                                             .format(location))
@@ -359,15 +357,15 @@ class Claims(StorageCommandPlugin):
                     if location in self.planet_announcer.storage["greetings"]:
                         self.planet_announcer.storage["greetings"].pop(
                             location)
-                        yield from send_message(connection, "Greeting message "
+                        await send_message(connection, "Greeting message "
                                                             "cleared.")
                 else:
                     self.planet_announcer.storage["greetings"][location] = msg
-                    yield from send_message(connection, "Greeting message "
+                    await send_message(connection, "Greeting message "
                                                         "set to \"{}\"."
                                             .format(msg))
             else:
-                yield from send_message(connection, "You don't own this "
+                await send_message(connection, "You don't own this "
                                                     "planet!")
         else:
             send_message(connection, "Planet greetings are not available on "
@@ -392,7 +390,7 @@ class Claims(StorageCommandPlugin):
             if access["whitelist"]:
                 allow = "allowed"
             if not data:
-                yield from send_message(connection, "Argument not recognized. "
+                await send_message(connection, "Argument not recognized. "
                                                     "Usage: /planet_access ["
                                                     "name] add/remove")
             elif data[0].lower() == "whitelist":
@@ -475,7 +473,7 @@ class Claims(StorageCommandPlugin):
         target = self.plugins.player_manager.find_player(" ".join(data))
         if target.uuid in self.storage['owners']:
             self.storage['owners'][target.uuid] = []
-            yield from send_message(connection, "Purged claims of {}"
+            await send_message(connection, "Purged claims of {}"
                                     .format(target.alias))
         else:
-            yield from send_message(connection, "Target has no claims.")
+            await send_message(connection, "Target has no claims.")

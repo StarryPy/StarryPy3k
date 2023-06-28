@@ -97,7 +97,7 @@ class PlanetProtect(StorageCommandPlugin):
             action = data["parsed"]["spawn_type"]
             if action not in [EntitySpawnType.OBJECT, EntitySpawnType.VEHICLE]:
                 return True
-        yield from self._protection_warn(data, connection)
+        await self._protection_warn(data, connection)
 
         item_base = GiveItem.build(dict(name=data["parsed"]["payload"],
                                         count=1,
@@ -105,8 +105,8 @@ class PlanetProtect(StorageCommandPlugin):
                                         description=""))
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
-        yield from asyncio.sleep(.1)
-        yield from connection.raw_write(item_packet)
+        await asyncio.sleep(.1)
+        await connection.raw_write(item_packet)
         return False
 
     def on_entity_interact_result(self, data, connection):
@@ -142,7 +142,7 @@ class PlanetProtect(StorageCommandPlugin):
                           EntityInteractionType.GO_PRONE,
                           EntityInteractionType.NOMINAL]:
                 return True
-        yield from self._protection_warn(data, connection)
+        await self._protection_warn(data, connection)
         return False
 
     def on_tile_update(self, data, connection):
@@ -170,7 +170,7 @@ class PlanetProtect(StorageCommandPlugin):
         elif protection.check_builder(connection.player):
             return True
         else:
-            yield from self._protection_warn(data, connection)
+            await self._protection_warn(data, connection)
             return False
 
     # Rather than recreating the same check for every different type of
@@ -237,8 +237,7 @@ class PlanetProtect(StorageCommandPlugin):
         """
         self.storage["locations"][str(location)].unprotect()
 
-    @asyncio.coroutine
-    def _protection_warn(self, data, connection):
+    async def _protection_warn(self, data, connection):
         """
         Warn a player about planet being protected (if they do a restricted
         activity). One minute cool-down between warnings.
@@ -315,7 +314,7 @@ class PlanetProtect(StorageCommandPlugin):
                          "Added {} to allowed list for {}".format(
                              p.alias, connection.player.location))
             try:
-                yield from p.connection.send_message(
+                await p.connection.send_message(
                     "You've been granted build access on {} by {}".format(
                         connection.player.location, connection.player.alias))
             except AttributeError:

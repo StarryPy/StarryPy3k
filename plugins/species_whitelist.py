@@ -49,7 +49,7 @@ class SpeciesWhitelist(BasePlugin):
                             "aborted!\n\n^orange;Your species ({}) is not "
                             "allowed on this server.\n^green;Please use a "
                             "different character.".format(species))))
-            yield from connection.raw_write(rejection_packet)
+            await connection.raw_write(rejection_packet)
             connection.die()
             return False
         return True

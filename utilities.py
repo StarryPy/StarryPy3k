@@ -172,8 +172,7 @@ class DotDict(dict):
     __delattr__ = dict.__delitem__
 
 
-@asyncio.coroutine
-def detect_overrides(cls, obj):
+async def detect_overrides(cls, obj):
     """
     For each active plugin, check if it wield a packet hook. If it does, add
     make a not of it. Hand back all hooks for a specific packet type when done.
@@ -227,8 +226,7 @@ class AsyncBytesIO(io.BytesIO):
     easier to interface with functions designed to work on coroutines without
     having to monkey around with a type check and extra futures.
     """
-    @asyncio.coroutine
-    def read(self, *args, **kwargs):
+    async def read(self, *args, **kwargs):
         return super().read(*args, **kwargs)
 
 
@@ -280,8 +278,7 @@ class Cupboard(Shelf):
                 self.dict = None
 
 
-@asyncio.coroutine
-def read_vlq(bytestream):
+async def read_vlq(bytestream):
     """
     Give a bytestream, extract the leading Variable Length Quantity (VLQ).
 
@@ -291,7 +288,7 @@ def read_vlq(bytestream):
     d = b""
     v = 0
     while True:
-        tmp = yield from bytestream.readexactly(1)
+        tmp = await bytestream.readexactly(1)
         d += tmp
         tmp = ord(tmp)
         v <<= 7
@@ -302,12 +299,11 @@ def read_vlq(bytestream):
     return v, d
 
 
-@asyncio.coroutine
-def read_signed_vlq(reader):
+async def read_signed_vlq(reader):
     """
     Manipulate the read-in VLQ to account for signed-ness.
     """
-    v, d = yield from read_vlq(reader)
+    v, d = await read_vlq(reader)
     if (v & 1) == 0x00:
         return v >> 1, d
     else:
@@ -327,8 +323,7 @@ def extractor(*args):
     return [x for x in filter(None, x)]
 
 
-@asyncio.coroutine
-def read_packet(reader, direction):
+async def read_packet(reader, direction):
     """
     Given an interface to read from (reader) read the next packet that comes
     in. Determine the packet's type, decode its contents, and track the
@@ -342,13 +337,13 @@ def read_packet(reader, direction):
     p = {}
     compressed = False
 
-    packet_type = (yield from reader.readexactly(1))
-    packet_size, packet_size_data = yield from read_signed_vlq(reader)
+    packet_type = (await reader.readexactly(1))
+    packet_size, packet_size_data = await read_signed_vlq(reader)
     if packet_size < 0:
         packet_size = abs(packet_size)
         compressed = True
 
-    data = yield from reader.readexactly(packet_size)
+    data = await reader.readexactly(packet_size)
     p['type'] = ord(packet_type)
     p['size'] = packet_size
     p['compressed'] = compressed

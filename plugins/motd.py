@@ -47,8 +47,7 @@ class MOTD(SimpleCommandPlugin):
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _display_motd(self, connection):
+    async def _display_motd(self, connection):
         """
         Helper routine for displaying the MOTD on client connect. Sleeps for
         one second before displaying the MOTD. Do this in a non-blocking
@@ -57,7 +56,7 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection we're showing the message to.
         :return: Null.
         """
-        yield from send_message(connection, "{}".format(self.motd))
+        await send_message(connection, "{}".format(self.motd))
         return
 
     # Commands - In-game actions that can be performed

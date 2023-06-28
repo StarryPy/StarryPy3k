@@ -84,7 +84,7 @@ class BasicAuth(SimpleCommandPlugin):
                 # Starbound will take care of an incorrect password.
             elif self.plugin_config.staff_priority <= player.priority:
                 # They're privileged but failed to authenticate. Kill it.
-                yield from connection.raw_write(
+                await connection.raw_write(
                     self.build_rejection("^red;UNAUTHORIZED^reset;\n"
                                          "Privileged players must log in with "
                                          "an account defined in StarryPy3k's "

@@ -29,8 +29,7 @@ class WarpPlugin(SimpleCommandPlugin):
         super().activate()
         self.find_player = self.plugins.player_manager.find_player
 
-    @asyncio.coroutine
-    def warp_player_to_player(self, from_player, to_player):
+    async def warp_player_to_player(self, from_player, to_player):
         """
         Warps a player to another player.
         :param from_player: Player: The player being warped.
@@ -40,7 +39,7 @@ class WarpPlugin(SimpleCommandPlugin):
         wp = PlayerWarp.build(dict(warp_action=dict(warp_type=2,
                                                     player_id=to_player.uuid)))
         full = build_packet(packets.packets['player_warp'], wp)
-        yield from from_player.connection.client_raw_write(full)
+        await from_player.connection.client_raw_write(full)
 
     def warp_player_to_ship(self, from_player, to_player):
         """
@@ -53,7 +52,7 @@ class WarpPlugin(SimpleCommandPlugin):
                                                     ship_id=to_player.uuid,
                                                     flag=0)))
         full = build_packet(packets.packets['player_warp'], wp)
-        yield from from_player.connection.client_raw_write(full)
+        await from_player.connection.client_raw_write(full)
 
     @Command("tp",
              perm="warp.tp_player",
@@ -72,7 +71,7 @@ class WarpPlugin(SimpleCommandPlugin):
             send_message(connection, "Target is not logged in or does not "
                                      "exist.")
             return
-        yield from self.warp_player_to_player(from_player, to_player)
+        await self.warp_player_to_player(from_player, to_player)
         if from_player.alias != connection.player.alias:
             send_message(from_player.connection, "You've been warped to {}."
                          .format(to_player.alias))
@@ -98,7 +97,7 @@ class WarpPlugin(SimpleCommandPlugin):
             send_message(connection, "Target is not logged in or does not "
                                      "exist.")
             return
-        yield from self.warp_player_to_ship(from_player, to_player)
+        await self.warp_player_to_ship(from_player, to_player)
         if from_player.alias != connection.player.alias:
             send_message(from_player.connection, "You've been warped to {}'s"
                                                  " ship."

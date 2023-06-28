@@ -33,8 +33,7 @@ class Spawn(StorageCommandPlugin):
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _move_ship(self, connection):
+    async def _move_ship(self, connection):
         """
         Generate packet that moves ship.
 
@@ -62,7 +61,7 @@ class Spawn(StorageCommandPlugin):
             ))
             flyship_packet = pparser.build_packet(packets.packets["fly_ship"],
                                                   destination)
-            yield from connection.client_raw_write(flyship_packet)
+            await connection.client_raw_write(flyship_packet)
 
     # Commands - In-game actions that can be performed
 
@@ -87,7 +86,7 @@ class Spawn(StorageCommandPlugin):
                          "You must be on your ship for this to work.")
             return
         try:
-            yield from self._move_ship(connection)
+            await self._move_ship(connection)
             send_message(connection,
                          "Now en route to spawn. Please stand by...")
         except NotImplementedError:

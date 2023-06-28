@@ -5,7 +5,7 @@ from server import ServerFactory
 
 def start_server():
     serverf = ServerFactory()
-    yield from asyncio.start_server(serverf, '127.0.0.1', 21025)
+    await asyncio.start_server(serverf, '127.0.0.1', 21025)
 
 
 class TestServer:
@@ -18,7 +18,6 @@ class TestServer:
     def testTest(self):
         asyncio.ensure_future(self.beep())
 
-    @asyncio.coroutine
-    def beep(self):
-        x = yield from (lambda _: True)("")
+    async def beep(self):
+        x = await (lambda _: True)("")
         return x
