@@ -234,8 +234,8 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.error(e)
             raise SystemExit
         self.ranks = self._rebuild_ranks(self.rank_config)
-        asyncio.ensure_future(self._reap())
-        asyncio.ensure_future(self._save_shelf())
+        self.reap_task = asyncio.ensure_future(self._reap())
+        self.save_task = asyncio.ensure_future(self._save_shelf())
 
     # Packet hooks - look for these packets and act on them
 
@@ -563,6 +563,8 @@ class PlayerManager(SimpleCommandPlugin):
         for player in self.shelf["players"].values():
             player.connection = None
             player.logged_in = False
+        self.reap_task.cancel()
+        self.save_task.cancel()
         self.sync()
         self.shelf.close()
         self.logger.debug("Closed the shelf")
