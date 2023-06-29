@@ -54,7 +54,8 @@ class BasePlugin(metaclass=BaseMeta):
     async def activate(self):
         pass
 
-    async def deactivate(self):
+    # not async so server can shut down outside of async loop
+    def deactivate(self):
         pass
 
     async def on_protocol_request(self, data, connection):
