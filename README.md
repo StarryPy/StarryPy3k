@@ -3,15 +3,15 @@
 ## About
 StarryPy3k is the successor to StarryPy. StarryPy is a plugin-driven Starbound
 server wrapper that adds a great deal of functionality to Starbound. StarryPy3k
- is written using asyncio is Python 3.
+ is written using asyncio in Python 3.11.
 
 ***Please note this is still in very active development and is not ready to be
 used on general purpose servers. It should mostly work, but you have been
 forewarned.***
 
 ## Requirements
-Due to an upgrade of the Discord API, Python **3.5** or greater is required. 
-Tests are only conducted on Python version 3.5.
+Due to an upgrade of the Discord API, Python **3.8** or greater is required. 
+Tests are only conducted on Python version 3.11.
 
 While StarryPy3k **may** work with earlier or later versions of Python, it is not
 recommended and will not be readily supported.
