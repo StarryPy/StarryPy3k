@@ -321,7 +321,7 @@ class DiscordPlugin(BasePlugin):
                                       target=self.command_target)
 
     async def bot_write(self, msg, target=None):
-        if self.discord_client == None or self.discord_client.is_closed:
+        if self.discord_client == None or not self.discord_client.is_ready():
             await self.start_bot()
         if target is None:
             target = self.discord_client.channel
