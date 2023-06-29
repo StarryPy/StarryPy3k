@@ -31,8 +31,8 @@ class SpeciesWhitelist(BasePlugin):
                       ]}
 
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.enabled = self.config.get_plugin_config(self.name)["enabled"]
         self.allowed_species = self.config.get_plugin_config(self.name)["allowed_species"]
 

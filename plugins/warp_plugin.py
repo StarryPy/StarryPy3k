@@ -25,8 +25,8 @@ class WarpPlugin(SimpleCommandPlugin):
         super().__init__()
         self.find_player = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.find_player = self.plugins.player_manager.find_player
 
     async def warp_player_to_player(self, from_player, to_player):

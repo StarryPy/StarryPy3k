@@ -149,14 +149,15 @@ class PluginManager:
             self._override_cache = self._activated_plugins
             return overrides
 
-    def activate_all(self):
+    async def activate_all(self):
         self.logger.info("Activating plugins:")
         for plugin in self._plugins.values():
             self.logger.info(plugin.name)
-            plugin.activate()
+            await plugin.activate()
             self._activated_plugins.add(plugin)
+        await self.get_overrides()
 
-    def deactivate_all(self):
+    async def deactivate_all(self):
         for plugin in self._plugins.values():
             self.logger.info("Deactivating %s", plugin.name)
-            plugin.deactivate()
+            await plugin.deactivate()

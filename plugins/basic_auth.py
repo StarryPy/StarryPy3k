@@ -31,8 +31,8 @@ class BasicAuth(SimpleCommandPlugin):
         super().__init__()
         self.enabled = False
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if self.config.get_plugin_config(self.name)["enabled"]:
             self.logger.debug("Enabled.")
             self.enabled = True

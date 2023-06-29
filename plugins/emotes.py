@@ -51,8 +51,8 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
         self.discord_active = False
         self.chat_enhancements = False
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.irc_active = link_plugin_if_available(self, "irc_bot")
         self.discord_active = link_plugin_if_available(self, "discord_bot")
         self.chat_enhancements = link_plugin_if_available(self,

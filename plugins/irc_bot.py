@@ -142,11 +142,11 @@ class IRCPlugin(BasePlugin):
                                  'unmute', 'set_motd', 'whois', 'broadcast',
                                  'user', 'del_player', 'maintenance_mode',
                                  'shutdown', 'save')
-    def activate(self):
+    async def activate(self):
         self.enabled = self.config.get_plugin_config(self.name)["enabled"]
         if not self.enabled:
             return
-        super().activate()
+        await super().activate()
         self.dispatcher = self.plugins.command_dispatcher
         self.prefix = self.config.get_plugin_config("command_dispatcher")[
             "command_prefix"]

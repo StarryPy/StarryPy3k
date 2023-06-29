@@ -15,8 +15,8 @@ class ChatLogger(BasePlugin):
     def __init__(self):
         super().__init__()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
 
     async def on_chat_sent(self, data, connection):
         """

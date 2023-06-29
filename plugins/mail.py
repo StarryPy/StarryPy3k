@@ -32,8 +32,8 @@ class MailPlugin(StorageCommandPlugin):
         self.max_mail = 0
         self.find_player = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.max_mail = self.plugin_config.max_mail_storage
         self.find_player = self.plugins.player_manager.find_player
         if 'mail' not in self.storage:

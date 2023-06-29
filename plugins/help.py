@@ -21,8 +21,8 @@ class HelpPlugin(SimpleCommandPlugin):
         self.command_prefix = None
         self.commands = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         cd = self.plugins.command_dispatcher
         self.command_prefix = cd.plugin_config.command_prefix
         self.commands = cd.commands

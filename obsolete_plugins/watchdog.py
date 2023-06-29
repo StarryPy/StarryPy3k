@@ -11,7 +11,7 @@ class StarboundWatchdog(SimpleCommandPlugin):
     """ Provides a watchdog to automatically start a server, restart it should
     it die, and (in the future) detect hangs."""
 
-    def activate(self):
+    async def activate(self):
         self.is_64bits = sys.maxsize > 2 ** 32  # Check if it's 64 bits
         self.platform = sys.platform.lower()  # Linux, Windows, Darwin.
         self.starbound_path = pathlib.Path(self.config.config.starbound_folder)

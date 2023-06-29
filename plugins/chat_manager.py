@@ -22,8 +22,8 @@ class ChatManager(SimpleCommandPlugin):
         super().__init__()
         self.storage = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.storage = self.plugins.player_manager.get_storage(self)
         if "mutes" not in self.storage:
             self.storage["mutes"] = set()

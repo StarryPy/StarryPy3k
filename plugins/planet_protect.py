@@ -55,8 +55,8 @@ class PlanetProtect(StorageCommandPlugin):
     name = "planet_protect"
     depends = ["player_manager", "command_dispatcher"]
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "locations" not in self.storage:
             self.storage["locations"] = {}
         if "converted" not in self.storage:

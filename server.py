@@ -195,8 +195,7 @@ class ServerFactory:
             self.plugin_manager.load_from_path(
                 path / self.configuration_manager.config.plugin_path)
             self.plugin_manager.resolve_dependencies()
-            self.plugin_manager.activate_all()
-            asyncio.ensure_future(self.plugin_manager.get_overrides())
+            asyncio.ensure_future(self.plugin_manager.activate_all())
         except Exception as err:
             logger.exception("Error during server startup.", exc_info=True)
 

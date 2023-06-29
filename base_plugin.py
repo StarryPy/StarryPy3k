@@ -51,10 +51,10 @@ class BasePlugin(metaclass=BaseMeta):
         else:
             self.plugin_config = self.default_config
 
-    def activate(self):
+    async def activate(self):
         pass
 
-    def deactivate(self):
+    async def deactivate(self):
         pass
 
     async def on_protocol_request(self, data, connection):
@@ -338,8 +338,8 @@ class SimpleCommandPlugin(BasePlugin):
     depends = ["command_dispatcher"]
     auto_activate = True
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         for name, attr in [(x, getattr(self, x)) for x in self.__dir__()]:
             if hasattr(attr, "_command"):
                 for alias in attr._aliases:
@@ -350,8 +350,8 @@ class StoragePlugin(BasePlugin):
     name = "storage_plugin"
     depends = ['player_manager']
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.storage = self.plugins.player_manager.get_storage(self.name)
 
 
@@ -359,6 +359,6 @@ class StorageCommandPlugin(SimpleCommandPlugin):
     name = "storage_command_plugin"
     depends = ['command_dispatcher', 'player_manager']
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.storage = self.plugins.player_manager.get_storage(self)

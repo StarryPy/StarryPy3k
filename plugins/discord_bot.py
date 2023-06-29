@@ -135,11 +135,12 @@ class DiscordPlugin(BasePlugin):
                                  'user', 'del_player', 'maintenance_mode',
                                  'shutdown', 'save')
 
-    def activate(self):
+    async def activate(self):
         self.enabled = self.config.get_plugin_config(self.name)["enabled"]
         if not self.enabled:
             return;
-        BasePlugin.activate(self)
+        await super().activate()
+
         self.dispatcher = self.plugins.command_dispatcher
         self.irc_bot_exists = link_plugin_if_available(self, 'irc_bot')
         if self.irc_bot_exists:
@@ -154,9 +155,9 @@ class DiscordPlugin(BasePlugin):
         self.staff_channel_id = int(self.config.get_plugin_config(self.name)[
             "staff_channel"])
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
+
         self.discord_task = asyncio.create_task(self.start_bot())
         self.discord_task.add_done_callback(self.error_handler)
-
 
         self.mock_connection = MockConnection(self)
         self.rank_roles = self.config.get_plugin_config(self.name)[
@@ -245,6 +246,7 @@ class DiscordPlugin(BasePlugin):
             await self.discord_client.connect()
         except Exception as e:
             self.logger.exception(e)
+            raise e
 
     async def send_to_game(self, message):
         """

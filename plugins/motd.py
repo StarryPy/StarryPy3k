@@ -24,8 +24,8 @@ class MOTD(SimpleCommandPlugin):
         super().__init__()
         self.motd = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.motd = self.config.get_plugin_config(self.name)["message"]
 
     # Packet hooks - look for these packets and act on them

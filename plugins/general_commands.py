@@ -36,8 +36,8 @@ class GeneralCommands(SimpleCommandPlugin):
         self.chat_manager = None
     # Helper functions - Used by commands
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.maintenance = False
         self.rejection_message = self.config.get_plugin_config(self.name)[
             "maintenance_message"]

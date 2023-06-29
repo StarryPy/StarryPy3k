@@ -20,8 +20,8 @@ class PlanetAnnouncer(StorageCommandPlugin):
     def __init__(self):
         super().__init__()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "greetings" not in self.storage:
             self.storage["greetings"] = {}
 

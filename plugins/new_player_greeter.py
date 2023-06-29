@@ -34,8 +34,8 @@ class NewPlayerGreeter(SimpleCommandPlugin):
         self.greeting = None
         self.gifts = DotDict({})
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.greeting = self.config.get_plugin_config(self.name)["greeting"]
         self.gifts = self.config.get_plugin_config(self.name)["gifts"]
 

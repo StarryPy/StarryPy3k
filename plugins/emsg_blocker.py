@@ -18,8 +18,8 @@ class ChatLogger(BasePlugin):
         self.blocked_messages = []
         self.in_transit_players = set()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.in_transit_players = set()
         self.blocked_messages = [
             "applyStatusEffect",

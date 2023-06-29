@@ -18,7 +18,7 @@ class WebManager(BasePlugin):
     name = "web_manager"
     depends = ['player_manager']
 
-    def activate(self):
+    async def activate(self):
         WebHandler.web_manager = self
         WebHandler.factory = self.factory
         WebHandler.player_manager = self.plugins.player_manager

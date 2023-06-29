@@ -25,8 +25,8 @@ class POI(StorageCommandPlugin):
     def __init__(self):
         super().__init__()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "pois" not in self.storage:
             self.storage["pois"] = {}
 

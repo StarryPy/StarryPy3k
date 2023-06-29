@@ -26,8 +26,8 @@ class Spawn(StorageCommandPlugin):
     def __init__(self):
         super().__init__()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "spawn" not in self.storage:
             self.storage["spawn"] = {}
 

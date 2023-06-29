@@ -39,8 +39,8 @@ class ChatEnhancements(StorageCommandPlugin):
         self.last_whisper = {}
         self.social_spies = set()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.command_dispatcher = self.plugins.command_dispatcher.plugin_config
         self.cts = self.config.get_plugin_config(self.name)["chat_timestamps"]
         self.cts_color = self.config.get_plugin_config(self.name)[

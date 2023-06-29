@@ -28,8 +28,8 @@ class Claims(StorageCommandPlugin):
         self.planet_protect = self.plugins["planet_protect"]
         self.planet_announcer = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "owners" not in self.storage:
             self.storage["owners"] = {}
         if "access" not in self.storage:

@@ -32,8 +32,8 @@ class PrivilegedChatter(SimpleCommandPlugin):
         self.discord = None
         self.chat_enhancements = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.modchat_color = self.config.get_plugin_config(self.name)[
             "modchat_color"]
         self.report_prefix = self.config.get_plugin_config(self.name)[
