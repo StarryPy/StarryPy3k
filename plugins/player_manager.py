@@ -234,8 +234,8 @@ class PlayerManager(SimpleCommandPlugin):
             self.logger.error(e)
             raise SystemExit
         self.ranks = self._rebuild_ranks(self.rank_config)
-        self.reap_task = asyncio.ensure_future(self._reap())
-        self.save_task = asyncio.ensure_future(self._save_shelf())
+        self.reap_task = asyncio.create_task(self._reap())
+        self.save_task = asyncio.create_task(self._save_shelf())
 
     # Packet hooks - look for these packets and act on them
 
