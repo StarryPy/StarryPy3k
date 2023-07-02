@@ -19,9 +19,10 @@ from pathlib import Path
 from types import FunctionType
 from shelve import Shelf, _ClosedDict
 from pickle import Pickler, Unpickler
+from collections import abc
 
 path = Path(__file__).parent
-
+background_tasks = set()
 
 # Enums
 
@@ -137,7 +138,7 @@ def recursive_dictionary_update(d, u):
     :return: Dictionary. Merged dictionary with bias towards the second.
     """
     for k, v in u.items():
-        if isinstance(v, collections.Mapping):
+        if isinstance(v, abc.Mapping):
             r = recursive_dictionary_update(d.get(k, {}), v)
             d[k] = r
         else:
@@ -154,7 +155,7 @@ class DotDict(dict):
     def __init__(self, d, **kwargs):
         super().__init__(**kwargs)
         for k, v in d.items():
-            if isinstance(v, collections.Mapping):
+            if isinstance(v, abc.Mapping):
                 v = DotDict(v)
             self[k] = v
 
@@ -165,15 +166,14 @@ class DotDict(dict):
             raise AttributeError(str(e)) from None
 
     def __setattr__(self, key, value):
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, abc.Mapping):
             value = DotDict(value)
         super().__setitem__(key, value)
 
     __delattr__ = dict.__delitem__
 
 
-@asyncio.coroutine
-def detect_overrides(cls, obj):
+async def detect_overrides(cls, obj):
     """
     For each active plugin, check if it wield a packet hook. If it does, add
     make a not of it. Hand back all hooks for a specific packet type when done.
@@ -227,8 +227,7 @@ class AsyncBytesIO(io.BytesIO):
     easier to interface with functions designed to work on coroutines without
     having to monkey around with a type check and extra futures.
     """
-    @asyncio.coroutine
-    def read(self, *args, **kwargs):
+    async def read(self, *args, **kwargs):
         return super().read(*args, **kwargs)
 
 
@@ -271,6 +270,11 @@ class Cupboard(Shelf):
                 pass
 
     def close(self):
+        if(self.dict is None):
+            return
+        if isinstance(self.dict, _ClosedDict):
+            # don't re-close, just exit
+            return    
         try:
             self.sync()
         finally:
@@ -279,9 +283,10 @@ class Cupboard(Shelf):
             except:
                 self.dict = None
 
+    def __del__(self):
+        self.close()
 
-@asyncio.coroutine
-def read_vlq(bytestream):
+async def read_vlq(bytestream):
     """
     Give a bytestream, extract the leading Variable Length Quantity (VLQ).
 
@@ -291,7 +296,7 @@ def read_vlq(bytestream):
     d = b""
     v = 0
     while True:
-        tmp = yield from bytestream.readexactly(1)
+        tmp = await bytestream.readexactly(1)
         d += tmp
         tmp = ord(tmp)
         v <<= 7
@@ -302,12 +307,11 @@ def read_vlq(bytestream):
     return v, d
 
 
-@asyncio.coroutine
-def read_signed_vlq(reader):
+async def read_signed_vlq(reader):
     """
     Manipulate the read-in VLQ to account for signed-ness.
     """
-    v, d = yield from read_vlq(reader)
+    v, d = await read_vlq(reader)
     if (v & 1) == 0x00:
         return v >> 1, d
     else:
@@ -327,8 +331,7 @@ def extractor(*args):
     return [x for x in filter(None, x)]
 
 
-@asyncio.coroutine
-def read_packet(reader, direction):
+async def read_packet(reader, direction):
     """
     Given an interface to read from (reader) read the next packet that comes
     in. Determine the packet's type, decode its contents, and track the
@@ -342,13 +345,13 @@ def read_packet(reader, direction):
     p = {}
     compressed = False
 
-    packet_type = (yield from reader.readexactly(1))
-    packet_size, packet_size_data = yield from read_signed_vlq(reader)
+    packet_type = (await reader.readexactly(1))
+    packet_size, packet_size_data = await read_signed_vlq(reader)
     if packet_size < 0:
         packet_size = abs(packet_size)
         compressed = True
 
-    data = yield from reader.readexactly(packet_size)
+    data = await reader.readexactly(packet_size)
     p['type'] = ord(packet_type)
     p['size'] = packet_size
     p['compressed'] = compressed
@@ -382,6 +385,19 @@ def get_syntax(command, fn, command_prefix):
         command,
         fn.syntax)
 
+def background(coro):
+    task = asyncio.create_task(coro)
+
+    # Add task to the set. This creates a strong reference.
+    background_tasks.add(task)
+
+    # To prevent keeping references to finished tasks forever,
+    # make each task remove its own reference from the set after
+    # completion:
+    task.add_done_callback(background_tasks.discard)
+
+    return task
+
 
 def send_message(connection, *messages, **kwargs):
     """
@@ -391,7 +407,7 @@ def send_message(connection, *messages, **kwargs):
     :param messages: The message(s) to send.
     :return: A Future for the message(s) being sent.
     """
-    return asyncio.ensure_future(connection.send_message(*messages, **kwargs))
+    return background(connection.send_message(*messages, **kwargs))
 
 
 def broadcast(connection, *messages, **kwargs):
@@ -402,8 +418,7 @@ def broadcast(connection, *messages, **kwargs):
     :param messages: The message(s) to send.
     :return: A Future for the message(s) being sent.
     """
-    return asyncio.ensure_future(
-        connection.factory.broadcast(*messages, **kwargs))
+    return background(connection.factory.broadcast(*messages, **kwargs))
 
 
 def link_plugin_if_available(self, plugin):
@@ -444,12 +459,12 @@ class Command:
         :param f: The function the Command decorator is wrapping.
         :return: The now-wrapped command, with all the trappings.
         """
-        def wrapped(s, data, connection):
+        async def wrapped(s, data, connection):
             try:
                 if self.perm is not None:
                     if not connection.player.perm_check(self.perm):
                         raise PermissionError
-                return f(s, data, connection)
+                return await f(s, data, connection)
             except PermissionError:
                 send_message(connection,
                              "You don't have permissions to do that.")

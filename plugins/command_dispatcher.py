@@ -7,6 +7,8 @@ should register themselves through CommandDispatcher.
 This should be done by using the @Command decorator in a SimpleCommandPlugin
 subclass, though it could be done manually in tricky use-cases.
 
+Note that your @Command subroutines must be async functions.
+
 Original authors: AMorporkian
 Updated for release: kharidiron
 """
@@ -30,7 +32,7 @@ class CommandDispatcher(BasePlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Catch a chat packet as it goes by. If the first character in its
         string is the command_prefix, it is a command. Grab it and start
@@ -53,7 +55,7 @@ class CommandDispatcher(BasePlugin):
                 pkt = ChatSent.build({"message": cmd, "send_mode": data[
                     'parsed']['send_mode']})
                 full = build_packet(packets.packets['chat_sent'], pkt)
-                yield from connection.client_raw_write(full)
+                await connection.client_raw_write(full)
                 return False
             to_parse = data['parsed']['message'][len(
                 self.plugin_config.command_prefix):].split()
@@ -66,7 +68,7 @@ class CommandDispatcher(BasePlugin):
             if command not in self.commands:
                 return True  # There's no command here that we know of.
             else:
-                asyncio.ensure_future(self.run_command(command,
+                self.background(self.run_command(command,
                                                        connection,
                                                        to_parse[1:]))
                 return False  # We're handling the command in the event loop.
@@ -134,8 +136,7 @@ class CommandDispatcher(BasePlugin):
         send_message(connection, "Unknown player {}".format(player_name))
         return None
 
-    @asyncio.coroutine
-    def run_command(self, command, connection, to_parse):
+    async def run_command(self, command, connection, to_parse):
         """
         Evaluate the command passed in, passing along the arguments. Raise
         various errors depending on what might have gone wrong.
@@ -149,8 +150,9 @@ class CommandDispatcher(BasePlugin):
                 General Exception error as a last-resort catch-all.
         """
         try:
-            yield from self.commands[command](extractor(to_parse),
-                                              connection)
+            handler = self.commands[command]
+            #self.logger.debug("Processing command {} with handler {}.".format(command, handler))
+            await handler(extractor(to_parse), connection)
         except SyntaxWarning as e:
             self._send_syntax_error(command, e, connection)
         except NameError as e:

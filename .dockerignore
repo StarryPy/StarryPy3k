@@ -1,2 +1,6 @@
 .dockerignore
 Dockerfile
+.venv
+.github
+config/*.json
+config/*.log

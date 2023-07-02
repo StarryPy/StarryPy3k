@@ -1,22 +1,20 @@
 import json
 
-from nose.tools import *
+from nose.tools import assert_equals, assert_true, assert_raises
 
 from configuration_manager import ConfigurationManager
 import utilities
 
 
 class TestConfigurationManager:
-    def __init__(self):
+
+    def setup(self):
         self.base_path = utilities.path / 'tests' / 'test_config'
         self.output_path = self.base_path / 'test_outputs' / 'out.json'
         self.trivial_config_path = self.base_path / 'trivial_config.json'
         self.complex_config_path = self.base_path / 'complex_config.json'
         self.merged_path = self.base_path / 'complex_merged_config.json'
         self.config_with_utf_8_path = self.base_path / 'unicode_config.json'
-        self.config = None
-
-    def setup(self):
         self.config = ConfigurationManager()
 
     def test_config_manager_loads_correct_path(self):

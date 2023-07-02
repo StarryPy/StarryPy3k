@@ -25,15 +25,14 @@ class POI(StorageCommandPlugin):
     def __init__(self):
         super().__init__()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "pois" not in self.storage:
             self.storage["pois"] = {}
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _move_ship(self, connection, location):
+    async def _move_ship(self, connection, location):
         """
         Generate packet that moves ship.
 
@@ -62,7 +61,7 @@ class POI(StorageCommandPlugin):
             ))
             flyship_packet = pparser.build_packet(packets.packets["fly_ship"],
                                                   destination)
-            yield from connection.client_raw_write(flyship_packet)
+            await connection.client_raw_write(flyship_packet)
 
     # Commands - In-game actions that can be performed
 
@@ -71,7 +70,7 @@ class POI(StorageCommandPlugin):
              doc="Moves a player's ship to the specified Point of Interest, "
                  "or prints the POIs if no argument given.",
              syntax="[\"][POI name][\"]")
-    def _poi(self, data, connection):
+    async def _poi(self, data, connection):
         """
         Move a players ship to the specified POI, free of fuel charge,
         no matter where they are in the universe.
@@ -96,7 +95,7 @@ class POI(StorageCommandPlugin):
                          "You must be on your ship for this to work.")
             return
         try:
-            yield from self._move_ship(connection, poi)
+            await self._move_ship(connection, poi)
             send_message(connection,
                          "Now en route to {}. Please stand by...".format(poi))
         except NotImplementedError:
@@ -106,7 +105,7 @@ class POI(StorageCommandPlugin):
              perm="poi.set_poi",
              doc="Set the planet you're on as a POI.",
              syntax="[\"](POI name)[\"]")
-    def _set_poi(self, data, connection):
+    async def _set_poi(self, data, connection):
         """
         Set the current planet as a Point of Interest. Note, you must be
         standing on a planet for this to work.
@@ -137,7 +136,7 @@ class POI(StorageCommandPlugin):
              perm="poi.set_poi",
              doc="Remove the specified POI from the POI list.",
              syntax="[\"](POI name)[\"]")
-    def _del_poi(self, data, connection):
+    async def _del_poi(self, data, connection):
         """
         Remove the specified Point of Interest from the POI list.
 

@@ -31,8 +31,8 @@ class BasicAuth(SimpleCommandPlugin):
         super().__init__()
         self.enabled = False
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if self.config.get_plugin_config(self.name)["enabled"]:
             self.logger.debug("Enabled.")
             self.enabled = True
@@ -44,7 +44,7 @@ class BasicAuth(SimpleCommandPlugin):
             self.logger.warning("| Consult README for enablement info.     |")
             self.logger.warning("+-----------------------------------------+")
 
-    def on_client_connect(self, data, connection):
+    async def on_client_connect(self, data, connection):
         """
         Catch when a the client updates the server with its connection
         details.
@@ -84,7 +84,7 @@ class BasicAuth(SimpleCommandPlugin):
                 # Starbound will take care of an incorrect password.
             elif self.plugin_config.staff_priority <= player.priority:
                 # They're privileged but failed to authenticate. Kill it.
-                yield from connection.raw_write(
+                await connection.raw_write(
                     self.build_rejection("^red;UNAUTHORIZED^reset;\n"
                                          "Privileged players must log in with "
                                          "an account defined in StarryPy3k's "

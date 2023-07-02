@@ -26,15 +26,14 @@ class Spawn(StorageCommandPlugin):
     def __init__(self):
         super().__init__()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "spawn" not in self.storage:
             self.storage["spawn"] = {}
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _move_ship(self, connection):
+    async def _move_ship(self, connection):
         """
         Generate packet that moves ship.
 
@@ -62,14 +61,14 @@ class Spawn(StorageCommandPlugin):
             ))
             flyship_packet = pparser.build_packet(packets.packets["fly_ship"],
                                                   destination)
-            yield from connection.client_raw_write(flyship_packet)
+            await connection.client_raw_write(flyship_packet)
 
     # Commands - In-game actions that can be performed
 
     @Command("spawn",
              perm="spawn.spawn",
              doc="Moves a player's ship to the spawn planet.")
-    def _spawn(self, data, connection):
+    async def _spawn(self, data, connection):
         """
         Move a players ship to the spawn planet, free of fuel charge,
         no matter where they are in the universe.
@@ -87,7 +86,7 @@ class Spawn(StorageCommandPlugin):
                          "You must be on your ship for this to work.")
             return
         try:
-            yield from self._move_ship(connection)
+            await self._move_ship(connection)
             send_message(connection,
                          "Now en route to spawn. Please stand by...")
         except NotImplementedError:
@@ -96,7 +95,7 @@ class Spawn(StorageCommandPlugin):
     @Command("set_spawn",
              perm="spawn.set_spawn",
              doc="Set the spawn planet.")
-    def _set_spawn(self, data, connection):
+    async def _set_spawn(self, data, connection):
         """
         Set the current planet as the spawn plant. Note, you must be standing
         on a planet for this to work.
@@ -116,7 +115,7 @@ class Spawn(StorageCommandPlugin):
     @Command("show_spawn",
              perm="spawn.show_spawn",
              doc="Print the current spawn location.")
-    def _show_spawn(self, data, connection):
+    async def _show_spawn(self, data, connection):
         """
         Display the coordinates of the current spawn location.
 

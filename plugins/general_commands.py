@@ -36,8 +36,8 @@ class GeneralCommands(SimpleCommandPlugin):
         self.chat_manager = None
     # Helper functions - Used by commands
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.maintenance = False
         self.rejection_message = self.config.get_plugin_config(self.name)[
             "maintenance_message"]
@@ -90,14 +90,14 @@ class GeneralCommands(SimpleCommandPlugin):
                     ban_status,
                     mute_line))
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         if self.maintenance and not connection.player.perm_check(
                 "general_commands.maintenance_bypass"):
             fail = data_parser.ConnectFailure.build(dict(
                 reason=self.rejection_message))
             pkt = pparser.build_packet(packets.packets['connect_failure'],
                                        fail)
-            yield from connection.raw_write(pkt)
+            await connection.raw_write(pkt)
             return False
         else:
             return True
@@ -107,7 +107,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("who",
              perm="general_commands.who",
              doc="Lists players who are currently logged in.")
-    def _who(self, data, connection):
+    async def _who(self, data, connection):
         """
         Return a list of players currently logged in.
 
@@ -134,7 +134,7 @@ class GeneralCommands(SimpleCommandPlugin):
              perm="general_commands.whois",
              doc="Returns client data about the specified user.",
              syntax="(username)")
-    def _whois(self, data, connection):
+    async def _whois(self, data, connection):
         """
         Display information about a player.
 
@@ -157,7 +157,7 @@ class GeneralCommands(SimpleCommandPlugin):
              doc="Gives an item to a player. "
                  "If player name is omitted, give item(s) to self.",
              syntax=("[player=self]", "(item name)", "[count=1]"))
-    def _give_item(self, data, connection):
+    async def _give_item(self, data, connection):
         """
         Give item(s) to a player.
 
@@ -201,7 +201,7 @@ class GeneralCommands(SimpleCommandPlugin):
                                                     description=""))
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
-        yield from target.raw_write(item_packet)
+        await target.raw_write(item_packet)
         send_message(connection,
                      "Gave {} (count: {}) to {}".format(
                          item,
@@ -214,7 +214,7 @@ class GeneralCommands(SimpleCommandPlugin):
              perm="general_commands.nick",
              doc="Changes your nickname to another one.",
              syntax="(username)")
-    def _nick(self, data, connection):
+    async def _nick(self, data, connection):
         """
         Change your name as it is displayed in the chat window.
 
@@ -248,7 +248,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("serverwhoami",
              perm="general_commands.whoami",
              doc="Displays your current nickname for chat.")
-    def _whoami(self, data, connection):
+    async def _whoami(self, data, connection):
         """
         Displays your current nickname and connection information.
 
@@ -262,7 +262,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("here",
              perm="general_commands.here",
              doc="Displays all players on the same planet as you.")
-    def _here(self, data, connection):
+    async def _here(self, data, connection):
         """
         Displays all players on the same planet as the user.
 
@@ -292,7 +292,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("uptime",
              perm="general_commands.uptime",
              doc="Displays the time since the server started.")
-    def _uptime(self, data, connection):
+    async def _uptime(self, data, connection):
         """
         Displays the time since the server started.
         :param data: The packet containing the command.
@@ -300,13 +300,13 @@ class GeneralCommands(SimpleCommandPlugin):
         :return: Null.
         """
         current_time = datetime.datetime.now() - self.start_time
-        yield from send_message(connection, "Uptime: {}".format(current_time))
+        send_message(connection, "Uptime: {}".format(current_time))
 
     @Command("shutdown",
              perm="general_commands.shutdown",
              doc="Shutdown the server after N seconds (default 5).",
              syntax="[time]")
-    def _shutdown(self, data, connection):
+    async def _shutdown(self, data, connection):
         """
         Shutdown the StarryPy server, disconnecting everyone.
 
@@ -323,7 +323,7 @@ class GeneralCommands(SimpleCommandPlugin):
 
         broadcast(self, "^red;(ADMIN) The server is shutting down in {} "
                         "seconds.^reset;".format(shutdown_time))
-        yield from asyncio.sleep(shutdown_time)
+        await asyncio.sleep(shutdown_time)
         # this is a noisy shutdown (makes a bit of errors in the logs). Not
         # sure how to make it better...
         self.logger.warning("Shutting down server now.")
@@ -335,7 +335,7 @@ class GeneralCommands(SimpleCommandPlugin):
              doc="Toggle maintenance mode on the server. While in "
                  "maintenance mode, the server will reject all new "
                  "connection.")
-    def _maintenance(self, data, connection):
+    async def _maintenance(self, data, connection):
         if self.maintenance:
             self.maintenance = False
             broadcast(self, "^red;NOTICE: Maintence mode disabled. "
