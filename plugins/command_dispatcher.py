@@ -148,8 +148,9 @@ class CommandDispatcher(BasePlugin):
                 General Exception error as a last-resort catch-all.
         """
         try:
-            await self.commands[command](extractor(to_parse),
-                                              connection)
+            handler = self.commands[command]
+            self.logger.info("Processing command {} with handler {}.".format(command, handler))
+            await handler(extractor(to_parse), connection)
         except SyntaxWarning as e:
             self._send_syntax_error(command, e, connection)
         except NameError as e:

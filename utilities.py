@@ -22,7 +22,7 @@ from pickle import Pickler, Unpickler
 from collections import abc
 
 path = Path(__file__).parent
-
+background_tasks = set()
 
 # Enums
 
@@ -385,6 +385,19 @@ def get_syntax(command, fn, command_prefix):
         command,
         fn.syntax)
 
+def background(coro):
+    task = asyncio.create_task(coro)
+
+    # Add task to the set. This creates a strong reference.
+    background_tasks.add(task)
+
+    # To prevent keeping references to finished tasks forever,
+    # make each task remove its own reference from the set after
+    # completion:
+    task.add_done_callback(background_tasks.discard)
+
+    return task
+
 
 def send_message(connection, *messages, **kwargs):
     """
@@ -394,7 +407,7 @@ def send_message(connection, *messages, **kwargs):
     :param messages: The message(s) to send.
     :return: A Future for the message(s) being sent.
     """
-    return asyncio.ensure_future(connection.send_message(*messages, **kwargs))
+    return background(connection.send_message(*messages, **kwargs))
 
 
 def broadcast(connection, *messages, **kwargs):
@@ -405,8 +418,7 @@ def broadcast(connection, *messages, **kwargs):
     :param messages: The message(s) to send.
     :return: A Future for the message(s) being sent.
     """
-    return asyncio.ensure_future(
-        connection.factory.broadcast(*messages, **kwargs))
+    return background(connection.factory.broadcast(*messages, **kwargs))
 
 
 def link_plugin_if_available(self, plugin):

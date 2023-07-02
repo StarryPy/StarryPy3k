@@ -2,7 +2,7 @@ import asyncio
 import collections
 from collections import abc
 
-from utilities import DotDict, recursive_dictionary_update
+from utilities import DotDict, recursive_dictionary_update, background
 
 
 class BaseMeta(type):
@@ -61,18 +61,7 @@ class BasePlugin(metaclass=BaseMeta):
 
     # helper to ensure background tasks get properly referenced until awaited
     def background(self, coro):
-        task = asyncio.create_task(coro)
-
-        # Add task to the set. This creates a strong reference.
-        self.background_tasks.add(task)
-
-        # To prevent keeping references to finished tasks forever,
-        # make each task remove its own reference from the set after
-        # completion:
-        task.add_done_callback(self.background_tasks.discard)
-
-        return task
-
+        return background(coro)
 
     async def on_protocol_request(self, data, connection):
         """Packet type: 0 """
@@ -317,13 +306,6 @@ class BasePlugin(metaclass=BaseMeta):
         """Packet type: 60 """
         return True
 
-    async def on_system_object_create(self, data, connection):
-        """Packet type: 61 """
-        return True
-
-    async def on_system_object_destroy(self, data, connection):
-        """Packet type: 62 """
-        return True
 
     async def on_system_ship_create(self, data, connection):
         """Packet type: 63 """
