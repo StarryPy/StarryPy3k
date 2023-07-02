@@ -11,6 +11,16 @@ from plugin_manager import PluginManager
 from utilities import path, read_packet, State, Direction, ChatReceiveMode
 
 
+DEBUG = True
+
+if DEBUG:
+    loglevel = logging.DEBUG
+else:
+    loglevel = logging.INFO
+
+logger = logging.getLogger('starrypy')
+logger.setLevel(loglevel)
+
 class StarryPyServer:
     """
     Primary server class. Handles all the things.
@@ -198,9 +208,7 @@ class ServerFactory:
             asyncio.ensure_future(self.plugin_manager.activate_all())
         except Exception as err:
             logger.exception("Error during server startup.", exc_info=True)
-
-            loop.stop()
-            sys.exit()
+            raise err
 
     async def broadcast(self, messages, *, mode=ChatReceiveMode.RADIO_MESSAGE,
                   **kwargs):
@@ -256,7 +264,7 @@ class ServerFactory:
             connection.die()
 
 
-async def start_server():
+async def start_server() -> tuple[ServerFactory, asyncio.AbstractServer]:
     """
     Main function for kicking off the server factory.
 
@@ -265,30 +273,21 @@ async def start_server():
     _server_factory = ServerFactory()
     config = _server_factory.configuration_manager.config
     try:
-        await asyncio.start_server(_server_factory,
+        srv = await asyncio.start_server(_server_factory,
                                         port=config['listen_port'])
     except OSError as err:
         logger.error("Error while trying to start server.")
         logger.error("{}".format(str(err)))
         sys.exit(1)
-    return _server_factory
+    return (_server_factory, srv)
 
 
-if __name__ == "__main__":
-    DEBUG = True
-
-    if DEBUG:
-        loglevel = logging.DEBUG
-    else:
-        loglevel = logging.INFO
-
+async def main():
     formatter = logging.Formatter(
         '%(asctime)s - %(levelname)s - %(name)s # %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
     aiologger = logging.getLogger("asyncio")
     aiologger.setLevel(loglevel)
-    logger = logging.getLogger('starrypy')
-    logger.setLevel(loglevel)
     if DEBUG:
         fh_d = logging.FileHandler("config/debug.log")
         fh_d.setLevel(loglevel)
@@ -306,19 +305,19 @@ if __name__ == "__main__":
 
     loop = asyncio.get_event_loop()
     loop.set_debug(False)  # Removed in commit to avoid errors.
-    # loop.executor = ThreadPoolExecutor(max_workers=100)
-    # loop.set_default_executor(loop.executor)
 
     logger.info("Starting server")
 
-    server_factory = asyncio.ensure_future(start_server())
+    (server_factory, srv) = await start_server()
 
     try:
-        loop.run_forever()
+        await srv.serve_forever()
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Exiting")
+        raise
     except Exception as e:
         logger.warning('An exception occurred: {}'.format(e))
+        raise e
     finally:
         _factory = server_factory.result()
         _factory.kill_all()
@@ -329,3 +328,8 @@ if __name__ == "__main__":
         loop.stop()
         loop.close()
         logger.info("Finished.")
+
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
