@@ -606,7 +606,7 @@ class PlayerManager(SimpleCommandPlugin):
             kick_packet = build_packet(packets["server_disconnect"],
                                        ServerDisconnect.build(
                                            dict(reason=reason)))
-            asyncio.ensure_future(player.connection.raw_write(kick_packet))
+            self.background(player.connection.raw_write(kick_packet))
         except AttributeError as e:  # Ignore errors in sending the packet.
             self.logger.debug("Error occurred while kicking user. {}".format(e))
         player.connection = None

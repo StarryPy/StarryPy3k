@@ -42,7 +42,7 @@ class MOTD(SimpleCommandPlugin):
         :return: Boolean: True. Anything else stops the client from being able
                  to connect.
         """
-        asyncio.ensure_future(self._display_motd(connection))
+        self.background(self._display_motd(connection))
         return True
 
     # Helper functions - Used by commands
@@ -91,5 +91,5 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        asyncio.ensure_future(
+        self.background(
             send_message(connection, "{}".format(self.motd)))

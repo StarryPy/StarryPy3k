@@ -56,8 +56,8 @@ class NewPlayerGreeter(SimpleCommandPlugin):
         if hasattr(player, 'seen_before'):
             return True
         else:
-            asyncio.ensure_future(self._new_player_greeter(connection))
-            asyncio.ensure_future(self._new_player_gifter(connection))
+            self.background(self._new_player_greeter(connection))
+            self.background(self._new_player_gifter(connection))
             player.seen_before = True
         return True
 

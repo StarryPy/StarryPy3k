@@ -128,7 +128,6 @@ class DiscordPlugin(BasePlugin):
         self.rank_roles = None
         self.discord_logger = None
         self.discord_client = None
-        self.discord_task = None
         self.allowed_commands = ('who', 'help', 'uptime', 'motd', 'show_spawn',
                                  'ban', 'unban', 'kick', 'list_bans', 'mute',
                                  'unmute', 'set_motd', 'whois', 'broadcast',
@@ -156,9 +155,8 @@ class DiscordPlugin(BasePlugin):
             "staff_channel"])
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
 
-        self.discord_task = asyncio.create_task(self.start_bot())
-        self.discord_task.add_done_callback(self.error_handler)
-
+        self.background(self.start_bot()).add_done_callback(self.error_handler)
+        
         self.mock_connection = MockConnection(self)
         self.rank_roles = self.config.get_plugin_config(self.name)[
             "rank_roles"]
@@ -184,7 +182,7 @@ class DiscordPlugin(BasePlugin):
         """
         if not self.enabled:
             return True;
-        asyncio.ensure_future(self.make_announce(connection, "joined")).add_done_callback(self.error_handler)
+        self.background(self.make_announce(connection, "joined")).add_done_callback(self.error_handler)
         return True
 
     async def on_client_disconnect_request(self, data, connection):
@@ -197,7 +195,7 @@ class DiscordPlugin(BasePlugin):
         """
         if not self.enabled:
             return True;
-        asyncio.ensure_future(self.make_announce(connection, "left")).add_done_callback(self.error_handler)
+        self.background(self.make_announce(connection, "left")).add_done_callback(self.error_handler)
         return True
 
     async def on_chat_sent(self, data, connection):
@@ -222,7 +220,7 @@ class DiscordPlugin(BasePlugin):
                 if self.chat_manager:
                     if not self.chat_manager.mute_check(connection.player):
                         alias = connection.player.alias
-                        asyncio.ensure_future(self.bot_write("**<{}>** {}"
+                        self.background(self.bot_write("**<{}>** {}"
                                                              .format(alias,
                                                                      msg)))
         return True
@@ -238,10 +236,10 @@ class DiscordPlugin(BasePlugin):
         self.logger.info("Starting Discord Bot")
         try:
             if(self.discord_client != None):
-                asyncio.ensure_future(self.discord_client.close())
+                self.background(self.discord_client.close())
             self.discord_client = DiscordClient(self);
             await self.discord_client.login(self.token)
-            await self.discord_client.connect()
+            await self.discord_client.connect() # sleeps forever until a problem occurs
         except Exception as e:
             self.logger.exception(e)
             raise e
@@ -260,7 +258,7 @@ class DiscordPlugin(BasePlugin):
         if message.author.id != self.client_id:
             if message.content[0] == self.command_prefix and (message.channel == self.discord_client.channel or message.channel == self.discord_client.staff_channel):
                 self.command_target = message.channel
-                asyncio.ensure_future(self.handle_command(message.content[1:],
+                self.background(self.handle_command(message.content[1:],
                                                           message.author))
             elif message.channel == self.discord_client.channel:
                 for emote in guild.emojis:
@@ -273,7 +271,7 @@ class DiscordPlugin(BasePlugin):
                 if self.config.get_plugin_config(self.name)["log_discord"]:
                     self.logger.info("<{}> {}".format(nick, text))
                 if self.irc_bot_exists and self.irc.enabled:
-                    asyncio.ensure_future(self.irc.bot_write(
+                    self.background(self.irc.bot_write(
                                           "[DC] <{}> {}".format(nick, text)))
 
     async def make_announce(self, connection, circumstance):
@@ -325,7 +323,7 @@ class DiscordPlugin(BasePlugin):
             target = self.discord_client.channel
         if target is None:
             return
-        asyncio.ensure_future(target.send(msg)).add_done_callback(self.error_handler)
+        self.background(target.send(msg)).add_done_callback(self.error_handler)
 
     def error_handler(self, future):
         try:

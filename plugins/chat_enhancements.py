@@ -214,13 +214,13 @@ class ChatEnhancements(StorageCommandPlugin):
                                             connection)
             if link_plugin_if_available(self, "irc_bot"):
                 # Try sending it to IRC if we have that available.
-                asyncio.ensure_future(
+                self.background(
                     self.plugins["irc_bot"].bot_write(
                         "<{}> {}".format(connection.player.alias,
                                          " ".join(data))))
             if link_plugin_if_available(self, "discord_bot"):
                 discord = self.plugins['discord_bot']
-                asyncio.ensure_future(discord.bot_write("**<{}>** {}"
+                self.background(discord.bot_write("**<{}>** {}"
                                                         .format(
                     connection.player.alias, " ".join(data))))
             return True

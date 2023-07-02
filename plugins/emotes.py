@@ -99,11 +99,11 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                 pass
             finally:
                 if self.irc_active:
-                    asyncio.ensure_future(
+                    self.background(
                         self.plugins["irc_bot"].bot_write(" -*- {} {}".format(
                             connection.player.alias, emote)))
                 if self.discord_active:
-                    asyncio.ensure_future(self.plugins["discord_bot"]
+                    self.background(self.plugins["discord_bot"]
                         .bot_write(" -*- {} {}".format(
                                     connection.player.alias, emote)))
                 message = "^orange;{} {}".format(connection.player.alias,

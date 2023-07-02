@@ -47,7 +47,7 @@ class MailPlugin(StorageCommandPlugin):
         :param connection:
         :return: True. Must always be true so the packet continues.
         """
-        asyncio.ensure_future(self._display_unread(connection))
+        self.background(self._display_unread(connection))
         return True
 
     async def _display_unread(self, connection):

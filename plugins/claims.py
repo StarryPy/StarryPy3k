@@ -59,8 +59,8 @@ class Claims(StorageCommandPlugin):
         :return: Boolean: True. Must be true, so that packet get passed on.
         """
         if self.config.get_plugin_config(self.name)["auto_claim_ships"]:
-            asyncio.ensure_future(self._protect_ship(connection))
-        asyncio.ensure_future(self._access_check(connection))
+            self.background(self._protect_ship(connection))
+        self.background(self._access_check(connection))
         return True
 
     async def _protect_ship(self, connection):

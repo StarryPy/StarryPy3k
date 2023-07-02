@@ -66,7 +66,7 @@ class CommandDispatcher(BasePlugin):
             if command not in self.commands:
                 return True  # There's no command here that we know of.
             else:
-                asyncio.ensure_future(self.run_command(command,
+                self.background(self.run_command(command,
                                                        connection,
                                                        to_parse[1:]))
                 return False  # We're handling the command in the event loop.

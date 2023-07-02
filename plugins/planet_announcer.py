@@ -26,7 +26,7 @@ class PlanetAnnouncer(StorageCommandPlugin):
             self.storage["greetings"] = {}
 
     async def on_world_start(self, data, connection):
-        asyncio.ensure_future(self._announce(connection))
+        self.background(self._announce(connection))
         return True
 
     async def _announce(self, connection):

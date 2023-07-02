@@ -185,7 +185,7 @@ class IRCPlugin(BasePlugin):
 
         self.ops = set()
         self.connection = MockConnection(self)
-        asyncio.ensure_future(self.update_ops())
+        self.background(self.update_ops())
 
     # Packet hooks - look for these packets and act on them
 
@@ -199,7 +199,7 @@ class IRCPlugin(BasePlugin):
         """
         if not self.enabled:
             return True
-        asyncio.ensure_future(self.announce_join(connection))
+        self.background(self.announce_join(connection))
         return True
 
     async def on_client_disconnect_request(self, data, connection):
@@ -212,7 +212,7 @@ class IRCPlugin(BasePlugin):
         """
         if not self.enabled:
             return True
-        asyncio.ensure_future(self.announce_leave(connection.player))
+        self.background(self.announce_leave(connection.player))
         return True
 
     async def on_chat_sent(self, data, connection):
@@ -237,7 +237,7 @@ class IRCPlugin(BasePlugin):
             if data["parsed"]["send_mode"] == ChatSendMode.UNIVERSE:
                 if self.chat_manager:
                     if not self.chat_manager.mute_check(connection.player):
-                        asyncio.ensure_future(self.bot_write("<{}> {}".format(
+                        self.background(self.bot_write("<{}> {}".format(
                                               connection.player.alias, msg)))
         return True
 
@@ -256,10 +256,10 @@ class IRCPlugin(BasePlugin):
         :return: None
         """
         if data[0] == self.command_prefix:
-            asyncio.ensure_future(self.handle_command(target, data[1:], mask))
+            self.background(self.handle_command(target, data[1:], mask))
         elif target.lower() == self.channel.lower():
             nick = mask.split("!")[0]
-            asyncio.ensure_future(self.send_message(data, nick))
+            self.background(self.send_message(data, nick))
         return None
 
     async def announce_irc_join(self, mask, event, channel, data):
@@ -272,7 +272,7 @@ class IRCPlugin(BasePlugin):
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("{} has {} the channel.".format(nick, move))
             if self.discord_active:
-                asyncio.ensure_future(self.discord.bot_write("[IRC] **{}** has"
+                self.background(self.discord.bot_write("[IRC] **{}** has"
                                                              " {} the IRC "
                                                              "channel."
                                                              .format(nick,
@@ -314,7 +314,7 @@ class IRCPlugin(BasePlugin):
                 if self.config.get_plugin_config(self.name)["log_irc"]:
                     self.logger.info(" -*- " + nick + " " + message)
                 if self.discord_active:
-                    asyncio.ensure_future(self.discord.bot_write(
+                    self.background(self.discord.bot_write(
                         "-*- {} {}".format(nick, message)))
                 await self.factory.broadcast(
                     "< ^orange;IRC^reset; > ^green;-*- {} {}".format(nick,
@@ -324,7 +324,7 @@ class IRCPlugin(BasePlugin):
             if self.config.get_plugin_config(self.name)["log_irc"]:
                 self.logger.info("<" + nick + "> " + message)
             if self.discord_active:
-                asyncio.ensure_future(self.discord.bot_write(
+                self.background(self.discord.bot_write(
                     "[IRC] **<{}>** {}".format(nick, message)))
             await self.factory.broadcast("[^orange;IRC^reset;] <{}> "
                                               "{}".format(nick, message),
