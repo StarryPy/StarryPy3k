@@ -11,7 +11,7 @@ class StarboundWatchdog(SimpleCommandPlugin):
     """ Provides a watchdog to automatically start a server, restart it should
     it die, and (in the future) detect hangs."""
 
-    def activate(self):
+    async def activate(self):
         self.is_64bits = sys.maxsize > 2 ** 32  # Check if it's 64 bits
         self.platform = sys.platform.lower()  # Linux, Windows, Darwin.
         self.starbound_path = pathlib.Path(self.config.config.starbound_folder)
@@ -33,8 +33,7 @@ class StarboundWatchdog(SimpleCommandPlugin):
             raise FileNotFoundError("Couldn't find starbound executable.")
         return str(p)
 
-    @asyncio.coroutine
-    def start_watchdog(self):
+    async def start_watchdog(self):
         subproc = subprocess.Popen(self.executable, shell=True)
         self.logger.info("Started Starbound server with PID: %d", subproc.pid)
         while True:
@@ -43,11 +42,11 @@ class StarboundWatchdog(SimpleCommandPlugin):
                                     "Restarting in 5 seconds...")
                 for connection in self.factory.connections:
                     connection.die()
-                yield from asyncio.sleep(5)
+                await asyncio.sleep(5)
                 self.watchdog = asyncio.Task(
                     self.start_watchdog())
                 break
-            yield from asyncio.sleep(1)
+            await asyncio.sleep(1)
         try:
             subproc.terminate()
         except ProcessLookupError:

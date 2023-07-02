@@ -55,8 +55,8 @@ class PlanetProtect(StorageCommandPlugin):
     name = "planet_protect"
     depends = ["player_manager", "command_dispatcher"]
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "locations" not in self.storage:
             self.storage["locations"] = {}
         if "converted" not in self.storage:
@@ -72,7 +72,7 @@ class PlanetProtect(StorageCommandPlugin):
 
     # Packet hooks - look for these packets and act on them
 
-    def on_spawn_entity(self, data, connection):
+    async def on_spawn_entity(self, data, connection):
         """
         Catch when a player tries spawning an object in the world.
 
@@ -97,7 +97,7 @@ class PlanetProtect(StorageCommandPlugin):
             action = data["parsed"]["spawn_type"]
             if action not in [EntitySpawnType.OBJECT, EntitySpawnType.VEHICLE]:
                 return True
-        yield from self._protection_warn(data, connection)
+        await self._protection_warn(data, connection)
 
         item_base = GiveItem.build(dict(name=data["parsed"]["payload"],
                                         count=1,
@@ -105,11 +105,11 @@ class PlanetProtect(StorageCommandPlugin):
                                         description=""))
         item_packet = pparser.build_packet(packets.packets['give_item'],
                                            item_base)
-        yield from asyncio.sleep(.1)
-        yield from connection.raw_write(item_packet)
+        await asyncio.sleep(.1)
+        await connection.raw_write(item_packet)
         return False
 
-    def on_entity_interact_result(self, data, connection):
+    async def on_entity_interact_result(self, data, connection):
         """
         Catch when a player interacts with an object in the world.
 
@@ -142,10 +142,10 @@ class PlanetProtect(StorageCommandPlugin):
                           EntityInteractionType.GO_PRONE,
                           EntityInteractionType.NOMINAL]:
                 return True
-        yield from self._protection_warn(data, connection)
+        await self._protection_warn(data, connection)
         return False
 
-    def on_tile_update(self, data, connection):
+    async def on_tile_update(self, data, connection):
         """
         Hook for tile update packet. Use to verify if changes to tiles are
         allowed for player.
@@ -170,7 +170,7 @@ class PlanetProtect(StorageCommandPlugin):
         elif protection.check_builder(connection.player):
             return True
         else:
-            yield from self._protection_warn(data, connection)
+            await self._protection_warn(data, connection)
             return False
 
     # Rather than recreating the same check for every different type of
@@ -237,8 +237,7 @@ class PlanetProtect(StorageCommandPlugin):
         """
         self.storage["locations"][str(location)].unprotect()
 
-    @asyncio.coroutine
-    def _protection_warn(self, data, connection):
+    async def _protection_warn(self, data, connection):
         """
         Warn a player about planet being protected (if they do a restricted
         activity). One minute cool-down between warnings.
@@ -264,7 +263,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.protect",
              doc="Protects a planet",
              syntax="")
-    def _protect(self, data, connection):
+    async def _protect(self, data, connection):
         """
         Protect a location. Location is taken for the player's current
         location.
@@ -281,7 +280,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.protect",
              doc="Removes protection from a planet",
              syntax="")
-    def _unprotect(self, data, connection):
+    async def _unprotect(self, data, connection):
         """
         Unprotect a location. Location is taken for the player's current
         location.
@@ -298,7 +297,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.manage_protection",
              doc="Adds a player to the current location's build list.",
              syntax="[\"](player name)[\"]")
-    def _add_builder(self, data, connection):
+    async def _add_builder(self, data, connection):
         """
         Add a builder to the builder's list for a protected location.
 
@@ -315,7 +314,7 @@ class PlanetProtect(StorageCommandPlugin):
                          "Added {} to allowed list for {}".format(
                              p.alias, connection.player.location))
             try:
-                yield from p.connection.send_message(
+                await p.connection.send_message(
                     "You've been granted build access on {} by {}".format(
                         connection.player.location, connection.player.alias))
             except AttributeError:
@@ -331,7 +330,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.manage_protection",
              doc="Deletes a player from the current location's build list",
              syntax="[\"](player name)[\"]")
-    def _del_builder(self, data, connection):
+    async def _del_builder(self, data, connection):
         """
         Remove a builder to the builder's list for a protected location.
 
@@ -355,7 +354,7 @@ class PlanetProtect(StorageCommandPlugin):
              doc="Lists all players granted build permissions "
                  "at current location",
              syntax="")
-    def _list_builders(self, data, connection):
+    async def _list_builders(self, data, connection):
         """
         List all builders allowed to build at this location.
 

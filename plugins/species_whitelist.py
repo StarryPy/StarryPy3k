@@ -31,13 +31,13 @@ class SpeciesWhitelist(BasePlugin):
                       ]}
 
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.enabled = self.config.get_plugin_config(self.name)["enabled"]
         self.allowed_species = self.config.get_plugin_config(self.name)["allowed_species"]
 
 
-    def on_client_connect(self, data, connection):
+    async def on_client_connect(self, data, connection):
         if not self.enabled:
             return True
         species = data['parsed']['species']
@@ -49,7 +49,7 @@ class SpeciesWhitelist(BasePlugin):
                             "aborted!\n\n^orange;Your species ({}) is not "
                             "allowed on this server.\n^green;Please use a "
                             "different character.".format(species))))
-            yield from connection.raw_write(rejection_packet)
+            await connection.raw_write(rejection_packet)
             connection.die()
             return False
         return True

@@ -20,17 +20,16 @@ class PlanetAnnouncer(StorageCommandPlugin):
     def __init__(self):
         super().__init__()
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         if "greetings" not in self.storage:
             self.storage["greetings"] = {}
 
-    def on_world_start(self, data, connection):
-        asyncio.ensure_future(self._announce(connection))
+    async def on_world_start(self, data, connection):
+        self.background(self._announce(connection))
         return True
 
-    @asyncio.coroutine
-    def _announce(self, connection):
+    async def _announce(self, connection):
         """
         Announce to all players in the world when a new player beams in,
         and display the greeting message to the new player, if set.
@@ -38,7 +37,7 @@ class PlanetAnnouncer(StorageCommandPlugin):
         :param connection: The connection of the player beaming in.
         :return: Null.
         """
-        yield from asyncio.sleep(.5)
+        await asyncio.sleep(.5)
         location = str(connection.player.location)
         for uuid in self.plugins["player_manager"].players_online:
             p = self.plugins["player_manager"].get_player_by_uuid(uuid)
@@ -52,15 +51,15 @@ class PlanetAnnouncer(StorageCommandPlugin):
              perm="planet_announcer.set_greeting",
              doc="Sets the greeting message to be displayed when a player "
                  "enters this planet, or clears it if unspecified.")
-    def _set_greeting(self, data, connection):
+    async def _set_greeting(self, data, connection):
         location = str(connection.player.location)
         msg = " ".join(data)
         if not msg:
             if location in self.storage["greetings"]:
                 self.storage["greetings"].pop(location)
-                yield from send_message(connection, "Greeting message "
+                send_message(connection, "Greeting message "
                                                     "cleared.")
         else:
             self.storage["greetings"][location] = msg
-            yield from send_message(connection, "Greeting message set to \"{}"
+            send_message(connection, "Greeting message set to \"{}"
                                                 "\".".format(msg))

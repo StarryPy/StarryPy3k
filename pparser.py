@@ -87,8 +87,7 @@ class PacketParser:
         self.loop = asyncio.get_event_loop()
         self._reaper = self.loop.create_task(self._reap())
 
-    @asyncio.coroutine
-    def parse(self, packet):
+    async def parse(self, packet):
         """
         Given a packet preped packet from the stream, parse it down to its
         parts. First check if the packet is one we've seen before; if it is,
@@ -106,17 +105,16 @@ class PacketParser:
                     packet["parsed"] = self._cache[packet["hash"]].packet[
                         "parsed"]
                 else:
-                    packet = yield from self._parse_and_cache_packet(packet)
+                    packet = await self._parse_and_cache_packet(packet)
             else:
-                packet = yield from self._parse_packet(packet)
+                packet = await self._parse_packet(packet)
         except Exception as e:
             print("Error during parsing.")
             print(traceback.print_exc())
         finally:
             return packet
 
-    @asyncio.coroutine
-    def _reap(self):
+    async def _reap(self):
         """
         Prune packets from the cache that are not being used, and that are
         older than the "packet_reap_time".
@@ -124,14 +122,13 @@ class PacketParser:
         :return: None.
         """
         while True:
-            yield from asyncio.sleep(self.config.config["packet_reap_time"])
+            await asyncio.sleep(self.config.config["packet_reap_time"])
             for h, cached_packet in self._cache.copy().items():
                 cached_packet.count -= 1
                 if cached_packet.count <= 0:
                     del (self._cache[h])
 
-    @asyncio.coroutine
-    def _parse_and_cache_packet(self, packet):
+    async def _parse_and_cache_packet(self, packet):
         """
         Take a new packet and pass it to the parser. Once we get it back,
         make a copy of it to the cache.
@@ -139,12 +136,11 @@ class PacketParser:
         :param packet: Packet with header information parsed.
         :return: Fully parsed packet.
         """
-        packet = yield from self._parse_packet(packet)
+        packet = await self._parse_packet(packet)
         self._cache[packet["hash"]] = CachedPacket(packet=packet)
         return packet
 
-    @asyncio.coroutine
-    def _parse_packet(self, packet):
+    async def _parse_packet(self, packet):
         """
         Parse the packet by giving it to the appropriate parser.
 
@@ -155,7 +151,7 @@ class PacketParser:
         if res is None:
             packet["parsed"] = {}
         else:
-            #packet["parsed"] = yield from self.loop.run_in_executor(
+            #packet["parsed"] = await self.loop.run_in_executor(
             #    self.loop.executor, res.parse, packet["data"])
             # Removed due to issues with testers. Need to evaluate what's going
             # on.

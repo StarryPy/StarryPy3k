@@ -59,11 +59,10 @@ class MockConnection:
         self.owner = owner
         self.player = MockPlayer()
 
-    @asyncio.coroutine
-    def send_message(self, *messages):
+    async def send_message(self, *messages):
         for message in messages:
             message = self.owner.color_strip.sub("", message)
-            yield from self.owner.bot_write(message,
+            await self.owner.bot_write(message,
                                             target=self.owner.command_target)
         return None
 
@@ -71,15 +70,13 @@ class DiscordClient(discord.Client):
 
     def __init__(self, plugin):
         intents = discord.Intents.default()  
-        intents.guild_messages = True
-        #intents.message_content = True # this is not supported on our version of discord.py
+        intents.message_content = True
         discord.Client.__init__(self, intents = intents)
         self.starry_plugin = plugin
         self.channel = None
         self.staff_channel = None
 
-    @asyncio.coroutine
-    def on_ready(self):
+    async def on_ready(self):
         self.channel = self.get_channel(self.starry_plugin.channel_id)
         self.staff_channel = self.get_channel(self.starry_plugin.staff_channel_id)
         if not self.channel:
@@ -89,9 +86,8 @@ class DiscordClient(discord.Client):
             self.starry_plugin.logger.warning("Couldn't get staff channel! Reports "
                                 "will be sent to the main channel.")
 
-    @asyncio.coroutine
-    def on_message(self, message):
-        yield from self.starry_plugin.send_to_game(message)
+    async def on_message(self, message):
+        await self.starry_plugin.send_to_game(message)
 
 
 class DiscordPlugin(BasePlugin):
@@ -138,11 +134,12 @@ class DiscordPlugin(BasePlugin):
                                  'user', 'del_player', 'maintenance_mode',
                                  'shutdown', 'save')
 
-    def activate(self):
+    async def activate(self):
         self.enabled = self.config.get_plugin_config(self.name)["enabled"]
         if not self.enabled:
             return;
-        BasePlugin.activate(self)
+        await super().activate()
+
         self.dispatcher = self.plugins.command_dispatcher
         self.irc_bot_exists = link_plugin_if_available(self, 'irc_bot')
         if self.irc_bot_exists:
@@ -157,7 +154,9 @@ class DiscordPlugin(BasePlugin):
         self.staff_channel_id = int(self.config.get_plugin_config(self.name)[
             "staff_channel"])
         self.sc = self.config.get_plugin_config(self.name)["strip_colors"]
-        asyncio.ensure_future(self.start_bot()).add_done_callback(self.error_handler)
+
+        self.background(self.start_bot()).add_done_callback(self.error_handler)
+        
         self.mock_connection = MockConnection(self)
         self.rank_roles = self.config.get_plugin_config(self.name)[
             "rank_roles"]
@@ -171,9 +170,16 @@ class DiscordPlugin(BasePlugin):
                                           datefmt='%Y-%m-%d %H:%M:%S'))
         self.discord_logger.addHandler(ch)
 
+    async def deactivate(self):
+        if not self.enabled:
+            return
+        if self.discord_client:
+            await self.discord_client.close()
+        await super().deactivate()
+
     # Packet hooks - look for these packets and act on them
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         """
         Hook on bot successfully connecting to server.
 
@@ -183,10 +189,10 @@ class DiscordPlugin(BasePlugin):
         """
         if not self.enabled:
             return True;
-        asyncio.ensure_future(self.make_announce(connection, "joined")).add_done_callback(self.error_handler)
+        self.background(self.make_announce(connection, "joined")).add_done_callback(self.error_handler)
         return True
 
-    def on_client_disconnect_request(self, data, connection):
+    async def on_client_disconnect_request(self, data, connection):
         """
         Hook on bot disconnecting from the server.
 
@@ -196,10 +202,10 @@ class DiscordPlugin(BasePlugin):
         """
         if not self.enabled:
             return True;
-        asyncio.ensure_future(self.make_announce(connection, "left")).add_done_callback(self.error_handler)
+        self.background(self.make_announce(connection, "left")).add_done_callback(self.error_handler)
         return True
 
-    def on_chat_sent(self, data, connection):
+    async def on_chat_sent(self, data, connection):
         """
         Hook on message being broadcast on server. Display it in Discord.
 
@@ -221,15 +227,14 @@ class DiscordPlugin(BasePlugin):
                 if self.chat_manager:
                     if not self.chat_manager.mute_check(connection.player):
                         alias = connection.player.alias
-                        asyncio.ensure_future(self.bot_write("**<{}>** {}"
+                        self.background(self.bot_write("**<{}>** {}"
                                                              .format(alias,
                                                                      msg)))
         return True
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def start_bot(self):
+    async def start_bot(self):
         """
         :param :
         :param :
@@ -238,15 +243,17 @@ class DiscordPlugin(BasePlugin):
         self.logger.info("Starting Discord Bot")
         try:
             if(self.discord_client != None):
-                asyncio.ensure_future(self.discord_client.close())
+                self.background(self.discord_client.close())
             self.discord_client = DiscordClient(self);
-            yield from self.discord_client.login(self.token)
-            yield from self.discord_client.connect()
+            await self.discord_client.login(self.token)
+            await self.discord_client.connect() # sleeps forever until a problem occurs
+        except asyncio.CancelledError as e:
+            self.logger.info("Caught interrupt, shutting down.")
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception("Caught exception in Discord run; shutting down: {}", e)
+            raise e
 
-    @asyncio.coroutine
-    def send_to_game(self, message):
+    async def send_to_game(self, message):
         """
         Broadcast a message on the server. Make sure it isn't coming from the
         bot (or else we get duplicate messages).
@@ -260,24 +267,23 @@ class DiscordPlugin(BasePlugin):
         if message.author.id != self.client_id:
             if message.content[0] == self.command_prefix and (message.channel == self.discord_client.channel or message.channel == self.discord_client.staff_channel):
                 self.command_target = message.channel
-                asyncio.ensure_future(self.handle_command(message.content[1:],
+                self.background(self.handle_command(message.content[1:],
                                                           message.author))
             elif message.channel == self.discord_client.channel:
                 for emote in guild.emojis:
                     text = text.replace("<:{}:{}>".format(emote.name,
                                                           emote.id),
                                         ":{}:".format(emote.name))
-                yield from self.factory.broadcast("[^orange;DC^reset;] <{}>"
+                await self.factory.broadcast("[^orange;DC^reset;] <{}>"
                                                   " {}".format(nick, text),
                                                   mode=ChatReceiveMode.BROADCAST)
                 if self.config.get_plugin_config(self.name)["log_discord"]:
                     self.logger.info("<{}> {}".format(nick, text))
                 if self.irc_bot_exists and self.irc.enabled:
-                    asyncio.ensure_future(self.irc.bot_write(
+                    self.background(self.irc.bot_write(
                                           "[DC] <{}> {}".format(nick, text)))
 
-    @asyncio.coroutine
-    def make_announce(self, connection, circumstance):
+    async def make_announce(self, connection, circumstance):
         """
         Send a message to Discord when someone joins/leaves the server.
 
@@ -285,13 +291,12 @@ class DiscordPlugin(BasePlugin):
         :param circumstance:
         :return: Null.
         """
-        yield from asyncio.sleep(1)
+        await asyncio.sleep(1)
         if hasattr(connection, "player"):
-            yield from self.bot_write("**{}** has {} the server.".format(
+            await self.bot_write("**{}** has {} the server.".format(
                 connection.player.alias, circumstance))
 
-    @asyncio.coroutine
-    def handle_command(self, data, user):
+    async def handle_command(self, data, user):
         split = data.split()
         command = split[0]
         to_parse = split[1:]
@@ -310,30 +315,32 @@ class DiscordPlugin(BasePlugin):
         if command in self.dispatcher.commands:
             # Only handle commands that work from Discord
             if command in self.allowed_commands:
-                yield from self.dispatcher.run_command(command,
+                await self.dispatcher.run_command(command,
                                                        self.mock_connection,
                                                        to_parse)
             else:
-                yield from self.bot_write("Command not handled by Discord.",
+                await self.bot_write("Command not handled by Discord.",
                                           target=self.command_target)
         else:
-            yield from self.bot_write("Command not found.",
+            await self.bot_write("Command not found.",
                                       target=self.command_target)
 
-    @asyncio.coroutine
-    def bot_write(self, msg, target=None):
-        if self.discord_client == None or self.discord_client.is_closed:
-            self.start_bot()
+    async def bot_write(self, msg, target=None):
+        if self.discord_client == None or not self.discord_client.is_ready():
+            await self.start_bot()
         if target is None:
             target = self.discord_client.channel
         if target is None:
             return
-        asyncio.ensure_future(target.send(msg)).add_done_callback(self.error_handler)
+        self.background(target.send(msg)).add_done_callback(self.error_handler)
 
     def error_handler(self, future):
         try:
             future.result()
+        except KeyboardInterrupt:
+            # exiting, can leave this alone
+            return
         except Exception as e:
             self.logger.error("Caught an unhandled exception in Discord bot.  Will restart.")
             self.logger.exception(e)
-            asyncio.ensure_future(self.start_bot())
+            self.background(self.start_bot()).add_done_callback(self.error_handler)
