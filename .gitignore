@@ -41,8 +41,7 @@ nosetests.xml
 /config/player.bak
 /config/player.dir
 /config/player
-/config/config.json
-/config/permissions.json
+/config/*.json
 *config.json
 *.db
 *.db-journal

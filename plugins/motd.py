@@ -24,13 +24,13 @@ class MOTD(SimpleCommandPlugin):
         super().__init__()
         self.motd = None
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.motd = self.config.get_plugin_config(self.name)["message"]
 
     # Packet hooks - look for these packets and act on them
 
-    def on_connect_success(self, data, connection):
+    async def on_connect_success(self, data, connection):
         """
         Client successfully connected hook. If a client connects, show them the
         Message of the day. We have to wrap the display of the MOTD in a future
@@ -42,13 +42,12 @@ class MOTD(SimpleCommandPlugin):
         :return: Boolean: True. Anything else stops the client from being able
                  to connect.
         """
-        asyncio.ensure_future(self._display_motd(connection))
+        self.background(self._display_motd(connection))
         return True
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _display_motd(self, connection):
+    async def _display_motd(self, connection):
         """
         Helper routine for displaying the MOTD on client connect. Sleeps for
         one second before displaying the MOTD. Do this in a non-blocking
@@ -57,8 +56,7 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection we're showing the message to.
         :return: Null.
         """
-        yield from send_message(connection, "{}".format(self.motd))
-        return
+        send_message(connection, "{}".format(self.motd))
 
     # Commands - In-game actions that can be performed
 
@@ -66,7 +64,7 @@ class MOTD(SimpleCommandPlugin):
              perm="motd.set_motd",
              doc="Sets the 'Message of the Day' text.",
              syntax="(message text)")
-    def _set_motd(self, data, connection):
+    async def _set_motd(self, data, connection):
         """
         Sets the 'Message of the Day' text.
 
@@ -84,7 +82,7 @@ class MOTD(SimpleCommandPlugin):
     @Command("motd",
              perm="motd.motd",
              doc="Displays the 'Message of the Day' text.")
-    def _motd(self, data, connection):
+    async def _motd(self, data, connection):
         """
         Displays the 'Message of the Day' text to the requesting user.
 
@@ -92,5 +90,4 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        asyncio.ensure_future(
-            send_message(connection, "{}".format(self.motd)))
+        send_message(connection, "{}".format(self.motd))

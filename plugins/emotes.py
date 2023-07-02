@@ -51,8 +51,8 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
         self.discord_active = False
         self.chat_enhancements = False
 
-    def activate(self):
-        super().activate()
+    async def activate(self):
+        await super().activate()
         self.irc_active = link_plugin_if_available(self, "irc_bot")
         self.discord_active = link_plugin_if_available(self, "discord_bot")
         self.chat_enhancements = link_plugin_if_available(self,
@@ -60,20 +60,19 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
 
     # Helper functions - Used by commands
 
-    @asyncio.coroutine
-    def _send_to_server(self, message, mode, connection):
+    async def _send_to_server(self, message, mode, connection):
         msg_base = data_parser.ChatSent.build(dict(message="".join(message),
                                                    send_mode=mode))
         msg_packet = pparser.build_packet(packets.packets['chat_sent'],
                                           msg_base)
-        yield from connection.client_raw_write(msg_packet)
+        await connection.client_raw_write(msg_packet)
 
     # Commands - In-game actions that can be performed
 
     @Command("me",
              perm="emotes.emote",
              doc="Perform emote actions.")
-    def _emote(self, data, connection):
+    async def _emote(self, data, connection):
         """
         Command to provide in-game text emotes.
 
@@ -100,17 +99,17 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                 pass
             finally:
                 if self.irc_active:
-                    asyncio.ensure_future(
+                    self.background(
                         self.plugins["irc_bot"].bot_write(" -*- {} {}".format(
                             connection.player.alias, emote)))
                 if self.discord_active:
-                    asyncio.ensure_future(self.plugins["discord_bot"]
+                    self.background(self.plugins["discord_bot"]
                         .bot_write(" -*- {} {}".format(
                                     connection.player.alias, emote)))
                 message = "^orange;{} {}".format(connection.player.alias,
                                                  emote)
                 try:
-                    yield from (
+                    await (
                         self._send_to_server(message,
                                              ChatSendMode.UNIVERSE,
                                              connection))
@@ -121,7 +120,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
     @Command("mel",
              perm="emotes.emote",
              doc="Perform emote actions in local chat.")
-    def _emote_local(self, data, connection):
+    async def _emote_local(self, data, connection):
         """
         Command to provide in-game text emotes for local chat.
 
@@ -150,7 +149,7 @@ class Emotes(StorageMixin, SimpleCommandPlugin):
                 message = "^orange;{} {}".format(connection.player.alias,
                                                  emote)
                 try:
-                    yield from (
+                    await (
                         self._send_to_server(message,
                                              ChatSendMode.LOCAL,
                                              connection))

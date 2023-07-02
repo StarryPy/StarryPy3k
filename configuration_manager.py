@@ -80,3 +80,4 @@ class ConfigurationManager:
             raise ValueError("Plugin name provided is not valid.")
         if isinstance(new_value, dict):
             self.config.plugins[plugin_name] = new_value
+            self.save_config()
