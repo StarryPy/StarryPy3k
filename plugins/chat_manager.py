@@ -68,7 +68,7 @@ class ChatManager(SimpleCommandPlugin):
              perm="chat_manager.mute",
              doc="Mutes a user",
              syntax="(username)")
-    def _mute(self, data, connection):
+    async def _mute(self, data, connection):
         """
         Mute command. Pulls target's name from data stream. Check if valid
         player. Also check if player can be muted, or is already muted.
@@ -103,7 +103,7 @@ class ChatManager(SimpleCommandPlugin):
              perm="chat_manager.mute",
              doc="Unmutes a player",
              syntax="(username)")
-    def _unmute(self, data, connection):
+    async def _unmute(self, data, connection):
         """
         Unmute command. Pulls target's name from data stream. Check if valid
         player. Check that player is actually muted. If possible, unmute

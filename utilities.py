@@ -464,7 +464,7 @@ class Command:
                 if self.perm is not None:
                     if not connection.player.perm_check(self.perm):
                         raise PermissionError
-                return f(s, data, connection)
+                return await f(s, data, connection)
             except PermissionError:
                 send_message(connection,
                              "You don't have permissions to do that.")

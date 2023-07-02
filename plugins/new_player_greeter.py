@@ -71,7 +71,7 @@ class NewPlayerGreeter(SimpleCommandPlugin):
         :return: Null.
         """
         await asyncio.sleep(1.3)
-        await send_message(connection,
+        send_message(connection,
                                 "{}".format(self.greeting),
                                 mode=ChatReceiveMode.RADIO_MESSAGE)
         return

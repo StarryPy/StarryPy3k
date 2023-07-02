@@ -32,7 +32,7 @@ class HelpPlugin(SimpleCommandPlugin):
     @Command("help",
              perm="help.help",
              doc="Help command.")
-    def _help(self, data, connection):
+    async def _help(self, data, connection):
         """
         Command to provide in-game help with commands.
 

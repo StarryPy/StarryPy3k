@@ -105,7 +105,7 @@ class POI(StorageCommandPlugin):
              perm="poi.set_poi",
              doc="Set the planet you're on as a POI.",
              syntax="[\"](POI name)[\"]")
-    def _set_poi(self, data, connection):
+    async def _set_poi(self, data, connection):
         """
         Set the current planet as a Point of Interest. Note, you must be
         standing on a planet for this to work.
@@ -136,7 +136,7 @@ class POI(StorageCommandPlugin):
              perm="poi.set_poi",
              doc="Remove the specified POI from the POI list.",
              syntax="[\"](POI name)[\"]")
-    def _del_poi(self, data, connection):
+    async def _del_poi(self, data, connection):
         """
         Remove the specified Point of Interest from the POI list.
 

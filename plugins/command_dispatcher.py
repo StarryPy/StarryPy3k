@@ -7,6 +7,8 @@ should register themselves through CommandDispatcher.
 This should be done by using the @Command decorator in a SimpleCommandPlugin
 subclass, though it could be done manually in tricky use-cases.
 
+Note that your @Command subroutines must be async functions.
+
 Original authors: AMorporkian
 Updated for release: kharidiron
 """

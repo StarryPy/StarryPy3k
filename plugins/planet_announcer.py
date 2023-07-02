@@ -57,9 +57,9 @@ class PlanetAnnouncer(StorageCommandPlugin):
         if not msg:
             if location in self.storage["greetings"]:
                 self.storage["greetings"].pop(location)
-                await send_message(connection, "Greeting message "
+                send_message(connection, "Greeting message "
                                                     "cleared.")
         else:
             self.storage["greetings"][location] = msg
-            await send_message(connection, "Greeting message set to \"{}"
+            send_message(connection, "Greeting message set to \"{}"
                                                 "\".".format(msg))

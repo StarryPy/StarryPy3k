@@ -263,7 +263,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.protect",
              doc="Protects a planet",
              syntax="")
-    def _protect(self, data, connection):
+    async def _protect(self, data, connection):
         """
         Protect a location. Location is taken for the player's current
         location.
@@ -280,7 +280,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.protect",
              doc="Removes protection from a planet",
              syntax="")
-    def _unprotect(self, data, connection):
+    async def _unprotect(self, data, connection):
         """
         Unprotect a location. Location is taken for the player's current
         location.
@@ -330,7 +330,7 @@ class PlanetProtect(StorageCommandPlugin):
              perm="planet_protect.manage_protection",
              doc="Deletes a player from the current location's build list",
              syntax="[\"](player name)[\"]")
-    def _del_builder(self, data, connection):
+    async def _del_builder(self, data, connection):
         """
         Remove a builder to the builder's list for a protected location.
 
@@ -354,7 +354,7 @@ class PlanetProtect(StorageCommandPlugin):
              doc="Lists all players granted build permissions "
                  "at current location",
              syntax="")
-    def _list_builders(self, data, connection):
+    async def _list_builders(self, data, connection):
         """
         List all builders allowed to build at this location.
 

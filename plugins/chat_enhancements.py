@@ -98,7 +98,7 @@ class ChatEnhancements(StorageCommandPlugin):
                                             "".format(data["parsed"]["name"]))
                         sender = data["parsed"]["name"]
 
-        await send_message(connection,
+        send_message(connection,
                                 data["parsed"]["message"],
                                 mode=data["parsed"]["header"]["mode"],
                                 client_id=data["parsed"]["header"]["client_id"],
@@ -130,7 +130,7 @@ class ChatEnhancements(StorageCommandPlugin):
             if data["parsed"]["send_mode"] in [ChatSendMode.LOCAL,
                                                ChatSendMode.PARTY] and \
                     p.logged_in:
-                await send_message(p.connection,
+                send_message(p.connection,
                                         msg,
                                         mode=ChatReceiveMode.BROADCAST,
                                         name=sender)
@@ -185,7 +185,7 @@ class ChatEnhancements(StorageCommandPlugin):
             sender = self.decorate_line(connection)
             for p in self.social_spies:
                 if p.logged_in:
-                    await send_message(p.connection,
+                    send_message(p.connection,
                                             msg,
                                             mode=ChatReceiveMode.BROADCAST,
                                             name=sender)
@@ -243,7 +243,7 @@ class ChatEnhancements(StorageCommandPlugin):
             sender = self.decorate_line(connection)
             for p in self.social_spies:
                 if p.logged_in:
-                    await send_message(p.connection,
+                    send_message(p.connection,
                                             msg,
                                             mode=ChatReceiveMode.BROADCAST,
                                             name=sender)
@@ -294,13 +294,13 @@ class ChatEnhancements(StorageCommandPlugin):
             sender = self.decorate_line(connection)
             send_mode = ChatReceiveMode.WHISPER
             channel = "Private"
-            await send_message(recipient.connection,
+            send_message(recipient.connection,
                                     message,
                                     client_id=client_id,
                                     name=sender,
                                     mode=send_mode,
                                     channel=channel)
-            await send_message(connection,
+            send_message(connection,
                                     message,
                                     client_id=client_id,
                                     name=sender,
@@ -312,12 +312,12 @@ class ChatEnhancements(StorageCommandPlugin):
             ssmsg = "[SS]: " + message
             for p in self.social_spies:
                 if p.logged_in:
-                    await send_message(p.connection,
+                    send_message(p.connection,
                                             ssmsg,
                                             name=sssender,
                                             mode=ChatReceiveMode.BROADCAST)
         else:
-            await send_message(connection,
+            send_message(connection,
                                     "Couldn't find a player with name {}"
                                     "".format(name))
 
@@ -361,13 +361,13 @@ class ChatEnhancements(StorageCommandPlugin):
             sender = self.decorate_line(connection)
             send_mode = ChatReceiveMode.WHISPER
             channel = "Private"
-            await send_message(recipient.connection,
+            send_message(recipient.connection,
                                     message,
                                     client_id=client_id,
                                     name=sender,
                                     mode=send_mode,
                                     channel=channel)
-            await send_message(connection,
+            send_message(connection,
                                     message,
                                     client_id=client_id,
                                     name=sender,
@@ -379,12 +379,12 @@ class ChatEnhancements(StorageCommandPlugin):
             ssmsg = "[SS]: " + message
             for p in self.social_spies:
                 if p.logged_in:
-                    await send_message(p.connection,
+                    send_message(p.connection,
                                             ssmsg,
                                             name=sssender,
                                             mode=ChatReceiveMode.BROADCAST)
         else:
-            await send_message(connection,
+            send_message(connection,
                                     "You haven't been messaged by anyone.")
 
     @Command("ignore",
@@ -406,11 +406,11 @@ class ChatEnhancements(StorageCommandPlugin):
                 self.storage["ignores"][user] = []
             if target.uuid in self.storage["ignores"][user]:
                 self.storage["ignores"][user].remove(target.uuid)
-                await send_message(connection, "User {} removed from "
+                send_message(connection, "User {} removed from "
                                         "ignores list.".format(target.alias))
             else:
                 self.storage["ignores"][user].append(target.uuid)
-                await send_message(connection, "User {} added to ignores "
+                send_message(connection, "User {} added to ignores "
                                         "list.".format(target.alias))
 
     @Command("socialspy",
@@ -420,7 +420,7 @@ class ChatEnhancements(StorageCommandPlugin):
     async def _socialspy(self, data, connection):
         if connection.player in self.social_spies:
             self.social_spies.remove(connection.player)
-            await send_message(connection, "Social spy disabled.")
+            send_message(connection, "Social spy disabled.")
         else:
             self.social_spies.add(connection.player)
-            await send_message(connection, "Social spy enabled.")
+            send_message(connection, "Social spy enabled.")

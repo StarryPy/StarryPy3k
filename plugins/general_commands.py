@@ -107,7 +107,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("who",
              perm="general_commands.who",
              doc="Lists players who are currently logged in.")
-    def _who(self, data, connection):
+    async def _who(self, data, connection):
         """
         Return a list of players currently logged in.
 
@@ -134,7 +134,7 @@ class GeneralCommands(SimpleCommandPlugin):
              perm="general_commands.whois",
              doc="Returns client data about the specified user.",
              syntax="(username)")
-    def _whois(self, data, connection):
+    async def _whois(self, data, connection):
         """
         Display information about a player.
 
@@ -214,7 +214,7 @@ class GeneralCommands(SimpleCommandPlugin):
              perm="general_commands.nick",
              doc="Changes your nickname to another one.",
              syntax="(username)")
-    def _nick(self, data, connection):
+    async def _nick(self, data, connection):
         """
         Change your name as it is displayed in the chat window.
 
@@ -248,7 +248,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("serverwhoami",
              perm="general_commands.whoami",
              doc="Displays your current nickname for chat.")
-    def _whoami(self, data, connection):
+    async def _whoami(self, data, connection):
         """
         Displays your current nickname and connection information.
 
@@ -262,7 +262,7 @@ class GeneralCommands(SimpleCommandPlugin):
     @Command("here",
              perm="general_commands.here",
              doc="Displays all players on the same planet as you.")
-    def _here(self, data, connection):
+    async def _here(self, data, connection):
         """
         Displays all players on the same planet as the user.
 
@@ -300,7 +300,7 @@ class GeneralCommands(SimpleCommandPlugin):
         :return: Null.
         """
         current_time = datetime.datetime.now() - self.start_time
-        await send_message(connection, "Uptime: {}".format(current_time))
+        send_message(connection, "Uptime: {}".format(current_time))
 
     @Command("shutdown",
              perm="general_commands.shutdown",
@@ -335,7 +335,7 @@ class GeneralCommands(SimpleCommandPlugin):
              doc="Toggle maintenance mode on the server. While in "
                  "maintenance mode, the server will reject all new "
                  "connection.")
-    def _maintenance(self, data, connection):
+    async def _maintenance(self, data, connection):
         if self.maintenance:
             self.maintenance = False
             broadcast(self, "^red;NOTICE: Maintence mode disabled. "

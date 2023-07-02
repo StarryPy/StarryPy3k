@@ -72,7 +72,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
             for uuid in self.plugins["player_manager"].players_online:
                 p = self.plugins["player_manager"].get_player_by_uuid(uuid)
                 if p.perm_check("privileged_chatter.modchat"):
-                    await send_message(p.connection,
+                    send_message(p.connection,
                                             "{}{}^reset;".format(
                                                 self.modchat_color, message),
                                             client_id=p.client_id,
@@ -101,7 +101,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
             send_mode = ChatReceiveMode.BROADCAST
             channel = ""
             mods_online = False
-            await send_message(connection,
+            send_message(connection,
                                     "{}{}^reset;".format(
                                         self.report_prefix, message),
                                     client_id=connection.player.client_id,
@@ -112,7 +112,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
                 p = self.plugins["player_manager"].get_player_by_uuid(uuid)
                 if p.perm_check("privileged_chatter.modchat"):
                     mods_online = True
-                    await send_message(p.connection,
+                    send_message(p.connection,
                                             "{}{}^reset;".format(
                                                 self.report_prefix, message),
                                             client_id=p.client_id,
@@ -130,7 +130,7 @@ class PrivilegedChatter(SimpleCommandPlugin):
              perm="privileged_chatter.broadcast",
              doc="Sends a message to everyone on the server.",
              syntax="(message)")
-    def _broadcast(self, data, connection):
+    async def _broadcast(self, data, connection):
         """
         Broadcast a message to everyone on the server. Currently, this is
         actually redundant, as sending a message regularly is already a

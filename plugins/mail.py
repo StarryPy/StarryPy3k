@@ -58,10 +58,10 @@ class MailPlugin(StorageCommandPlugin):
         unread_count = len([x for x in mailbox if x.unread])
         mail_count = len(mailbox)
         if unread_count > 0:
-            await send_message(connection, "You have {} unread messages."
+            send_message(connection, "You have {} unread messages."
                                     .format(unread_count))
         if mail_count >= self.max_mail * 0.8:
-            await send_message(connection, "Your mailbox is almost full!")
+            send_message(connection, "Your mailbox is almost full!")
 
     def send_mail(self, target, author, message):
         """
@@ -92,15 +92,15 @@ class MailPlugin(StorageCommandPlugin):
                 self.storage['mail'][uid] = []
             mailbox = self.storage['mail'][uid]
             if len(mailbox) >= self.max_mail:
-                await send_message(connection, "{}'s mailbox is full!"
+                send_message(connection, "{}'s mailbox is full!"
                                         .format(target.alias))
             else:
                 mail = Mail(" ".join(data[1:]), connection.player)
                 mailbox.insert(0, mail)
-                await send_message(connection, "Mail delivered to {}."
+                send_message(connection, "Mail delivered to {}."
                                         .format(target.alias))
                 if target.logged_in:
-                    await send_message(target.connection, "New mail from "
+                    send_message(target.connection, "New mail from "
                                                                "{}!"
                                             .format(connection.player.alias))
         else:
@@ -120,15 +120,15 @@ class MailPlugin(StorageCommandPlugin):
                 index = int(data[0]) - 1
                 mail = mailbox[index]
                 mail.unread = False
-                await send_message(connection, "From {} on {}: \n{}"
+                send_message(connection, "From {} on {}: \n{}"
                                         .format(mail.author.alias,
                                                 mail.time.strftime("%d %b "
                                                                    "%H:%M"),
                                                 mail.message))
             except ValueError:
-                await send_message(connection, "Specify a valid number.")
+                send_message(connection, "Specify a valid number.")
             except IndexError:
-                await send_message(connection, "No mail with that "
+                send_message(connection, "No mail with that "
                                                     "number.")
         else:
             unread_mail = False
@@ -136,13 +136,13 @@ class MailPlugin(StorageCommandPlugin):
                 if mail.unread:
                     unread_mail = True
                     mail.unread = False
-                    await send_message(connection, "From {} on {}: \n{}"
+                    send_message(connection, "From {} on {}: \n{}"
                                             .format(mail.author.alias,
                                                     mail.time
                                                     .strftime("%d %b %H:%M"),
                                                     mail.message))
             if not unread_mail:
-                await send_message(connection, "No unread mail to "
+                send_message(connection, "No unread mail to "
                                                     "display.")
 
     @Command("listmail",
@@ -158,7 +158,7 @@ class MailPlugin(StorageCommandPlugin):
                 count = 1
                 for mail in mailbox:
                         if mail.unread:
-                            await send_message(connection, "* {}: From "
+                            send_message(connection, "* {}: From "
                                                                 "{} on {}"
                                                     .format(count,
                                                             mail.author.alias,
@@ -166,20 +166,20 @@ class MailPlugin(StorageCommandPlugin):
                                                                 "%d %b ""%H:%M")))
                             count += 1
                 if count == 1:
-                    await send_message(connection, "No unread mail in "
+                    send_message(connection, "No unread mail in "
                                                         "mailbox.")
             elif data[0] == "read":
                 count = 1
                 for mail in mailbox:
                     if not mail.unread:
-                        await send_message(connection, "{}: From {} on {}"
+                        send_message(connection, "{}: From {} on {}"
                                                 .format(count,
                                                         mail.author.alias,
                                                         mail.time.strftime(
                                                             "%d %b %H:%M")))
                     count += 1
                 if count == 1:
-                    await send_message(connection, "No read mail in "
+                    send_message(connection, "No read mail in "
                                                         "mailbox.")
             else:
                 raise SyntaxWarning("Invalid category. Valid categories are "
@@ -192,10 +192,10 @@ class MailPlugin(StorageCommandPlugin):
                                                             "%d %b %H:%M"))
                 if mail.unread:
                     msg = "* {}".format(msg)
-                await send_message(connection, msg)
+                send_message(connection, msg)
                 count += 1
             if count == 1:
-                await send_message(connection, "No mail in mailbox.")
+                send_message(connection, "No mail in mailbox.")
 
     @Command("delmail",
              perm="mail.readmail",
@@ -209,29 +209,29 @@ class MailPlugin(StorageCommandPlugin):
         if data:
             if data[0] == "all":
                 self.storage['mail'][uid] = []
-                await send_message(connection, "Deleted all mail.")
+                send_message(connection, "Deleted all mail.")
             elif data[0] == "unread":
                 for mail in mailbox:
                     if mail.unread:
                         self.storage['mail'][uid].remove(mail)
-                await send_message(connection, "Deleted all unread mail.")
+                send_message(connection, "Deleted all unread mail.")
             elif data[0] == "read":
                 for mail in mailbox:
                     if not mail.unread:
                         self.storage['mail'][uid].remove(mail)
-                await send_message(connection, "Deleted all read mail.")
+                send_message(connection, "Deleted all read mail.")
             else:
                 try:
                     index = int(data[0]) - 1
                     self.storage['mail'][uid].pop(index)
-                    await send_message(connection, "Deleted mail {}."
+                    send_message(connection, "Deleted mail {}."
                                             .format(data[0]))
                 except ValueError:
                     raise SyntaxWarning("Argument must be a category or "
                                         "number. Valid categories: \"read\","
                                         " \"unread\", \"all\"")
                 except IndexError:
-                    await send_message(connection, "No message at "
+                    send_message(connection, "No message at "
                                                         "that index.")
         else:
             raise SyntaxWarning("No argument provided.")

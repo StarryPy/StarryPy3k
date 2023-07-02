@@ -137,7 +137,7 @@ class Claims(StorageCommandPlugin):
     @Command("claim",
              perm="claims.claim",
              doc="Claim a planet to be protected.")
-    def _claim(self, data, connection):
+    async def _claim(self, data, connection):
         location = connection.player.location
         uuid = connection.player.uuid
         if self.planet_protect.check_protection(location):
@@ -163,7 +163,7 @@ class Claims(StorageCommandPlugin):
     @Command("unclaim",
              perm="claims.claim",
              doc="Unclaim and unprotect the planet you're standing on.")
-    def _unclaim(self, data, connection):
+    async def _unclaim(self, data, connection):
         location = connection.player.location
         uuid = connection.player.uuid
         if not self.planet_protect.check_protection(location):
@@ -200,7 +200,7 @@ class Claims(StorageCommandPlugin):
                 try:
                     send_message(connection, "Granted build access to player"
                                              " {}.".format(target.alias))
-                    await send_message(target.connection, "You've been "
+                    send_message(target.connection, "You've been "
                                                                "granted build "
                                                                "access on {}."
                                             .format(location))
@@ -216,7 +216,7 @@ class Claims(StorageCommandPlugin):
              priority=1,
              perm="claims.manage_claims",
              doc="Remove someone from the protected list of your planet.")
-    def _del_builder(self, data, connection):
+    async def _del_builder(self, data, connection):
         location = connection.player.location
         alias = connection.player.alias
         uuid = connection.player.uuid
@@ -243,7 +243,7 @@ class Claims(StorageCommandPlugin):
              priority=1,
              perm="claims.manage_claims",
              doc="List all of the people allowed to build on this planet.")
-    def _list_builders(self, data, connection):
+    async def _list_builders(self, data, connection):
         uuid = connection.player.uuid
         location = connection.player.location
         if not self.planet_protect.check_protection(location):
@@ -319,7 +319,7 @@ class Claims(StorageCommandPlugin):
                 send_message(connection, "Transferred ownership of {} to {}."
                              .format(location, target.alias))
                 try:
-                    await send_message(target.connection, "You've been "
+                    send_message(target.connection, "You've been "
                                                                "made owner of "
                                                                "{}."
                                             .format(location))
@@ -334,7 +334,7 @@ class Claims(StorageCommandPlugin):
     @Command("list_claims",
              perm="claims.claim",
              doc="List all of the planets you've claimed.")
-    def _list_claims(self, data, connection):
+    async def _list_claims(self, data, connection):
         uuid = connection.player.uuid
         if self.storage["owners"][uuid]:
             send_message(connection, "You've claimed the following worlds:")
@@ -357,15 +357,15 @@ class Claims(StorageCommandPlugin):
                     if location in self.planet_announcer.storage["greetings"]:
                         self.planet_announcer.storage["greetings"].pop(
                             location)
-                        await send_message(connection, "Greeting message "
+                        send_message(connection, "Greeting message "
                                                             "cleared.")
                 else:
                     self.planet_announcer.storage["greetings"][location] = msg
-                    await send_message(connection, "Greeting message "
+                    send_message(connection, "Greeting message "
                                                         "set to \"{}\"."
                                             .format(msg))
             else:
-                await send_message(connection, "You don't own this "
+                send_message(connection, "You don't own this "
                                                     "planet!")
         else:
             send_message(connection, "Planet greetings are not available on "
@@ -390,7 +390,7 @@ class Claims(StorageCommandPlugin):
             if access["whitelist"]:
                 allow = "allowed"
             if not data:
-                await send_message(connection, "Argument not recognized. "
+                send_message(connection, "Argument not recognized. "
                                                     "Usage: /planet_access ["
                                                     "name] add/remove")
             elif data[0].lower() == "whitelist":
@@ -473,7 +473,7 @@ class Claims(StorageCommandPlugin):
         target = self.plugins.player_manager.find_player(" ".join(data))
         if target.uuid in self.storage['owners']:
             self.storage['owners'][target.uuid] = []
-            await send_message(connection, "Purged claims of {}"
+            send_message(connection, "Purged claims of {}"
                                     .format(target.alias))
         else:
-            await send_message(connection, "Target has no claims.")
+            send_message(connection, "Target has no claims.")

@@ -64,7 +64,7 @@ class MOTD(SimpleCommandPlugin):
              perm="motd.set_motd",
              doc="Sets the 'Message of the Day' text.",
              syntax="(message text)")
-    def _set_motd(self, data, connection):
+    async def _set_motd(self, data, connection):
         """
         Sets the 'Message of the Day' text.
 
@@ -82,7 +82,7 @@ class MOTD(SimpleCommandPlugin):
     @Command("motd",
              perm="motd.motd",
              doc="Displays the 'Message of the Day' text.")
-    def _motd(self, data, connection):
+    async def _motd(self, data, connection):
         """
         Displays the 'Message of the Day' text to the requesting user.
 

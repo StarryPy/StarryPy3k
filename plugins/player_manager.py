@@ -945,7 +945,7 @@ class PlayerManager(SimpleCommandPlugin):
              perm="player_manager.kick",
              doc="Kicks a player.",
              syntax=("[\"]player name[\"]", "[reason]"))
-    def _kick(self, data, connection):
+    async def _kick(self, data, connection):
         """
         Kick a play off the server. You must specify a name. You may also
         specify an optional reason.
@@ -988,7 +988,7 @@ class PlayerManager(SimpleCommandPlugin):
              perm="player_manager.ban",
              doc="Bans a user or an IP address.",
              syntax=("(ip | name)", "(reason)"))
-    def _ban(self, data, connection):
+    async def _ban(self, data, connection):
         """
         Ban a player. You must specify either a name or an IP. You must also
         specify a 'reason' for banning the player. This information is stored
@@ -1023,7 +1023,7 @@ class PlayerManager(SimpleCommandPlugin):
              perm="player_manager.ban",
              doc="Unbans a user or an IP address.",
              syntax=("(ip | name)"))
-    def _unban(self, data, connection):
+    async def _unban(self, data, connection):
         """
         Unban a player. You must specify either a name or an IP.
 
@@ -1044,7 +1044,7 @@ class PlayerManager(SimpleCommandPlugin):
     @Command("list_bans",
              perm="player_manager.ban",
              doc="Lists all active bans.")
-    def _list_bans(self, data, connection):
+    async def _list_bans(self, data, connection):
         """
         List the current bans.
 
@@ -1067,7 +1067,7 @@ class PlayerManager(SimpleCommandPlugin):
              doc="Manages user permissions; see /user help for details.")
     async def _user(self, data, connection):
         if not data:
-            await send_message(connection, "No arguments provided. See "
+            send_message(connection, "No arguments provided. See "
                                                 "/user help for usage info.")
         elif data[0].lower() == "help":
             send_message(connection, "Syntax:")
@@ -1095,13 +1095,13 @@ class PlayerManager(SimpleCommandPlugin):
             target = self.find_player(data[1])
             if target:
                 if not data[2]:
-                    await send_message(connection, "No permission "
+                    send_message(connection, "No permission "
                                                         "specified.")
                 elif not connection.player.perm_check(data[2]):
-                    await send_message(connection, "You don't have "
+                    send_message(connection, "You don't have "
                                             "permission to do that!")
                 elif data[2].lower() in target.permissions:
-                    await send_message(connection, "Player {} already "
+                    send_message(connection, "Player {} already "
                                                         "has permission {}."
                                             .format(target.alias, data[2]))
                 else:
@@ -1109,31 +1109,31 @@ class PlayerManager(SimpleCommandPlugin):
                     target.granted_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
                     if target.logged_in:
-                        await send_message(target.connection,
+                        send_message(target.connection,
                                                 "You were granted permission "
                                                 "{} by {}."
                                                 .format(data[2].lower(),
                                                         connection.player.alias))
-                    await send_message(connection, "Granted permission "
+                    send_message(connection, "Granted permission "
                                                         "{} to {}."
                                             .format(data[2], target.alias))
             else:
-                await send_message(connection, "User {} not "
+                send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         elif data[0].lower() == "rmperm":
             target = self.find_player(data[1])
             if target:
                 if not data[2]:
-                    await send_message(connection, "No permission "
+                    send_message(connection, "No permission "
                                                         "specified.")
                 elif not connection.player.perm_check(data[2]):
-                    await send_message(connection, "You don't have "
+                    send_message(connection, "You don't have "
                                             "permission to do that!")
                 elif target.priority >= connection.player.priority:
-                    await send_message(connection, "You don't have "
+                    send_message(connection, "You don't have "
                                             "permission to do that!")
                 elif data[2].lower() not in target.permissions:
-                    await send_message(connection, "Player {} does not "
+                    send_message(connection, "Player {} does not "
                                                         "have permission {}."
                                             .format(target.alias, data[2]))
                 else:
@@ -1141,16 +1141,16 @@ class PlayerManager(SimpleCommandPlugin):
                     target.revoked_perms.add(data[2].lower())
                     target.update_ranks(self.ranks)
                     if target.logged_in:
-                        await send_message(target.connection,
+                        send_message(target.connection,
                                                 "{} removed permission {} "
                                                 "from you."
                                                 .format(connection.player.alias,
                                                         data[2].lower()))
-                    await send_message(connection, "Removed permission "
+                    send_message(connection, "Removed permission "
                                                         "{} from {}."
                                             .format(data[2], target.alias))
             else:
-                await send_message(connection, "User {} not "
+                send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         elif data[0].lower() == "addrank":
             target = self.find_player(data[1])
@@ -1165,25 +1165,25 @@ class PlayerManager(SimpleCommandPlugin):
                     return
                 rank = self.ranks[search]
                 if rank["priority"] >= connection.player.priority:
-                    await send_message(connection, "You don't have "
+                    send_message(connection, "You don't have "
                                             "permission to do that!")
                 elif search in target.ranks:
-                    await send_message(connection, "Player {} already "
+                    send_message(connection, "Player {} already "
                                                         "has rank {}."
                                             .format(target.alias, search))
                 else:
                     target.ranks.add(search)
                     target.update_ranks(self.ranks)
                     if target.logged_in:
-                        await send_message(target.connection,
+                        send_message(target.connection,
                                                 "You were granted rank {} by {}."
                                                 .format(search,
                                                         connection.player.alias))
-                    await send_message(connection, "Granted rank "
+                    send_message(connection, "Granted rank "
                                                         "{} to {}."
                                             .format(search, target.alias))
             else:
-                await send_message(connection, "User {} not "
+                send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         elif data[0].lower() == "rmrank":
             target = self.find_player(data[1])
@@ -1197,49 +1197,49 @@ class PlayerManager(SimpleCommandPlugin):
                                  .format(data[2]))
                     return
                 if target.priority >= connection.player.priority:
-                    await send_message(connection, "You don't have "
+                    send_message(connection, "You don't have "
                                             "permission to do that!")
                 elif search not in target.ranks:
-                    await send_message(connection, "Player {} does not "
+                    send_message(connection, "Player {} does not "
                                                         "have rank {}."
                                             .format(target.alias, search))
                 else:
                     target.ranks.remove(search)
                     target.update_ranks(self.ranks)
                     if target.logged_in:
-                        await send_message(target.connection, "{} removed"
+                        send_message(target.connection, "{} removed"
                                                                    " rank {} "
                                                                    "from you."
                                                 .format(connection.player.alias,
                                                         search))
-                    await send_message(connection, "Removed rank "
+                    send_message(connection, "Removed rank "
                                                         "{} from {}."
                                             .format(search, target.alias))
             else:
-                await send_message(connection, "User {} not "
+                send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         elif data[0].lower() == "listperms":
             target = self.find_player(data[1])
             if target:
                 perms = ", ".join(target.permissions)
-                await send_message(connection, "Permissions for user {}:"
+                send_message(connection, "Permissions for user {}:"
                                                     "\n{}"
                                         .format(target.alias, perms))
             else:
-                await send_message(connection, "User {} not "
+                send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         elif data[0].lower() == "listranks":
             target = self.find_player(data[1])
             if target:
                 ranks = ", ".join((x.capitalize() for x in target.ranks))
-                await send_message(connection, "Ranks for user {}:"
+                send_message(connection, "Ranks for user {}:"
                                                     "\n{}"
                                         .format(target.alias, ranks))
             else:
-                await send_message(connection, "User {} not "
+                send_message(connection, "User {} not "
                                                     "found.".format(data[1]))
         else:
-            await send_message(connection, "Argument not recognized. "
+            send_message(connection, "Argument not recognized. "
                                                 "See /user help for usage "
                                                 "info.")
 
@@ -1247,7 +1247,7 @@ class PlayerManager(SimpleCommandPlugin):
              perm="player_manager.list_players",
              doc="Lists all players.",
              syntax=("[wildcards]",))
-    def _list_players(self, data, connection):
+    async def _list_players(self, data, connection):
         """
         List the players in the database. Wildcard formats are allowed in this
         search (not really. NotImplemementedYet...) Careful, this list can get
@@ -1276,7 +1276,7 @@ class PlayerManager(SimpleCommandPlugin):
              syntax=("(username)",
                      "[*force=forces deletion of a logged in player."
                      " ^red;NOT RECOMMENDED^reset;.]"))
-    def _delete_player(self, data, connection):
+    async def _delete_player(self, data, connection):
         """
         Removes a player from the player database. By default. you cannot
         remove a logged-in player, so either they need to be removed from
@@ -1316,6 +1316,6 @@ class PlayerManager(SimpleCommandPlugin):
     @Command("save",
              perm="player_manager.save",
              doc="Saves the player database to disk.")
-    def _save(self, data, connection):
+    async def _save(self, data, connection):
         self.shelf.sync()
         send_message(connection, "Player database saved successfully.")

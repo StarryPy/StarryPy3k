@@ -95,7 +95,7 @@ class Spawn(StorageCommandPlugin):
     @Command("set_spawn",
              perm="spawn.set_spawn",
              doc="Set the spawn planet.")
-    def _set_spawn(self, data, connection):
+    async def _set_spawn(self, data, connection):
         """
         Set the current planet as the spawn plant. Note, you must be standing
         on a planet for this to work.
@@ -115,7 +115,7 @@ class Spawn(StorageCommandPlugin):
     @Command("show_spawn",
              perm="spawn.show_spawn",
              doc="Print the current spawn location.")
-    def _show_spawn(self, data, connection):
+    async def _show_spawn(self, data, connection):
         """
         Display the coordinates of the current spawn location.
 
