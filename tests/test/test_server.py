@@ -3,7 +3,7 @@ import asyncio
 from server import ServerFactory
 
 
-def start_server():
+async def start_server():
     serverf = ServerFactory()
     await asyncio.start_server(serverf, '127.0.0.1', 21025)
 
