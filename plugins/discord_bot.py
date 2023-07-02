@@ -170,6 +170,13 @@ class DiscordPlugin(BasePlugin):
                                           datefmt='%Y-%m-%d %H:%M:%S'))
         self.discord_logger.addHandler(ch)
 
+    async def deactivate(self):
+        if not self.enabled:
+            return
+        if self.discord_client:
+            await self.discord_client.close()
+        await super().deactivate()
+
     # Packet hooks - look for these packets and act on them
 
     async def on_connect_success(self, data, connection):
@@ -240,8 +247,10 @@ class DiscordPlugin(BasePlugin):
             self.discord_client = DiscordClient(self);
             await self.discord_client.login(self.token)
             await self.discord_client.connect() # sleeps forever until a problem occurs
+        except asyncio.CancelledError as e:
+            self.logger.info("Caught interrupt, shutting down.")
         except Exception as e:
-            self.logger.exception(e)
+            self.logger.exception("Caught exception in Discord run; shutting down: {}", e)
             raise e
 
     async def send_to_game(self, message):
@@ -328,8 +337,10 @@ class DiscordPlugin(BasePlugin):
     def error_handler(self, future):
         try:
             future.result()
+        except KeyboardInterrupt:
+            # exiting, can leave this alone
+            return
         except Exception as e:
             self.logger.error("Caught an unhandled exception in Discord bot.  Will restart.")
             self.logger.exception(e)
-            self.discord_task = asyncio.create_task(self.start_bot())
-            self.discord_task.add_done_callback(self.error_handler)
+            self.background(self.start_bot()).add_done_callback(self.error_handler)

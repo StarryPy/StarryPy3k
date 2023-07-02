@@ -157,7 +157,7 @@ class PluginManager:
             self._activated_plugins.add(plugin)
         await self.get_overrides()
 
-    def deactivate_all(self):
+    async def deactivate_all(self):
         for plugin in self._plugins.values():
             self.logger.info("Deactivating %s", plugin.name)
-            plugin.deactivate()
+            await plugin.deactivate()

@@ -56,7 +56,7 @@ class BasePlugin(metaclass=BaseMeta):
         pass
 
     # not async so server can shut down outside of async loop
-    def deactivate(self):
+    async def deactivate(self):
         pass
 
     # helper to ensure background tasks get properly referenced until awaited

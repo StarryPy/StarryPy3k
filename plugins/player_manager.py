@@ -554,7 +554,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.logger.debug("Saved the player database.")
         self.shelf.sync()
 
-    def deactivate(self):
+    async def deactivate(self):
         """
         Deactivate the shelf.
 

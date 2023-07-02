@@ -205,10 +205,12 @@ class ServerFactory:
             self.plugin_manager.load_from_path(
                 path / self.configuration_manager.config.plugin_path)
             self.plugin_manager.resolve_dependencies()
-            asyncio.ensure_future(self.plugin_manager.activate_all())
         except Exception as err:
             logger.exception("Error during server startup.", exc_info=True)
             raise err
+        
+    async def start_plugins(self):
+        await self.plugin_manager.activate_all()
 
     async def broadcast(self, messages, *, mode=ChatReceiveMode.RADIO_MESSAGE,
                   **kwargs):
@@ -271,6 +273,7 @@ async def start_server() -> tuple[ServerFactory, asyncio.AbstractServer]:
     :return: Server factory object.
     """
     _server_factory = ServerFactory()
+    await _server_factory.start_plugins()
     config = _server_factory.configuration_manager.config
     try:
         srv = await asyncio.start_server(_server_factory,
@@ -314,22 +317,16 @@ async def main():
         await srv.serve_forever()
     except (KeyboardInterrupt, SystemExit):
         logger.warning("Exiting")
-        raise
     except Exception as e:
-        logger.warning('An exception occurred: {}'.format(e))
-        raise e
+        logger.warning('An exception occurred, exiting: {}'.format(e))
     finally:
-        _factory = server_factory.result()
-        _factory.kill_all()
-        _factory.plugin_manager.deactivate_all()
+        logger.info("Exiting StarryPy. Shutting down all plugins.")
+        server_factory.kill_all()
+        await server_factory.plugin_manager.deactivate_all()
         #_factory.configuration_manager.save_config() # this causes changes to the config while the server is running to be overwritten.  Very annoying and makes quick restart cycles impossible.
         aiologger.removeHandler(fh_d)
         aiologger.removeHandler(ch)
-        loop.stop()
-        loop.close()
         logger.info("Finished.")
-
-
 
 if __name__ == "__main__":
     asyncio.run(main())
