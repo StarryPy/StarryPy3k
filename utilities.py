@@ -270,6 +270,11 @@ class Cupboard(Shelf):
                 pass
 
     def close(self):
+        if(self.dict is None):
+            return
+        if isinstance(self.dict, _ClosedDict):
+            # don't re-close, just exit
+            return    
         try:
             self.sync()
         finally:
@@ -278,6 +283,8 @@ class Cupboard(Shelf):
             except:
                 self.dict = None
 
+    def __del__(self):
+        self.close()
 
 async def read_vlq(bytestream):
     """

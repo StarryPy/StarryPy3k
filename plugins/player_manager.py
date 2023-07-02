@@ -236,7 +236,7 @@ class PlayerManager(SimpleCommandPlugin):
         self.ranks = self._rebuild_ranks(self.rank_config)
         self.reap_task = asyncio.create_task(self._reap())
         self.save_task = asyncio.create_task(self._save_shelf())
-
+    
     # Packet hooks - look for these packets and act on them
 
     async def on_protocol_request(self, data, connection):
