@@ -149,7 +149,7 @@ class CommandDispatcher(BasePlugin):
         """
         try:
             handler = self.commands[command]
-            self.logger.info("Processing command {} with handler {}.".format(command, handler))
+            #self.logger.debug("Processing command {} with handler {}.".format(command, handler))
             await handler(extractor(to_parse), connection)
         except SyntaxWarning as e:
             self._send_syntax_error(command, e, connection)
