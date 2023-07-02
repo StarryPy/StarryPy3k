@@ -311,7 +311,7 @@ if __name__ == "__main__":
 
     logger.info("Starting server")
 
-    server_factory = asyncio.create_task(start_server())
+    server_factory = asyncio.ensure_future(start_server())
 
     try:
         loop.run_forever()
