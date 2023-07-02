@@ -459,7 +459,7 @@ class Command:
         :param f: The function the Command decorator is wrapping.
         :return: The now-wrapped command, with all the trappings.
         """
-        def wrapped(s, data, connection):
+        async def wrapped(s, data, connection):
             try:
                 if self.perm is not None:
                     if not connection.player.perm_check(self.perm):

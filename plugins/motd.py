@@ -56,8 +56,7 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection we're showing the message to.
         :return: Null.
         """
-        await send_message(connection, "{}".format(self.motd))
-        return
+        send_message(connection, "{}".format(self.motd))
 
     # Commands - In-game actions that can be performed
 
@@ -91,5 +90,4 @@ class MOTD(SimpleCommandPlugin):
         :param connection: The connection from which the packet came.
         :return: Null.
         """
-        self.background(
-            send_message(connection, "{}".format(self.motd)))
+        send_message(connection, "{}".format(self.motd))
