@@ -24,6 +24,12 @@ If you are installing during the development phase, please clone the repository
  using a virtual environment helps to keep a clean namespace and reduce the
  chance of bugs.
 
+If you plan to run under Docker, we now provide an official image: medeor/starrypy3k.  
+
+For a list of available tags, see: [Docker Hub](https://hub.docker.com/r/medeor/starrypy3k)
+
+
+
 ### Starbound Server Configuration
 StarryPy works as a benevolent "man in the middle" between the Starbound game
 client and the Starbound dedicated server, in effect acting as a proxy server.
