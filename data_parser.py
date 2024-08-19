@@ -336,6 +336,45 @@ class StarString(Struct):
     def _build(cls, obj, ctx: OrderedDotDict):
         return StarByteArray.build(obj.encode("utf-8"), ctx)
 
+class StarJson(Struct):
+    @classmethod
+    def _parse(cls, stream: BytesIO, ctx: OrderedDict):
+
+        type_index = Byte.parse(stream, ctx)
+        if type_index > 0:
+            type_index -= 1
+        
+        match type_index:
+            case 1:
+                return BFloat32.parse(stream, ctx)
+            case 2:
+                return Flag.parse(stream, ctx)
+            case 3:
+                return SignedVLQ.parse(stream, ctx)
+            case 4:
+                return StarString.parse(stream, ctx)
+            case 5:
+                l = VLQ.parse(stream, ctx)
+                c = []
+                for _ in range(l):
+                    c.append(StarJson.parse(stream, ctx))
+                return c
+            case 6:
+                data = {}
+                l = VLQ.parse(stream, ctx)
+                for _ in range(l):
+                    key = StarString.parse(stream, ctx)
+                    value = StarJson.parse(stream, ctx)
+                    data[key] = value
+                return data
+            case _:
+                return None # Invalid
+                
+
+    @classmethod
+    def _build(cls, obj, ctx: OrderedDotDict):
+        raise NotImplementedError
+
 
 class Byte(Struct):
     @classmethod
@@ -748,6 +787,7 @@ class ProtocolRequest(Struct):
 class ProtocolResponse(Struct):
     """packet type 1 """
     server_response = Byte
+    info = StarJson
 
 
 class ServerDisconnect(Struct):
