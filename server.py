@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 import signal
+import traceback
 
 from configuration_manager import ConfigurationManager
 from data_parser import ChatReceived
@@ -74,6 +75,7 @@ class StarryPyServer:
         except Exception as err:
             logger.error("Server loop exception occurred:"
                          "{}: {}".format(err.__class__.__name__, err))
+            logger.error("Error details and traceback: {}".format(traceback.format_exc()))
         finally:
             self.die()
 
