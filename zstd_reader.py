@@ -25,7 +25,7 @@ class ZstdFrameReader:
 
     async def read_from_network(self):
         while True:
-            chunk = await self.raw_reader.read(1024)  # Read in chunks of 1024 bytes
+            chunk = await self.raw_reader.read(32768)  # Read in chunks; we'll only get what's available
             # print(f"Read {len(chunk)} bytes from network")
             if not chunk:
                 raise asyncio.CancelledError("Connection closed")
