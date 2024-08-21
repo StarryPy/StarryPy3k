@@ -1,46 +1,71 @@
 import asyncio
-from io import BufferedReader, BytesIO
+from io import BufferedReader
+import io
 import zstandard as zstd
 
+from utilities import Direction
+
 class ZstdFrameReader:
-    def __init__(self, reader: asyncio.StreamReader):
-        self.decompressor = zstd.ZstdDecompressor()
-        self.inputbuffer = bytearray()
-        self.outputbuffer = BytesIO()
-        self.remaining = 0
+    def __init__(self, reader: asyncio.StreamReader, direction: Direction):
+        self.outputbuffer = NonSeekableMemoryStream()
+        self.decompressor = zstd.ZstdDecompressor().stream_writer(self.outputbuffer)
         self.raw_reader = reader
+        self.direction = direction
 
     async def readexactly(self, count):
         # print(f"Reading exactly {count} bytes")
 
         while True:
             # if there are enough bytes, return them
-            if self.remaining >= count:
-                # print (f"Returning {count} bytes from buffer")
-                self.remaining -= count;
-                return self.outputbuffer.read1(count)
+            if self.outputbuffer.remaining() >= count:
+                # print (f"Returning {count} bytes from buffer {self.direction}")
+                return self.outputbuffer.read(count)
         
             # print(f"Reading from network since there are only {self.remaining} bytes in buffer")
-            await self.read_from_network()
+            await self.read_from_network(count)
 
-    async def read_from_network(self):
-        while True:
+    async def read_from_network(self, target_count):
+        while self.outputbuffer.remaining() < target_count:
+
             chunk = await self.raw_reader.read(32768)  # Read in chunks; we'll only get what's available
             # print(f"Read {len(chunk)} bytes from network")
             if not chunk:
                 raise asyncio.CancelledError("Connection closed")
-            self.inputbuffer.extend(chunk)
-            
-            decompressor = self.decompressor.decompressobj() # single use decompressor
-            try:
-                decompressed_data = decompressor.decompress(self.inputbuffer)
-                if decompressed_data:
-                    # write to the output buffer
-                    self.outputbuffer = BytesIO(decompressed_data)# assume that previous reads emptied the buffer (no packets split across zstd frames)
-                    self.remaining = len(decompressed_data)
-                    # Save leftover bytes
-                    self.inputbuffer = bytearray(decompressor.unused_data)
-                    # print("Decompressed frame of size", len(decompressed_data))
-                    return
+            try: 
+                self.decompressor.write(chunk)
             except zstd.ZstdError:
-                continue  # Continue reading if the frame is not complete
+                print("Zstd error, dropping connection")
+                raise asyncio.CancelledError("Error in compressed data stream!")
+
+class NonSeekableMemoryStream(io.RawIOBase):
+    def __init__(self):
+        self.buffer = bytearray()
+        self.read_pos = 0
+        self.write_pos = 0
+
+    def write(self, b):
+        self.buffer.extend(b)
+        self.write_pos += len(b)
+        return len(b)
+
+    def read(self, size=-1):
+        if size == -1 or size > self.write_pos - self.read_pos:
+            size = self.write_pos - self.read_pos
+        if size == 0:
+            return b''
+        data = self.buffer[self.read_pos:self.read_pos + size]
+        self.read_pos += size
+        if self.read_pos == self.write_pos:
+            self.buffer = bytearray()
+            self.read_pos = 0
+            self.write_pos = 0
+        return bytes(data)
+    
+    def remaining(self):
+        return self.write_pos - self.read_pos
+
+    def readable(self):
+        return True
+
+    def writable(self):
+        return True

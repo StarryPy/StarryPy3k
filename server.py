@@ -52,8 +52,8 @@ class StarryPyServer:
         logger.info("Received connection from {}".format(self.client_ip))
 
     def start_zstd(self):
-        self._reader = ZstdFrameReader(self._reader)
-        self._client_reader= ZstdFrameReader(self._client_reader)
+        self._reader = ZstdFrameReader(self._reader, Direction.TO_SERVER)
+        self._client_reader= ZstdFrameReader(self._client_reader, Direction.TO_CLIENT)
         self._writer = ZstdFrameWriter(self._writer, skip_packets=1)
         self._client_writer = ZstdFrameWriter(self._client_writer)
         self._expect_server_loop_death = True
