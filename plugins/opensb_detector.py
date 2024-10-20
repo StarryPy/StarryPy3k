@@ -21,7 +21,8 @@ class OpenSBDetector(SimpleCommandPlugin):
 
     async def on_protocol_response(self, data, connection):
         # self.logger.debug("Received protocol response: {} from connection {}".format(data, connection))
-        if data["parsed"]["info"]["compression"] == "Zstd":
+        info = data["parsed"].get("info")
+        if info != None and info["compression"] == "Zstd":
             self.logger.info("Detected Zstd compression. Setting server configuration.")
             connection.start_zstd()
         return True
