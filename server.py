@@ -2,6 +2,7 @@ import asyncio
 import logging
 import sys
 import signal
+import traceback
 
 from configuration_manager import ConfigurationManager
 from data_parser import ChatReceived
@@ -9,6 +10,8 @@ from packets import packets
 from pparser import build_packet
 from plugin_manager import PluginManager
 from utilities import path, read_packet, State, Direction, ChatReceiveMode
+from zstd_reader import ZstdFrameReader
+from zstd_writer import ZstdFrameWriter
 
 
 DEBUG = True
@@ -21,18 +24,21 @@ else:
 logger = logging.getLogger('starrypy')
 logger.setLevel(loglevel)
 
+class SwitchToZstdException(Exception):
+    pass
+
 class StarryPyServer:
     """
     Primary server class. Handles all the things.
     """
     def __init__(self, reader, writer, config, factory):
         logger.debug("Initializing connection.")
-        self._reader = reader
-        self._writer = writer
-        self._client_reader = None
-        self._client_writer = None
+        self._reader = reader # read packets from client
+        self._writer = writer # writes packets to client
+        self._client_reader = None # read packets from server (acting as client)
+        self._client_writer = None # write packets to server
         self.factory = factory
-        self._client_loop_future = None
+        self._client_loop_future = asyncio.create_task(self.client_loop())
         self._server_loop_future = asyncio.create_task(self.server_loop())
         self.state = None
         self._alive = True
@@ -42,7 +48,19 @@ class StarryPyServer:
         self._client_read_future = None
         self._server_write_future = None
         self._client_write_future = None
+        self._expect_server_loop_death = False
         logger.info("Received connection from {}".format(self.client_ip))
+
+    def start_zstd(self):
+        self._reader = ZstdFrameReader(self._reader, Direction.TO_SERVER)
+        self._client_reader= ZstdFrameReader(self._client_reader, Direction.TO_CLIENT)
+        self._writer = ZstdFrameWriter(self._writer, skip_packets=1)
+        self._client_writer = ZstdFrameWriter(self._client_writer)
+        self._expect_server_loop_death = True
+        self._server_loop_future.cancel()
+        self._server_loop_future = asyncio.create_task(self.server_loop())
+        logger.info("Switched to zstd")
+
 
     async def server_loop(self):
         """
@@ -52,14 +70,15 @@ class StarryPyServer:
 
         :return:
         """
-        (self._client_reader, self._client_writer) = \
-            await asyncio.open_connection(self.config['upstream_host'],
-                                               self.config['upstream_port'])
-        self._client_loop_future = asyncio.create_task(self.client_loop())
+
+        # wait until client is available
+        while self._client_writer is None:
+            await asyncio.sleep(0.1)
+
         try:
             while True:
                 packet = await read_packet(self._reader,
-                                                Direction.TO_SERVER)
+                                            Direction.TO_SERVER)
                 # Break in case of emergencies:
                 # if packet['type'] not in [17, 40, 41, 43, 48, 51]:
                 #    logger.debug('c->s  {}'.format(packet['type']))
@@ -74,8 +93,14 @@ class StarryPyServer:
         except Exception as err:
             logger.error("Server loop exception occurred:"
                          "{}: {}".format(err.__class__.__name__, err))
+            logger.error("Error details and traceback: {}".format(traceback.format_exc()))
         finally:
-            self.die()
+            if not self._expect_server_loop_death:
+                logger.info("Server loop ended.")
+                self.die()
+            else:
+                logger.info("Restarting server loop for switch to zstd.")
+                self._expect_server_loop_death = False
 
     async def client_loop(self):
         """
@@ -84,6 +109,10 @@ class StarryPyServer:
 
         :return:
         """
+        (self._client_reader, self._client_writer) = \
+            await asyncio.open_connection(self.config['upstream_host'],
+                                               self.config['upstream_port'])
+
         try:
             while True:
                 packet = await read_packet(self._client_reader,
