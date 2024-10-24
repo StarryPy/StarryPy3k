@@ -11,6 +11,10 @@ class ZstdFrameReader:
         self.decompressor = zstd.ZstdDecompressor().stream_writer(self.outputbuffer)
         self.raw_reader = reader
         self.direction = direction
+        self.zstd_enabled = False
+    
+    def enable_zstd(self):
+        self.zstd_enabled = True
 
     async def readexactly(self, count):
         # print(f"Reading exactly {count} bytes")
@@ -31,11 +35,14 @@ class ZstdFrameReader:
             # print(f"Read {len(chunk)} bytes from network")
             if not chunk:
                 raise asyncio.CancelledError("Connection closed")
-            try: 
-                self.decompressor.write(chunk)
-            except zstd.ZstdError:
-                print("Zstd error, dropping connection")
-                raise asyncio.CancelledError("Error in compressed data stream!")
+            if not self.zstd_enabled:
+                self.outputbuffer.write(chunk)
+            else:
+                try: 
+                    self.decompressor.write(chunk)
+                except zstd.ZstdError:
+                    print("Zstd error, dropping connection")
+                    raise asyncio.CancelledError("Error in compressed data stream!")
 
 class NonSeekableMemoryStream(io.RawIOBase):
     def __init__(self):
