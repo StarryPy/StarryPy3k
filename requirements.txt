@@ -9,7 +9,7 @@ docopt==0.6.2
 frozenlist==1.4.1
 idna==3.7
 irc3==1.1.10
-multidict==6.0.5
+multidict==6.1.0
 venusian==3.1.0
 yarl==1.9.4
 zstandard==0.23.0
