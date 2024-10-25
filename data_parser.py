@@ -336,7 +336,6 @@ class StarString(Struct):
     def _build(cls, obj, ctx: OrderedDotDict):
         return StarByteArray.build(obj.encode("utf-8"), ctx)
 
-
 class Byte(Struct):
     @classmethod
     def _parse(cls, stream: BytesIO, ctx: OrderedDict):
@@ -748,6 +747,7 @@ class ProtocolRequest(Struct):
 class ProtocolResponse(Struct):
     """packet type 1 """
     server_response = Byte
+    info = Variant
 
 
 class ServerDisconnect(Struct):
