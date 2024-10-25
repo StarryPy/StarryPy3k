@@ -48,7 +48,6 @@ class StarryPyServer:
         self._client_read_future = None
         self._server_write_future = None
         self._client_write_future = None
-        self._expect_server_loop_death = False
         logger.info("Received connection from {}".format(self.client_ip))
 
     def start_zstd(self):
@@ -92,12 +91,8 @@ class StarryPyServer:
                          "{}: {}".format(err.__class__.__name__, err))
             logger.error("Error details and traceback: {}".format(traceback.format_exc()))
         finally:
-            if not self._expect_server_loop_death:
-                logger.info("Server loop ended.")
-                self.die()
-            else:
-                logger.info("Restarting server loop for switch to zstd.")
-                self._expect_server_loop_death = False
+            logger.info("Server loop ended.")
+            self.die()
 
     async def client_loop(self):
         """
