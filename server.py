@@ -33,8 +33,8 @@ class StarryPyServer:
     """
     def __init__(self, reader, writer, config, factory):
         logger.debug("Initializing connection.")
-        self._reader = reader # read packets from client
-        self._writer = writer # writes packets to client
+        self._reader = ZstdFrameReader(reader, Direction.TO_SERVER) # read packets from client
+        self._writer = ZstdFrameWriter(writer) # writes packets to client
         self._client_reader = None # read packets from server (acting as client)
         self._client_writer = None # write packets to server
         self.factory = factory
@@ -48,17 +48,13 @@ class StarryPyServer:
         self._client_read_future = None
         self._server_write_future = None
         self._client_write_future = None
-        self._expect_server_loop_death = False
         logger.info("Received connection from {}".format(self.client_ip))
 
     def start_zstd(self):
-        self._reader = ZstdFrameReader(self._reader, Direction.TO_SERVER)
-        self._client_reader= ZstdFrameReader(self._client_reader, Direction.TO_CLIENT)
-        self._writer = ZstdFrameWriter(self._writer, skip_packets=1)
-        self._client_writer = ZstdFrameWriter(self._client_writer)
-        self._expect_server_loop_death = True
-        self._server_loop_future.cancel()
-        self._server_loop_future = asyncio.create_task(self.server_loop())
+        self._reader.enable_zstd()
+        self._client_reader.enable_zstd()
+        self._writer.enable_zstd(skip_packets=1) # skip this packet
+        self._client_writer.enable_zstd()
         logger.info("Switched to zstd")
 
 
@@ -95,12 +91,8 @@ class StarryPyServer:
                          "{}: {}".format(err.__class__.__name__, err))
             logger.error("Error details and traceback: {}".format(traceback.format_exc()))
         finally:
-            if not self._expect_server_loop_death:
-                logger.info("Server loop ended.")
-                self.die()
-            else:
-                logger.info("Restarting server loop for switch to zstd.")
-                self._expect_server_loop_death = False
+            logger.info("Server loop ended.")
+            self.die()
 
     async def client_loop(self):
         """
@@ -109,9 +101,11 @@ class StarryPyServer:
 
         :return:
         """
-        (self._client_reader, self._client_writer) = \
-            await asyncio.open_connection(self.config['upstream_host'],
+        (reader, writer) = await asyncio.open_connection(self.config['upstream_host'],
                                                self.config['upstream_port'])
+        
+        self._client_reader = ZstdFrameReader(reader, Direction.TO_CLIENT)
+        self._client_writer = ZstdFrameWriter(writer)
 
         try:
             while True:
