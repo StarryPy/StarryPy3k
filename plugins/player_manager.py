@@ -594,7 +594,7 @@ class PlayerManager(SimpleCommandPlugin):
 
         return final
 
-    def kick_player(self, player, reason=""):
+    async def kick_player(self, player, reason=""):
         if player.client_id == -1 or player.connection is None:
             player.connection = None
             player.logged_in = False
@@ -603,10 +603,16 @@ class PlayerManager(SimpleCommandPlugin):
             self.players_online.remove(player.uuid)
             return
         try:
+            world_stop_packet = build_packet(packets["world_stop"],
+                                             WorldStop.build(
+                                                 dict(reason=reason)
+                                             ))
+            await player.connection.raw_write(world_stop_packet)
             kick_packet = build_packet(packets["server_disconnect"],
                                        ServerDisconnect.build(
                                            dict(reason=reason)))
-            self.background(player.connection.raw_write(kick_packet))
+            await player.connection.raw_write(kick_packet)
+            player.connection.active = False
         except AttributeError as e:  # Ignore errors in sending the packet.
             self.logger.debug("Error occurred while kicking user. {}".format(e))
         player.connection = None
@@ -628,7 +634,7 @@ class PlayerManager(SimpleCommandPlugin):
         banned_plr = self.get_player_by_ip(ip, check_logged_in=True)
         if banned_plr:
             kickstr = "You were kicked.\nReason: {}".format(reason)
-            self.kick_player(banned_plr, kickstr)
+            self.background(self.kick_player(banned_plr, kickstr))
         ban = IPBan(ip, reason, connection.player.alias)
         self.shelf["bans"][ip] = ban
         send_message(connection, "Banned IP: {} with reason: {}"
@@ -955,8 +961,7 @@ class PlayerManager(SimpleCommandPlugin):
         :return: Null.
         """
 
-        # FIXME: Kick is currently broken. Kicking someone will cause their
-        # starbound client to crash (overkill).
+        # FIXED: NO MORE CRASHES
         try:
             alias = data[0]
         except IndexError:
@@ -980,7 +985,7 @@ class PlayerManager(SimpleCommandPlugin):
             send_message(connection,
                          "Player {} is not currently logged in.".format(alias))
             return
-        self.kick_player(p, reason)
+        self.background(self.kick_player(p, reason))
         broadcast(self, "^red;{} has been kicked for reason: "
                         "{}^reset;".format(alias, reason))
 

@@ -394,8 +394,12 @@ def background(coro):
     # To prevent keeping references to finished tasks forever,
     # make each task remove its own reference from the set after
     # completion:
-    task.add_done_callback(background_tasks.discard)
-
+    def _done_callback(t):
+        background_tasks.discard(t)
+        
+        
+    task.add_done_callback(_done_callback)
+    background_tasks.add(task)
     return task
 
 

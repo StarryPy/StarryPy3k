@@ -48,6 +48,9 @@ class StarryPyServer:
         self._client_read_future = None
         self._server_write_future = None
         self._client_write_future = None
+
+        self.active = True
+        
         logger.info("Received connection from {}".format(self.client_ip))
 
     def start_zstd(self):
@@ -169,8 +172,13 @@ class StarryPyServer:
             logger.exception(err)
 
     async def raw_write(self, data):
-        self._writer.write(data)
-        await self._writer.drain()
+        if not self.active:
+            return  # stop writing
+        try:
+            self._writer.write(data)
+            await self._writer.drain()
+        except Exception as e:
+            logger.error(f"Exception in raw_write: {e}")
 
     async def client_raw_write(self, data):
         self._client_writer.write(data)
